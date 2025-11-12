@@ -5,3 +5,155 @@
 [x-cloak] {
     display: none;
 }
+
+/* Custom Auth Form Styles */
+.custom-auth-form .form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #ffffff;
+    padding: 30px;
+    width: 100%;
+    max-width: 450px;
+    border-radius: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .custom-auth-form .form {
+        padding: 20px;
+        border-radius: 15px;
+    }
+
+    .custom-auth-form .flex-row {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .custom-auth-form .btn {
+        width: 100%;
+    }
+}
+
+.custom-auth-form .input::placeholder {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+.custom-auth-form .form button {
+    align-self: flex-end;
+}
+
+.custom-auth-form .flex-column > label {
+    color: #151717;
+    font-weight: 600;
+}
+
+.custom-auth-form .inputForm {
+    border: 1.5px solid #ecedec;
+    border-radius: 10px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    transition: 0.2s ease-in-out;
+}
+
+.custom-auth-form .inputForm svg:last-child {
+    cursor: pointer;
+    margin-left: auto;
+    padding: 0 10px;
+}
+
+.custom-auth-form .input {
+    margin-left: 10px;
+    border-radius: 10px;
+    border: none;
+    width: 85%;
+    height: 100%;
+}
+
+.custom-auth-form .input:focus {
+    outline: none;
+}
+
+.custom-auth-form .inputForm:focus-within {
+    border: 1.5px solid #2d79f3;
+}
+
+.custom-auth-form .flex-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+}
+
+.custom-auth-form .flex-row > div > label {
+    font-size: 14px;
+    color: black;
+    font-weight: 400;
+}
+
+.custom-auth-form .span {
+    font-size: 14px;
+    margin-left: 5px;
+    color: #2d79f3;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.custom-auth-form .button-submit {
+    margin: 20px 0 10px 0;
+    background-color: #151717;
+    border: none;
+    color: white;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 10px;
+    height: 50px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.custom-auth-form .button-submit:hover {
+    background-color: #252727;
+}
+
+.custom-auth-form .p {
+    text-align: center;
+    color: black;
+    font-size: 14px;
+    margin: 5px 0;
+}
+
+.custom-auth-form .btn {
+    margin-top: 10px;
+    width: 100%;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 500;
+    gap: 10px;
+    border: 1px solid #ededef;
+    background-color: white;
+    cursor: pointer;
+    transition: 0.2s ease-in-out;
+}
+
+.custom-auth-form .btn:hover {
+    border: 1px solid #2d79f3;
+}
+
+.custom-auth-form .btn.google {
+    /* Specific Google button styles if needed */
+}
+
+.custom-auth-form .btn.apple {
+    /* Specific Apple button styles if needed */
+}
