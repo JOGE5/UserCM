@@ -9,7 +9,7 @@ class UsuarioCampusMarket extends Model
 {
     use HasFactory;
 
-    protected $table = 'usuarios_campus_market';
+    protected $table = 'usuarios_campus_markets';
 
     /**
      * The attributes that are mass assignable.
@@ -26,6 +26,7 @@ class UsuarioCampusMarket extends Model
         'Foto_de_perfil',
         'Cod_Rol',
         'Cod_Carrera',
+        'Cod_Universidad',
     ];
 
     /**

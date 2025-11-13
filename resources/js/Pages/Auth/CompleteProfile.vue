@@ -1,6 +1,7 @@
 <script setup>
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import axios from 'axios';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -30,22 +31,27 @@ const form = useForm({
 });
 
 const fetchCarreras = async (universidadId) => {
-    if (universidadId) {
+    const id = Number(universidadId);
+    console.log('Fetching careers for universidad ID:', id); // Debug log
+    if (id > 0) {
         try {
-            const response = await fetch(`/api/carreras?universidad_id=${universidadId}`);
-            carreras.value = await response.json();
+            const response = await axios.get('/api/carreras', { params: { universidad_id: id } });
+            console.log('Fetched careers data:', response.data); // Debug log
+            carreras.value = response.data;
         } catch (error) {
             console.error('Error fetching carreras:', error);
+            carreras.value = [];
         }
     } else {
+        console.log('No valid universidad ID provided, clearing careers'); // Debug log
         carreras.value = [];
     }
 };
 
-const onUniversidadChange = () => {
+watch(() => form.Cod_Universidad, (newVal) => {
     form.Cod_Carrera = '';
-    fetchCarreras(form.Cod_Universidad);
-};
+    fetchCarreras(newVal);
+});
 
 const isStep1Valid = computed(() => {
     return form.Apellidos && form.Genero && form.Telefono;
@@ -119,6 +125,8 @@ onMounted(() => {
                         <InputLabel for="name" value="Nombre" />
                         <TextInput
                             id="name"
+                            name="name"
+                            autocomplete="name"
                             v-model="form.name"
                             type="text"
                             class="block w-full mt-1"
@@ -130,6 +138,8 @@ onMounted(() => {
                         <InputLabel for="email" value="Email" />
                         <TextInput
                             id="email"
+                            name="email"
+                            autocomplete="email"
                             v-model="form.email"
                             type="email"
                             class="block w-full mt-1"
@@ -142,6 +152,8 @@ onMounted(() => {
                         <InputLabel for="Apellidos" value="Apellidos" />
                         <TextInput
                             id="Apellidos"
+                            name="Apellidos"
+                            autocomplete="family-name"
                             v-model="form.Apellidos"
                             type="text"
                             class="block w-full mt-1"
@@ -156,14 +168,16 @@ onMounted(() => {
                         <InputLabel for="Genero" value="Género" />
                         <select
                             id="Genero"
+                            name="Genero"
+                            autocomplete="sex"
                             v-model="form.Genero"
                             class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             required
                         >
                             <option value="">Selecciona tu género</option>
-                            <option value="Masculino">Masculino</option>
-                            <option value="Femenino">Femenino</option>
-                            <option value="Otro">Otro</option>
+                            <option value="Hombre">Hombre</option>
+                            <option value="Mujer">Mujer</option>
+                            <option value="Prefiero no decirlo">Prefiero no decirlo</option>
                         </select>
                         <InputError class="mt-2" :message="form.errors.Genero" />
                     </div>
@@ -173,6 +187,8 @@ onMounted(() => {
                         <InputLabel for="Telefono" value="Teléfono" />
                         <TextInput
                             id="Telefono"
+                            name="Telefono"
+                            autocomplete="tel"
                             v-model="form.Telefono"
                             type="tel"
                             class="block w-full mt-1"
@@ -191,6 +207,8 @@ onMounted(() => {
                         <InputLabel for="Foto_de_perfil" value="Foto de Perfil (Opcional)" />
                         <input
                             id="Foto_de_perfil"
+                            name="Foto_de_perfil"
+                            autocomplete="off"
                             type="file"
                             @input="form.Foto_de_perfil = $event.target.files[0]"
                             class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -204,6 +222,8 @@ onMounted(() => {
                         <InputLabel for="Foto_de_portada" value="Foto de Portada (Opcional)" />
                         <input
                             id="Foto_de_portada"
+                            name="Foto_de_portada"
+                            autocomplete="off"
                             type="file"
                             @input="form.Foto_de_portada = $event.target.files[0]"
                             class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -222,8 +242,9 @@ onMounted(() => {
                         <InputLabel for="Cod_Universidad" value="Universidad" />
                         <select
                             id="Cod_Universidad"
+                            name="Cod_Universidad"
+                            autocomplete="off"
                             v-model="form.Cod_Universidad"
-                            @change="onUniversidadChange"
                             class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                             required
                         >
@@ -231,7 +252,7 @@ onMounted(() => {
                             <option
                                 v-for="universidad in universidades"
                                 :key="universidad.Cod_Universidad"
-                                :value="universidad.Cod_Universidad"
+                                :value="Number(universidad.Cod_Universidad)"
                             >
                                 {{ universidad.Nombre_Universidad }}
                             </option>
@@ -244,6 +265,8 @@ onMounted(() => {
                         <InputLabel for="Cod_Carrera" value="Carrera" />
                         <select
                             id="Cod_Carrera"
+                            name="Cod_Carrera"
+                            autocomplete="off"
                             v-model="form.Cod_Carrera"
                             :disabled="!form.Cod_Universidad"
                             class="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"

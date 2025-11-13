@@ -27,7 +27,7 @@ class ProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
             'Apellidos' => 'required|string|max:255',
-            'Genero' => 'required|in:Masculino,Femenino,Otro',
+            'Genero' => 'required|in:Hombre,Mujer,Prefiero no decirlo',
             'Telefono' => 'required|string|max:20',
             'Foto_de_perfil' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Foto_de_portada' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -65,14 +65,15 @@ class ProfileController extends Controller
         // Crear el perfil extendido
         UsuarioCampusMarket::create([
             'user_id' => $user->id,
-            'Apellidos' => $request->Apellidos,
-            'Genero' => $request->Genero,
-            'Estado' => 'Activo',
-            'Telefono' => $request->Telefono,
+            'Apellidos' => trim($request->Apellidos),
+            'Genero' => trim($request->Genero),
+            'Estado' => 'Habilitado',
+            'Telefono' => trim($request->Telefono),
             'Foto_de_perfil' => $fotoPerfilPath,
             'Foto_de_portada' => $fotoPortadaPath,
             'Cod_Rol' => $codRol,
             'Cod_Carrera' => $request->Cod_Carrera,
+            'Cod_Universidad' => $request->Cod_Universidad,
         ]);
 
         return redirect()->route('dashboard')->with('success', 'Perfil completado exitosamente.');

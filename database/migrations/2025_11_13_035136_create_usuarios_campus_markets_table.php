@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('usuarios_campus_market', function (Blueprint $table) {
+        Schema::create('usuarios_campus_markets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('Apellidos')->nullable();
