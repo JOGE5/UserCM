@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\CarreraController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -21,4 +23,11 @@ Route::middleware([
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
+
+    // Rutas para completar perfil
+    Route::get('/complete-profile', [ProfileController::class, 'showCompleteForm'])->name('profile.complete.form');
+    Route::post('/complete-profile', [ProfileController::class, 'complete'])->name('profile.complete');
 });
+
+// API routes
+Route::get('/api/carreras', [CarreraController::class, 'index']);

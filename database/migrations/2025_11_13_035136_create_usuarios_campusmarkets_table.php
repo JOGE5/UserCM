@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('Telefono')->nullable();
             $table->string('Foto_de_portada')->nullable();
             $table->string('Foto_de_perfil')->nullable();
-            $table->foreignId('Cod_Rol')->nullable()->constrained('roles')->onDelete('set null');
-            $table->foreignId('Cod_Carrera')->nullable()->constrained('carreras')->onDelete('set null');
+            $table->foreignId('Cod_Rol')->nullable()->constrained('roles', 'Cod_Rol')->onDelete('set null');
+            $table->foreignId('Cod_Carrera')->nullable()->constrained('carreras', 'Cod_Carrera')->onDelete('set null');
             $table->timestamps();
         });
 
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('usuarioscampusmarkets');
+        Schema::dropIfExists('usuarios_campus_market');
     }
 };

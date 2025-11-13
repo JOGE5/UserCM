@@ -54,7 +54,7 @@ class UsuarioCampusMarket extends Model
      */
     public function rol()
     {
-        return $this->belongsTo(Rol::class, 'Cod_Rol');
+        return $this->belongsTo(Roles::class, 'Cod_Rol');
     }
 
     /**
