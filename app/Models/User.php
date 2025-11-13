@@ -16,6 +16,7 @@ class User extends Authenticatable
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
     use HasProfilePhoto;
     use Notifiable;
     use TwoFactorAuthenticatable;
@@ -63,5 +64,13 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Relación con el modelo UsuarioCampusMarket.
+     */
+    public function usuarioCampusMarket()
+    {
+        return $this->hasOne(UsuarioCampusMarket::class);
     }
 }
