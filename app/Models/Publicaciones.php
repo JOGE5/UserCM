@@ -20,4 +20,9 @@ class Publicaciones extends Model
     {
         return $this->belongsTo(\App\Models\Categorias::class, 'Cod_Categoria', 'Cod_Categoria');
     }
+
+    public function vendedor()
+    {
+        return $this->belongsTo(\App\Models\UsuarioCampusMarket::class, 'ID_Vendedor', 'ID_Usuario');
+    }
 }
