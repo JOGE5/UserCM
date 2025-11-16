@@ -18,12 +18,24 @@ Route::get('/', function () {
 // Ruta pública para servir imágenes de publicaciones (evita problemas con symlinks en Windows)
 Route::get('/files/publicaciones/{filename}', function ($filename) {
     $safe = basename($filename);
-    $path = storage_path('app/public/publicaciones/' . $safe);
-    if (!file_exists($path)) {
+    $path = storage_path('app/public/publicaciones/'.$safe);
+    if (! file_exists($path)) {
         abort(404);
     }
+
     return response()->file($path);
 })->name('files.publicaciones');
+
+// Ruta pública para servir imágenes de perfil de usuarios
+Route::get('/files/perfil/{filename}', function ($filename) {
+    $safe = basename($filename);
+    $path = storage_path('app/public/perfil/'.$safe);
+    if (! file_exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path);
+})->name('files.perfil');
 
 Route::middleware([
     'auth:sanctum',
@@ -31,7 +43,8 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
-        $publicaciones = \App\Models\Publicaciones::with('categoria')->get();
+        $publicaciones = \App\Models\Publicaciones::with('categoria', 'vendedor.user')->get();
+
         return Inertia::render('Dashboard', ['publicaciones' => $publicaciones]);
     })->name('dashboard');
 
@@ -60,6 +73,7 @@ Route::middleware([
     // Ruta para crear publicación
     Route::get('dashboard/create', function () {
         $categorias = \App\Models\Categorias::all();
+
         return Inertia::render('Create', ['categorias' => $categorias]);
     })->name('dashboard.create');
 

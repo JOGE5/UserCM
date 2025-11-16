@@ -26,6 +26,10 @@ const props = defineProps({
   id: {
     type: [String, Number],
     default: null // ID del item
+  },
+  user: {
+    type: Object,
+    default: null // Usuario que publicó
   }
 });
 
@@ -92,7 +96,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
       <div class="modal-image" v-if="props.image" :style="imageStyle"></div>
       <!-- Cuerpo del modal -->
       <div class="modal-body">
+
         <h3 class="modal-title">{{ props.title }}</h3> <!-- Título -->
+        <div class="vendedor" v-if="props.user">
+          <img v-if="props.user.usuarioCampusMarket && props.user.usuarioCampusMarket.Foto_de_perfil" :src="`/files/perfil/${props.user.usuarioCampusMarket.Foto_de_perfil.split('/').pop()}`" alt="Foto de perfil" class="profile-image" />
+          <span>Publicado por: {{ props.user.name }}</span>
+        </div>
         <p class="modal-price" v-if="props.subtitle">{{ props.subtitle }}</p> <!-- Subtítulo -->
         <p class="modal-category" v-if="props.category">Categoría: {{ props.category }}</p> <!-- Categoría -->
         <p class="modal-description" v-if="props.description">{{ props.description }}</p> <!-- Descripción -->
@@ -143,9 +152,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 }
 
 .card::before {
-  content: '';  
+  content: '';
   position: absolute;
-  width: 100px;                 
+  width: 100px;
   background-image: linear-gradient(180deg, rgb(0, 183, 255), rgb(255, 48, 255));
   height: 130%;
   animation: rotBGimg 3s linear infinite;  /* Animación de rotación */
@@ -168,7 +177,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 .card .image {
   position: absolute;      /* Posicionamiento absoluto */
   inset: 5px;              /* Margen interno */
-  border-radius: 15px;     
+  border-radius: 15px;
   background-position: center; /* Centrado de imagen */
   background-size: cover;      /* Cubrir todo el bloque */
   z-index: 0;                  /* Detrás de contenido */
@@ -180,85 +189,100 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
   position: fixed;           /* Fijo en pantalla */
   inset: 0;                  /* Ocupa toda la pantalla */
   background: rgba(0,0,0,0.5); /* Fondo negro semi-transparente */
-  display: flex;             
+  display: flex;
   align-items: center;       /* Centra vertical */
   justify-content: center;   /* Centra horizontal */
   z-index: 50;               /* Encima de todo */
-  padding: 1rem;             
+  padding: 1rem;
 }
 
 .modal {
   background: white;         /* Fondo blanco */
-  max-width: 720px;          
-  width: 100%;               
-  border-radius: 12px;       
-  overflow: hidden;          
-  position: relative;        
-  display: grid;             
+  max-width: 720px;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  display: grid;
   grid-template-columns: 1fr 1fr; /* Dos columnas: imagen y contenido */
 }
 
 .modal-close {
   position: absolute;        /* Posición absoluta */
-  top: 8px;                  
-  right: 8px;                
-  background: transparent;    
-  border: none;              
-  font-size: 1.25rem;        
-  cursor: pointer;           
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
 }
 
 .modal-image {
-  background-position: center;  
-  background-size: cover;      
-  min-height: 240px;           
+  background-position: center;
+  background-size: cover;
+  min-height: 240px;
 }
 
 .modal-body {
-  padding: 1rem 1.5rem;      
+  padding: 1rem 1.5rem;
 }
 
 .modal-title {
-  margin: 0 0 0.5rem 0;      
-  font-size: 1.125rem;       
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
 }
 
 .modal-category {
-  color: #6b7280;            
-  margin-bottom: 0.75rem;    
+  color: #6b7280;
+  margin-bottom: 0.75rem;
 }
 
 .modal-description {
-  color: #374151;            
+  color: #374151;
 }
 
 .modal-price {
-  font-weight: 700;          
-  margin-bottom: 0.5rem;    
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.vendedor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.profile-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .modal-footer {
-  display: flex;             
-  gap: 0.5rem;              
-  margin-top: 1rem;         
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .btn-primary {
-  background: #059669;       
-  color: white;              
-  padding: 0.5rem 0.75rem;  
-  border-radius: 8px;       
-  border: none;             
-  cursor: pointer;          
+  background: #059669;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
 }
 
 .btn-secondary {
-  background: transparent;  
-  color: #111827;            
-  padding: 0.5rem 0.75rem;  
-  border-radius: 8px;       
+  background: transparent;
+  color: #111827;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
   border: 1px solid #d1d5db;
-  cursor: pointer;          
+  cursor: pointer;
 }
 
 </style>
