@@ -59,7 +59,7 @@ function handleContact(id) {
                     <div v-for="pub in publicaciones" :key="pub.id" class="flex justify-center">
                         <CardPubli
                             :title="pub.Titulo_Publicacion"
-                            :subtitle="`$${pub.Precio_Publicacion}`"
+                            :subtitle="`Bs ${pub.Precio_Publicacion}`"
                             :image="pub.Imagen_Publicacion ? `/files/publicaciones/${pub.Imagen_Publicacion.split('/').pop()}` : null"
                             :description="pub.Descripcion_Publicacion"
                             :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
