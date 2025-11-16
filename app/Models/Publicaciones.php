@@ -15,4 +15,9 @@ class Publicaciones extends Model
         'Cod_Categoria',
         'ID_Vendedor',
     ];
+
+    public function categoria()
+    {
+        return $this->belongsTo(\App\Models\Categorias::class, 'Cod_Categoria', 'Cod_Categoria');
+    }
 }
