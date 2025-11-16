@@ -10,6 +10,8 @@ class UsuarioCampusMarket extends Model
     use HasFactory;
 
     protected $table = 'usuarios_campus_markets';
+    protected $primaryKey = 'ID_Usuario';
+    public $incrementing = true;
 
     /**
      * The attributes that are mass assignable.
