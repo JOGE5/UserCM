@@ -5,6 +5,7 @@ import CardPubli from '@/Components/CardPubli.vue';
 
 defineProps({
     publicaciones: Array,
+    currentUserId: Number,
 });
 
 function handleEdit(id) {
@@ -22,18 +23,51 @@ function handleEdit(id) {
     }
 }
 
-function handleContact(id) {
-    // Acción por defecto: abrir la página de la publicación (si existe)
-    try {
-        if (typeof route === 'function') {
-            router.visit(route('publicaciones.show', id));
-        } else {
-            router.visit(`/publicaciones/${id}`);
-        }
-    } catch (e) {
-        console.log('Contactar por publicación:', id, e);
-        alert('Abrir página de la publicación: /publicaciones/' + id + ' (si la ruta existe).');
+function handleContact(publicationId) {
+    console.log('handleContact called with publicationId:', publicationId);
+    console.log('publicaciones:', publicaciones);
+    console.log('currentUserId:', currentUserId);
+    console.log('currentUserId from page:', $page.props.auth.user.id);
+
+    // Obtener el user_id del vendedor desde las publicaciones
+    const publication = publicaciones.find(pub => pub.id === publicationId);
+    console.log('publication found:', publication);
+
+    if (!publication || !publication.vendedor || !publication.vendedor.user) {
+        alert('No se pudo encontrar al vendedor.');
+        return;
     }
+
+    const sellerUserId = publication.vendedor.user_id;
+    console.log('sellerUserId:', sellerUserId);
+    console.log('publication.vendedor:', publication.vendedor);
+    console.log('publication.vendedor.user:', publication.vendedor.user);
+
+    // Crear chat privado con el vendedor
+    fetch('/chats/private', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({ seller_id: sellerUserId })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.chat_id) {
+            router.visit('/chats/' + data.chat_id);
+        } else {
+            alert('Error al crear el chat: ' + (data.error || 'Respuesta inválida'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al contactar al vendedor: ' + error.message);
+    });
 }
 </script>
 
@@ -65,6 +99,7 @@ function handleContact(id) {
                             :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
                             :id="pub.id"
                             :user="pub.vendedor ? pub.vendedor.user : null"
+                            :currentUserId="$page.props.auth.user.id"
                             @edit="handleEdit"
                             @contact="handleContact"
                         />

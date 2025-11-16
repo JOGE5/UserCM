@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicacionesController;
 use Illuminate\Foundation\Application;
@@ -45,16 +46,25 @@ Route::middleware([
     Route::get('/dashboard', function () {
         $publicaciones = \App\Models\Publicaciones::with('categoria', 'vendedor.user')->get();
 
-        return Inertia::render('Dashboard', ['publicaciones' => $publicaciones]);
+        return Inertia::render('Dashboard', [
+            'publicaciones' => $publicaciones,
+            'currentUserId' => auth()->id(),
+        ]);
     })->name('dashboard');
 
     // Rutas para completar perfil
     Route::get('/complete-profile', [ProfileController::class, 'showCompleteForm'])->name('profile.complete.form');
     Route::post('/complete-profile', [ProfileController::class, 'complete'])->name('profile.complete');
 
-    // Ruta de prueba para "Prueba" en el sidebar
+    // Rutas de chats
+    Route::get('/mensajes', [ChatController::class, 'index'])->name('mensajes.index');
+    Route::post('/chats/private', [ChatController::class, 'createPrivateChat'])->name('chats.private.create');
+    Route::get('/chats/{chat}', [ChatController::class, 'show'])->name('chats.show');
+    Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->name('chats.messages.store');
+
+    // Ruta de prueba para "Prueba" en el sidebar (ahora redirige a mensajes)
     Route::get('/prueba', function () {
-        return Inertia::render('Prueba/Index'); // Vista: resources/js/Pages/Prueba/Index.vue
+        return redirect()->route('mensajes.index');
     })->name('algo'); // ← Este es el nombre que usas en tu sidebar
 
     // Rutas del sidebar

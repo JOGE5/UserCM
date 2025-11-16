@@ -30,6 +30,10 @@ const props = defineProps({
   user: {
     type: Object,
     default: null // Usuario que publicó
+  },
+  currentUserId: {
+    type: [String, Number],
+    default: null // ID del usuario actual
   }
 });
 
@@ -58,9 +62,13 @@ function doEdit() {
   close();
 }
 
-// Función que emite el evento "Contactar" y cierra el modal
+// Función que emite el evento "contact" y cierra el modal
 function doContact() {
-  if (props.id) emit('Contactar', props.id);
+  console.log('doContact called with id:', props.id);
+  if (props.id) {
+    console.log('Emitting contact event with id:', props.id);
+    emit('contact', props.id);
+  }
   close();
 }
 
@@ -108,7 +116,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
         <!-- Pie del modal con botones -->
         <div class="modal-footer">
-          <button class="btn-primary" @click.stop="doContact">Contactar</button> <!-- Botón contactar -->
+          <!-- Debug info -->
+          <div style="font-size: 10px; color: red; margin-bottom: 5px;">
+            Debug: user={{ props.user ? props.user.id : 'null' }}, currentUserId={{ props.currentUserId }}, showContact={{ props.user && props.currentUserId && props.user.id !== props.currentUserId }}
+          </div>
+          <button v-if="props.user && props.currentUserId && props.user.id !== props.currentUserId" class="btn-primary" @click.stop="doContact">Contactar</button> <!-- Botón contactar -->
           <button class="btn-secondary" @click.stop="doEdit">Editar</button> <!-- Botón editar -->
         </div>
       </div>
