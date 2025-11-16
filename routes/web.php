@@ -31,7 +31,7 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
-        $publicaciones = \App\Models\Publicaciones::all();
+        $publicaciones = \App\Models\Publicaciones::with('categoria')->get();
         return Inertia::render('Dashboard', ['publicaciones' => $publicaciones]);
     })->name('dashboard');
 
