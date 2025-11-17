@@ -21,6 +21,12 @@ Route::get('/files/publicaciones/{filename}', function ($filename) {
     $safe = basename($filename);
     $path = storage_path('app/public/publicaciones/'.$safe);
     if (! file_exists($path)) {
+        // Si no existe la imagen en storage, devolver un placeholder público
+        $placeholder = public_path('images/posters/university-logo.png');
+        if (file_exists($placeholder)) {
+            return response()->file($placeholder);
+        }
+
         abort(404);
     }
 
@@ -44,11 +50,18 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
-        $publicaciones = \App\Models\Publicaciones::with('categoria', 'vendedor.user')->get();
+        $userId = auth()->id();
+        
+        // Obtener publicaciones:
+        // - Todas las 'activas' (de cualquier usuario)
+        // - SOLO las activas del usuario actual (NO borradores)
+        $publicaciones = \App\Models\Publicaciones::with('categoria', 'vendedor.user')
+            ->where('estado', 'activa')
+            ->get();
 
         return Inertia::render('Dashboard', [
             'publicaciones' => $publicaciones,
-            'currentUserId' => auth()->id(),
+            'currentUserId' => $userId,
         ]);
     })->name('dashboard');
 
@@ -67,14 +80,38 @@ Route::middleware([
         return redirect()->route('mensajes.index');
     })->name('algo'); // ← Este es el nombre que usas en tu sidebar
 
-    // Rutas del sidebar
-    Route::get('/productos', function () {
-        return Inertia::render('Productos/Index');
-    })->name('productos');
+    // Rutas del sidebar -> Foros (productos)
+    Route::get('/productos', [App\Http\Controllers\ForoController::class, 'index'])->name('productos');
 
-    Route::get('/roles', function () {
-        return Inertia::render('Roles/Index');
-    })->name('roles');
+    // Foros create/store/show/edit/update/destroy
+    Route::get('/productos/create', [App\Http\Controllers\ForoController::class, 'create'])->name('productos.create');
+    Route::post('/productos', [App\Http\Controllers\ForoController::class, 'store'])->name('productos.store');
+    Route::get('/productos/{foro}', [App\Http\Controllers\ForoController::class, 'show'])->name('productos.show');
+    Route::get('/productos/{foro}/edit', [App\Http\Controllers\ForoController::class, 'edit'])->name('productos.edit');
+    Route::put('/productos/{foro}', [App\Http\Controllers\ForoController::class, 'update'])->name('productos.update');
+    Route::delete('/productos/{foro}', [App\Http\Controllers\ForoController::class, 'destroy'])->name('productos.destroy');
+    // Comentarios de foros
+    Route::post('/productos/{foro}/comentarios', [App\Http\Controllers\ComentarioController::class, 'store'])->name('productos.comentarios.store');
+
+    Route::get('/borradores', function () {
+        $userId = auth()->id();
+        // Obtener solo los borradores del usuario actual
+        $borradores = \App\Models\Publicaciones::with('categoria', 'vendedor.user')
+            ->where('estado', 'borrador')
+            ->whereHas('vendedor', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->get();
+
+        return Inertia::render('Borradores', [
+            'borradores' => $borradores,
+            'currentUserId' => $userId,
+        ]);
+    })->name('borradores');
+
+    // Rutas de Favoritos
+    Route::get('/favoritos', [App\Http\Controllers\FavoritoController::class, 'index'])->name('favoritos.index');
+    Route::post('/publicaciones/{publicaciones}/favorito', [App\Http\Controllers\FavoritoController::class, 'toggle'])->name('favoritos.toggle');
 
     Route::get('/ajustes', function () {
         return Inertia::render('Ajustes/Index');
@@ -87,6 +124,25 @@ Route::middleware([
         return Inertia::render('Create', ['categorias' => $categorias]);
     })->name('dashboard.create');
 
+    // Ruta pública para servir imágenes de foros (similar a publicaciones)
+    Route::get('/files/foros/{filename}', function ($filename) {
+        $safe = basename($filename);
+        $path = storage_path('app/public/foros/'.$safe);
+        if (! file_exists($path)) {
+            abort(404);
+        }
+
+        return response()->file($path);
+    })->name('files.foros');
+
     // Rutas de publicaciones
     Route::post('/publicaciones', [PublicacionesController::class, 'store'])->name('publicaciones.store');
+    // Rutas adicionales para operaciones sobre publicaciones (editar, mostrar, actualizar, eliminar)
+    Route::get('/publicaciones/{publicaciones}/edit', [PublicacionesController::class, 'edit'])->name('publicaciones.edit');
+    Route::get('/publicaciones/{publicaciones}', [PublicacionesController::class, 'show'])->name('publicaciones.show');
+    Route::put('/publicaciones/{publicaciones}', [PublicacionesController::class, 'update'])->name('publicaciones.update');
+    Route::delete('/publicaciones/{publicaciones}', [PublicacionesController::class, 'destroy'])->name('publicaciones.destroy');
+    // Rutas para cambiar estado
+    Route::patch('/publicaciones/{publicaciones}/draft', [PublicacionesController::class, 'toDraft'])->name('publicaciones.draft');
+    Route::patch('/publicaciones/{publicaciones}/active', [PublicacionesController::class, 'toActive'])->name('publicaciones.active');
 });

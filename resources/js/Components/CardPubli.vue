@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'; // Importa funciones de Vue
+import { router } from '@inertiajs/vue3';
 
 // Definición de las props que recibe el componente
 const props = defineProps({
@@ -34,12 +35,26 @@ const props = defineProps({
   currentUserId: {
     type: [String, Number],
     default: null // ID del usuario actual
+  },
+  isOwner: {
+    type: Boolean,
+    default: false // Si el usuario actual es propietario
+  },
+  estado: {
+    type: String,
+    default: 'activa' // Estado de la publicación
+  },
+  publicacion: {
+    type: Object,
+    default: null // Objeto de publicación completo
   }
 });
 
 const showModal = ref(false); // Controla si el modal está abierto o cerrado
+const isFavorite = ref(false); // Controla si está en favoritos
+const isLoadingFavorite = ref(false); // Indica si se está procesando la petición
 
-const emit = defineEmits(["edit", "contact"]); // Eventos que el componente puede emitir
+const emit = defineEmits(["edit", "contact"]); // Eventos que el componente pueden emitir
 
 // Computed para aplicar la imagen de fondo si existe
 const imageStyle = computed(() => {
@@ -70,6 +85,22 @@ function doContact() {
     emit('contact', props.id);
   }
   close();
+}
+
+// Función para toggle favorito
+function toggleFavorito() {
+  if (!props.publicacion) return;
+  
+  isLoadingFavorite.value = true;
+  router.post(route('favoritos.toggle', props.publicacion.id), {}, {
+    onSuccess: () => {
+      isFavorite.value = !isFavorite.value;
+      isLoadingFavorite.value = false;
+    },
+    onError: () => {
+      isLoadingFavorite.value = false;
+    }
+  });
 }
 
 // Función que cierra el modal al presionar Escape
@@ -113,15 +144,27 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
         <p class="modal-price" v-if="props.subtitle">{{ props.subtitle }}</p> <!-- Subtítulo -->
         <p class="modal-category" v-if="props.category">Categoría: {{ props.category }}</p> <!-- Categoría -->
         <p class="modal-description" v-if="props.description">{{ props.description }}</p> <!-- Descripción -->
+        
+        <!-- Badge de estado si es borrador -->
+        <div v-if="props.estado === 'borrador'" class="inline-block px-3 py-1 mt-2 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">
+          Borrador (solo visible para ti)
+        </div>
 
         <!-- Pie del modal con botones -->
         <div class="modal-footer">
-          <!-- Debug info -->
-          <div style="font-size: 10px; color: red; margin-bottom: 5px;">
-            Debug: user={{ props.user ? props.user.id : 'null' }}, currentUserId={{ props.currentUserId }}, showContact={{ props.user && props.currentUserId && props.user.id !== props.currentUserId }}
-          </div>
-          <button v-if="props.user && props.currentUserId && props.user.id !== props.currentUserId" class="btn-primary" @click.stop="doContact">Contactar</button> <!-- Botón contactar -->
-          <button class="btn-secondary" @click.stop="doEdit">Editar</button> <!-- Botón editar -->
+          <!-- Botón favorito para todos excepto el propietario -->
+          <button v-if="props.publicacion && props.user && props.currentUserId && props.user.id !== props.currentUserId" 
+                  :class="{ 'btn-favorite': !isFavorite, 'btn-favorite-active': isFavorite }" 
+                  @click.stop="toggleFavorito"
+                  :disabled="isLoadingFavorite">
+            {{ isFavorite ? '♥ Favorito' : '♡ Favorito' }}
+          </button>
+          
+          <!-- Botón contactar solo si NO es propietario -->
+          <button v-if="props.user && props.currentUserId && props.user.id !== props.currentUserId" class="btn-primary" @click.stop="doContact">Contactar</button>
+          
+          <!-- Botones de editar/eliminar solo si es propietario -->
+          <button v-if="props.isOwner" class="btn-secondary" @click.stop="doEdit">Editar</button>
         </div>
       </div>
     </div>
@@ -133,7 +176,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 .card {
   width: 600px;                 /* Ancho de la card */
   height: 400px;                /* Alto de la card */
-  background: #07182ed0;          /* Color de fondo */
+  background: #07182ea2;          /* Color de fondo */
   position: relative;           /* Posicionamiento relativo para hijos */
   display: flex;                /* Flex para centrar contenido */
   place-content: center;        /* Centra contenido */
@@ -158,7 +201,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 }
 
 .card .subtitle {
-  color: #cbd5e1;               /* Gris claro */
+  color: #000000a4;               /* Gris claro */
   font-size: 0.9rem;            /* Tamaño más pequeño que título */
   margin-top: 6px;              /* Espacio superior respecto al título */
 }
@@ -167,7 +210,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
   content: '';
   position: absolute;
   width: 100px;
-  background-image: linear-gradient(180deg, rgb(0, 183, 255), rgb(255, 48, 255));
+  background-image: linear-gradient(180deg, rgb(3, 16, 129), rgb(255, 48, 255));
   height: 130%;
   animation: rotBGimg 3s linear infinite;  /* Animación de rotación */
   transition: all 0.2s linear;
@@ -181,7 +224,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 .card::after {
   content: '';
   position: absolute;
-  background: rgba(7, 24, 46, 0.6); /* Overlay translúcido */
+  background: rgba(7, 24, 46, 0.322); /* Overlay translúcido */
   inset: 5px;                        /* Espaciado desde los bordes */
   border-radius: 15px;                /* Bordes redondeados */
 }
@@ -285,6 +328,24 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   border: none;
+  cursor: pointer;
+}
+
+.btn-favorite {
+  background: transparent;
+  color: #6b7280;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+
+.btn-favorite-active {
+  background: #fecaca;
+  color: #dc2626;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #dc2626;
   cursor: pointer;
 }
 

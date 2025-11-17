@@ -51,7 +51,7 @@ const filteredItems = computed(() => {
                         </div>
                     </div>
 
-                    <Link :href="route('dashboard.create')" class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700">
+                    <Link :href="route('productos.create')" class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700">
                         Nuevo foro
                     </Link>
                 </div>
@@ -69,14 +69,23 @@ const filteredItems = computed(() => {
 
                         <div v-if="filteredItems && filteredItems.length > 0">
                             <ul class="space-y-2">
-                                <li v-for="it in filteredItems" :key="it.id" class="p-3 bg-white rounded shadow-sm flex items-center space-x-4">
+                                <li v-for="it in filteredItems" :key="it.ID_Foro || it.id" class="p-3 bg-white rounded shadow-sm flex items-center space-x-4">
                                     <div class="w-20 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                                         <img v-if="it.Imagen_Foro" :src="route('files.foros', it.Imagen_Foro.split('/').pop())" class="w-full h-full object-cover" />
                                         <div v-else class="w-full h-full flex items-center justify-center text-xs text-gray-400">No imagen</div>
                                     </div>
-                                    <div>
-                                        <strong>{{ it.Titulo_Foro || it.Titulo_Publicacion || it.Titulo || it.nombre || 'Sin título' }}</strong>
-                                        <div class="text-sm text-gray-600">Categoria: {{ it.categoria ? it.categoria.Nombre_Categoria : it.Cod_Categoria }}</div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <strong>{{ it.Titulo_Foro || it.Titulo_Publicacion || it.Titulo || it.nombre || 'Sin título' }}</strong>
+                                                <div class="text-sm text-gray-600">Categoria: {{ it.categoria ? it.categoria.Nombre_Categoria : it.Cod_Categoria }}</div>
+                                            </div>
+                                            <div>
+                                                <Link :href="route('productos.show', it.ID_Foro || it.id)" class="px-3 py-2 bg-yellow-300 text-sm rounded">Ver foro</Link>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-2 text-sm text-gray-700">{{ it.Descripcion_Foro || it.Descripcion || it.descripcion || '' }}</div>
                                     </div>
                                 </li>
                             </ul>

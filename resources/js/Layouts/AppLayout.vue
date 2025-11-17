@@ -5,6 +5,11 @@ import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import GraduationCapIcon from '@/Components/Icons/GraduationCapIcon.vue';
+import ArchiveIcon from '@/Components/Icons/ArchiveIcon.vue';
+import MessagesSquareIcon from '@/Components/Icons/MessagesSquareIcon.vue';
+import FilePenIcon from '@/Components/Icons/FilePenIcon.vue';
+import TagIcon from '@/Components/Icons/TagIcon.vue';
 
 defineProps({
     title: String,
@@ -30,7 +35,7 @@ const logout = () => {
             <div class="p-4 border-b border-gray-800">
                 <Link :href="route('dashboard')" class="flex items-center space-x-2">
                     <ApplicationMark class="w-auto h-8" />
-                    <span class="text-lg font-semibold">Mi Panel</span>
+                    <span class="text-lg font-semibold">Campus Market</span>
                 </Link>
             </div>
 
@@ -38,34 +43,39 @@ const logout = () => {
             <nav class="flex-1 p-4 space-y-2">
 
                 <Link :href="route('algo')"
-                      class="block p-2 rounded hover:bg-gray-800"
+                      class="block p-2 rounded hover:bg-gray-800 flex items-center"
                       :class="{ 'bg-gray-800': route().current('algo') }">
-                    Mensajes
+                    <MessagesSquareIcon class="w-6 h-6 mr-2" />
+                    <span>Mensajes</span>
                 </Link>
 
                 <Link :href="route('dashboard')"
-                      class="block p-2 rounded hover:bg-gray-800"
+                      class="block p-2 rounded hover:bg-gray-800 flex items-center"
                       :class="{ 'bg-gray-800': route().current('dashboard') }">
-                    Publicaciones
+                    <GraduationCapIcon class="w-6 h-6 mr-2" />
+                    <span>Publicaciones</span>
                 </Link>
 
 
                 <Link :href="route('productos')"
-                      class="block p-2 rounded hover:bg-gray-800"
+                      class="block p-2 rounded hover:bg-gray-800 flex items-center"
                       :class="{ 'bg-gray-800': route().current('productos') }">
-                    Productos
+                    <FilePenIcon class="w-6 h-6 mr-2" />
+                    <span>Foros</span>
                 </Link>
 
-                <Link :href="route('roles')"
-                      class="block p-2 rounded hover:bg-gray-800"
-                      :class="{ 'bg-gray-800': route().current('roles') }">
-                    Roles
+                <Link :href="route('borradores')"
+                      class="block p-2 rounded hover:bg-gray-800 flex items-center"
+                      :class="{ 'bg-gray-800': route().current('borradores') }">
+                  <ArchiveIcon class="w-6 h-6 mr-2" />
+                  <span>Borradores</span>
                 </Link>
 
-                <Link :href="route('ajustes')"
-                      class="block p-2 rounded hover:bg-gray-800"
-                      :class="{ 'bg-gray-800': route().current('ajustes') }">
-                    Ajustes
+                <Link :href="route('favoritos.index')"
+                      class="block p-2 rounded hover:bg-gray-800 flex items-center"
+                      :class="{ 'bg-gray-800': route().current('favoritos.index') }">
+                    <TagIcon class="w-6 h-6 mr-2" />
+                    <span>Favoritos</span>
                 </Link>
 
             </nav>
