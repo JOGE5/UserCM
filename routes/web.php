@@ -48,6 +48,7 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+    \App\Http\Middleware\RedirectIfProfileIncomplete::class,
 ])->group(function () {
     Route::get('/dashboard', function () {
         $userId = auth()->id();
@@ -111,7 +112,7 @@ Route::middleware([
 
     // Rutas de Favoritos
     Route::get('/favoritos', [App\Http\Controllers\FavoritoController::class, 'index'])->name('favoritos.index');
-    Route::post('/publicaciones/{publicaciones}/favorito', [App\Http\Controllers\FavoritoController::class, 'toggle'])->name('favoritos.toggle');
+    Route::post('/publicaciones/{publicacion}/favorito', [App\Http\Controllers\FavoritoController::class, 'toggle'])->name('favoritos.toggle');
 
     Route::get('/ajustes', function () {
         return Inertia::render('Ajustes/Index');

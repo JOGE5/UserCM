@@ -152,19 +152,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
         <!-- Pie del modal con botones -->
         <div class="modal-footer">
-          <!-- Botón favorito para todos excepto el propietario -->
-          <button v-if="props.publicacion && props.user && props.currentUserId && props.user.id !== props.currentUserId" 
-                  :class="{ 'btn-favorite': !isFavorite, 'btn-favorite-active': isFavorite }" 
-                  @click.stop="toggleFavorito"
-                  :disabled="isLoadingFavorite">
-            {{ isFavorite ? '♥ Favorito' : '♡ Favorito' }}
-          </button>
+          <!-- Fila 1: Favorito (no propietarios) + Editar (propietarios) -->
+          <div class="flex gap-2">
+            <!-- Botón favorito para todos excepto el propietario -->
+            <button v-if="!props.isOwner && props.user && props.currentUserId && props.user.id !== props.currentUserId" 
+                    :class="{ 'btn-favorite': !isFavorite, 'btn-favorite-active': isFavorite }" 
+                    @click.stop="toggleFavorito"
+                    :disabled="isLoadingFavorite || !props.publicacion">
+              {{ isFavorite ? '♥ Favorito' : '♡ Favorito' }}
+            </button>
+            
+            <!-- Botón de editar solo si es propietario -->
+            <button v-if="props.isOwner" class="btn-secondary" @click.stop="doEdit">Editar</button>
+          </div>
           
-          <!-- Botón contactar solo si NO es propietario -->
+          <!-- Fila 2: Botón contactar (solo no propietarios) -->
           <button v-if="props.user && props.currentUserId && props.user.id !== props.currentUserId" class="btn-primary" @click.stop="doContact">Contactar</button>
-          
-          <!-- Botones de editar/eliminar solo si es propietario -->
-          <button v-if="props.isOwner" class="btn-secondary" @click.stop="doEdit">Editar</button>
         </div>
       </div>
     </div>
@@ -323,7 +326,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 }
 
 .btn-primary {
-  background: #059669;
+  background: #09a775;
   color: white;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Class Publicaciones
  *
  * @property int $id
+ * @property int $ID_Publicacion
  * @property string $Titulo_Publicacion
  * @property string $Descripcion_Publicacion
  * @property bool|null $Estado_Publicacion
