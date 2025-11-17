@@ -1,25 +1,43 @@
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
+    publicacion: Object,
     categorias: Array,
 });
 
 const form = useForm({
-    Titulo_Publicacion: '',
-    Descripcion_Publicacion: '',
-    Estado_Publicacion: true,
-    Precio_Publicacion: '',
+    Titulo_Publicacion: props.publicacion.Titulo_Publicacion || '',
+    Descripcion_Publicacion: props.publicacion.Descripcion_Publicacion || '',
+    Estado_Publicacion: props.publicacion.Estado_Publicacion ? true : false,
+    Precio_Publicacion: props.publicacion.Precio_Publicacion || '',
     Imagen_Publicacion: null,
-    Cod_Categoria: '',
+    Cod_Categoria: props.publicacion.Cod_Categoria || '',
 });
 
 const imagePreview = ref(null);
 
 const submit = () => {
-    form.post(route('publicaciones.store'));
+    // Si no hay imagen seleccionada, no incluirla en el request
+    // Inertia.js solo debe enviar campos que realmente cambiaron
+    if (!form.Imagen_Publicacion) {
+        delete form.Imagen_Publicacion;
+    }
+    form.put(route('publicaciones.update', props.publicacion.id));
+};
+
+const handleDelete = () => {
+    if (confirm('¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.')) {
+        router.delete(route('publicaciones.destroy', props.publicacion.id));
+    }
+};
+
+const handleDraft = () => {
+    if (confirm('¿Deseas convertir esta publicación a borrador? Solo tú podrás verla.')) {
+        router.patch(route('publicaciones.draft', props.publicacion.id));
+    }
 };
 
 const handleImageChange = (event) => {
@@ -51,10 +69,10 @@ const handleImageChange = (event) => {
 </script>
 
 <template>
-    <AppLayout title="Crear Publicación">
+    <AppLayout title="Editar Publicación">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Crear Publicación
+                Editar Publicación
             </h2>
         </template>
 
@@ -147,28 +165,45 @@ const handleImageChange = (event) => {
                             <!-- Imagen -->
                             <div>
                                 <label for="imagen" class="block text-sm font-medium text-gray-700">
-                                    Imagen
+                                    Imagen (sube solo si deseas reemplazar la actual)
                                 </label>
                                 <input
                                     id="imagen"
                                     type="file"
                                     accept="image/*"
                                     @change="handleImageChange"
-                                    required
+                                    :required="!props.publicacion.Imagen_Publicacion"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2"
                                 />
                                 <p v-if="form.errors.Imagen_Publicacion" class="text-red-500 text-sm mt-1">
                                     {{ form.errors.Imagen_Publicacion }}
                                 </p>
-                                <!-- Vista previa de imagen -->
-                                <div v-if="imagePreview" class="mt-4 flex justify-center">
-                                    <div class="relative drop-shadow-xl w-48 h-64 overflow-hidden rounded-xl bg-[#3d3c3d]">
-                                        <img
-                                            :src="imagePreview"
-                                            alt="Vista previa de imagen"
-                                            class="absolute inset-0 w-full h-full object-cover"
-                                        />
-                                        <div class="absolute w-56 h-48 bg-white blur-[50px] -left-1/2 -top-1/2"></div>
+                                <!-- Vista previa de nueva imagen (si se sube) -->
+                                <div v-if="imagePreview" class="mt-4">
+                                    <p class="text-sm text-gray-600 mb-2">Vista previa (nueva imagen):</p>
+                                    <div class="flex justify-center">
+                                        <div class="relative drop-shadow-xl w-48 h-64 overflow-hidden rounded-xl bg-[#3d3c3d]">
+                                            <img
+                                                :src="imagePreview"
+                                                alt="Vista previa de nueva imagen"
+                                                class="absolute inset-0 w-full h-full object-cover"
+                                            />
+                                            <div class="absolute w-56 h-48 bg-white blur-[50px] -left-1/2 -top-1/2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Imagen actual (si existe y no hay vista previa de nueva) -->
+                                <div v-else-if="props.publicacion.Imagen_Publicacion" class="mt-4">
+                                    <p class="text-sm text-gray-600 mb-2">Imagen actual:</p>
+                                    <div class="flex justify-center">
+                                        <div class="relative drop-shadow-xl w-48 h-64 overflow-hidden rounded-xl bg-[#3d3c3d]">
+                                            <img
+                                                :src="`/files/publicaciones/${props.publicacion.Imagen_Publicacion.split('/').pop()}`"
+                                                alt="Imagen actual"
+                                                class="absolute inset-0 w-full h-full object-cover"
+                                            />
+                                            <div class="absolute w-56 h-48 bg-white blur-[50px] -left-1/2 -top-1/2"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -193,7 +228,21 @@ const handleImageChange = (event) => {
                                     :disabled="form.processing"
                                     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                                 >
-                                    {{ form.processing ? 'Guardando...' : 'Crear Publicación' }}
+                                    {{ form.processing ? 'Guardando...' : 'Actualizar Publicación' }}
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="handleDraft"
+                                    class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                                >
+                                    Convertir a Borrador
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="handleDelete"
+                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                >
+                                    Eliminar
                                 </button>
                                 <a
                                     :href="route('dashboard')"

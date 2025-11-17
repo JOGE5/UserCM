@@ -5,6 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Class UsuarioCampusMarket
+ *
+ * @property int $ID_Usuario
+ * @property int $user_id
+ * @property string|null $Apellidos
+ * @property string|null $Genero
+ * @property string|null $Estado
+ * @property string|null $Telefono
+ * @property string|null $Foto_de_portada
+ * @property string|null $Foto_de_perfil
+ * @property int|null $Cod_Rol
+ * @property int|null $Cod_Carrera
+ * @property int|null $Cod_Universidad
+ * @mixin \Eloquent
+ */
 class UsuarioCampusMarket extends Model
 {
     use HasFactory;
@@ -29,6 +45,7 @@ class UsuarioCampusMarket extends Model
         'Cod_Rol',
         'Cod_Carrera',
         'Cod_Universidad',
+        'Cod_Categoria_Default',
     ];
 
     /**
