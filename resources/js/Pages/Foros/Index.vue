@@ -70,9 +70,11 @@ const filteredItems = computed(() => {
                         <div v-if="filteredItems && filteredItems.length > 0">
                             <ul class="space-y-2">
                                 <li v-for="it in filteredItems" :key="it.ID_Foro || it.id" class="p-3 bg-white rounded shadow-sm flex items-center space-x-4">
-                                    <div class="w-20 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                                        <img v-if="it.Imagen_Foro" :src="route('files.foros', it.Imagen_Foro.split('/').pop())" class="w-full h-full object-cover" />
-                                        <div v-else class="w-full h-full flex items-center justify-center text-xs text-gray-400">No imagen</div>
+                                    <div class="card flex-shrink-0">
+                                        <template v-if="it.Imagen_Foro">
+                                            <img :src="route('files.foros', it.Imagen_Foro.split('/').pop())" alt="imagen foro" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" />
+                                        </template>
+                                        <div v-else class="no-image">No imagen</div>
                                     </div>
                                     <div class="flex-1">
                                         <div class="flex items-center justify-between">
@@ -151,5 +153,32 @@ const filteredItems = computed(() => {
 .uiverse-btn:hover span:not(:nth-child(6)) {
     transform: translate(-50%, -50%) scale(4);
     transition: 1.5s ease;
+}
+
+/* Card styles for foro image */
+.card {
+    width: 190px;
+    height: 254px;
+    background: transparent;
+    border: 2px solid #0813aff3;
+    box-shadow: 2px 2px 15px #000000 inset;
+    text-align: center;
+    color: #5c0909;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Pacifico', sans-serif;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.card:hover {
+    color: #07ff07;
+    box-shadow: 2px 2px 15px #07ff07 inset;
+}
+
+.no-image {
+    font-size: 12px;
+    color: #9ca3af;
 }
 </style>
