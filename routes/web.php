@@ -48,7 +48,6 @@ Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
-    \App\Http\Middleware\RedirectIfProfileIncomplete::class,
 ])->group(function () {
     Route::get('/dashboard', function () {
         $userId = auth()->id();
