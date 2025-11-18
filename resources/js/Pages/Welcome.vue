@@ -192,7 +192,7 @@ onUnmounted(() => {
                                     :href="route('dashboard')"
                                     class="px-4 py-2 text-white transition rounded-md bg-white/10 backdrop-blur-sm hover:bg-white/20"
                                 >
-                                    Dashboard
+                                    Inicio 
                                 </Link>
                                 <template v-else>
                                     <Link
