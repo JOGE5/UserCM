@@ -11,7 +11,7 @@ use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
-    public function showCompleteForm(Request $request)
+    public function showCompleteProfileForm(Request $request)
     {
         $user = $request->user();
         $universidades = Universidad::all();
@@ -43,7 +43,19 @@ class ProfileController extends Controller
 
         // Verificar que no exista ya un perfil para este usuario
         if ($user->usuarioCampusMarket) {
-            return back()->withErrors(['general' => 'El perfil ya está completo.']);
+            // Si ya existe, actualizar el perfil existente
+            $user->usuarioCampusMarket->update([
+                'Apellidos' => trim($request->Apellidos),
+                'Genero' => trim($request->Genero),
+                'Estado' => 'Habilitado',
+                'Telefono' => trim($request->Telefono),
+                'Foto_de_perfil' => $fotoPerfilPath,
+                'Foto_de_portada' => $fotoPortadaPath,
+                'Cod_Rol' => $codRol,
+                'Cod_Carrera' => $request->Cod_Carrera,
+                'Cod_Universidad' => $request->Cod_Universidad,
+            ]);
+            return redirect()->route('dashboard')->with('success', 'Perfil actualizado exitosamente.');
         }
 
         // Guardar imágenes si se proporcionan
