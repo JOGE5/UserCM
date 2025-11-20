@@ -51,7 +51,7 @@ Route::middleware([
 ])->group(function () {
     Route::get('/dashboard', function () {
         $userId = auth()->id();
-        
+
         // Obtener publicaciones:
         // - Todas las 'activas' (de cualquier usuario)
         // - SOLO las activas del usuario actual (NO borradores)
@@ -66,7 +66,7 @@ Route::middleware([
     })->name('dashboard');
 
     // Rutas para completar perfil
-    Route::get('/complete-profile', [ProfileController::class, 'showCompleteForm'])->name('profile.complete.form');
+    Route::get('/complete-profile', [ProfileController::class, 'showCompleteProfileForm'])->name('profile.complete.form');
     Route::post('/complete-profile', [ProfileController::class, 'complete'])->name('profile.complete');
 
     // Rutas de chats
