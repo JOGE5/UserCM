@@ -26,8 +26,15 @@ const submit = () => {
 <template>
     <Head title="Register" />
 
-    <div class="flex flex-col items-center min-h-screen pt-6 bg-gray-100 sm:justify-center sm:pt-0">
-        <div class="w-full px-6 py-4 mt-6 overflow-hidden bg-white shadow-md custom-auth-form sm:max-w-md sm:rounded-lg">
+    <div class="relative flex flex-col items-center min-h-screen pt-6 overflow-hidden bg-gray-100 sm:justify-center sm:pt-0">
+        <!-- Video de fondo -->
+        <video autoplay muted loop playsinline class="absolute top-0 left-0 z-0 object-cover w-full h-full">
+            <source src="/videos/Coder.mp4" type="video/mp4" />
+            Tu navegador no soporta el video.
+        </video>
+        <!-- Capa de oscurecimiento opcional -->
+        <div class="absolute top-0 left-0 z-10 w-full h-full bg-black bg-opacity-40"></div>
+        <div class="relative z-20 w-full px-6 py-4 mt-6 overflow-hidden bg-white shadow-md custom-auth-form sm:max-w-md sm:rounded-lg">
             <form @submit.prevent="submit" class="form">
                 <div class="flex-column">
                     <label for="name">Nombre</label>

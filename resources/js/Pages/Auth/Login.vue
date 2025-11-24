@@ -35,12 +35,19 @@ const submit = () => {
 <template>
     <Head title="Log in" />
 
-    <div class="flex flex-col items-center min-h-screen pt-6 bg-gray-100 sm:justify-center sm:pt-0">
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
+    <div class="relative flex flex-col items-center min-h-screen pt-6 overflow-hidden bg-gray-100 sm:justify-center sm:pt-0">
+        <!-- Video de fondo -->
+        <video autoplay muted loop playsinline class="absolute top-0 left-0 z-0 object-cover w-full h-full">
+            <source src="/videos/Waza21.mp4" type="video/mp4" />
+            Tu navegador no soporta el video.
+        </video>
+        <!-- Capa de oscurecimiento opcional -->
+        <div class="absolute top-0 left-0 z-10 w-full h-full bg-black bg-opacity-40"></div>
+        <div v-if="status" class="z-20 mb-4 text-sm font-medium text-green-600">
             {{ status }}
         </div>
 
-        <div class="w-full px-6 py-4 mt-6 overflow-hidden bg-white shadow-md custom-auth-form sm:max-w-md sm:rounded-lg">
+        <div class="relative z-20 w-full px-6 py-4 mt-6 overflow-hidden bg-white shadow-md custom-auth-form sm:max-w-md sm:rounded-lg">
             <form @submit.prevent="submit" class="form">
                 <div class="flex-column">
                     <label for="email">Correo</label>
