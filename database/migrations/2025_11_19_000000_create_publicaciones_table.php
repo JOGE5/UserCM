@@ -18,17 +18,14 @@ return new class extends Migration
             $table->boolean('Estado_Publicacion')->default(true);
             $table->decimal('Precio_Publicacion', 10, 2);
             $table->string('Imagen_Publicacion')->nullable();
-            $table->unsignedBigInteger('Cod_Categoria');
-            $table->unsignedBigInteger('ID_Vendedor');
 
             // Relaciones
-            $table->foreign('Cod_Categoria')
-                  ->references('Cod_Categoria')
-                  ->on('categorias_articulos');
+            $table->foreignId('Cod_Categoria')
+                  ->constrained('categorias_articulos', 'Cod_Categoria');
 
-            $table->foreign('ID_Vendedor')
-                  ->references('ID_Usuario')
-                  ->on('usuarios_campus_markets');
+            $table->foreignId('ID_Vendedor')
+                  ->constrained('usuarios_campus_markets', 'id')
+                  ->onDelete('cascade');
 
             $table->timestamps();
         });

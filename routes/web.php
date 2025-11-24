@@ -52,6 +52,9 @@ Route::middleware([
     Route::get('/dashboard', function () {
         $userId = auth()->id();
 
+        $usuarioCampusMarket = \App\Models\UsuarioCampusMarket::where('user_id', $userId)->first();
+        $userEstado = $usuarioCampusMarket ? $usuarioCampusMarket->Estado : null;
+
         // Obtener publicaciones:
         // - Todas las 'activas' (de cualquier usuario)
         // - SOLO las activas del usuario actual (NO borradores)
@@ -62,6 +65,7 @@ Route::middleware([
         return Inertia::render('Dashboard', [
             'publicaciones' => $publicaciones,
             'currentUserId' => $userId,
+            'userEstado' => $userEstado,
         ]);
     })->name('dashboard');
 
