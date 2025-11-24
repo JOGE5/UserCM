@@ -23,7 +23,7 @@ class Comentario extends Model
 
     public function foro(): BelongsTo
     {
-        return $this->belongsTo(Foro::class, 'foro_id', 'ID_Foro');
+        return $this->belongsTo(foros::class, 'foro_id', 'ID_Foro');
     }
 
     public function usuario(): BelongsTo

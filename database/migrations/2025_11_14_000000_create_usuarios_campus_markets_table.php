@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('usuarios_campus_markets', function (Blueprint $table) {
-            $table->id();
+            $table-> id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('Apellidos')->nullable();
             $table->enum('Genero', ['Masculino', 'Femenino', 'Otro'])->nullable();
@@ -23,14 +23,15 @@ return new class extends Migration
             $table->unsignedBigInteger('Cod_Rol')->default(3);
             $table->unsignedBigInteger('Cod_Carrera');
             $table->unsignedBigInteger('Cod_Universidad');
+
+            // timestamps solo UNA VEZ
             $table->timestamps();
 
+            // foreign keys
             $table->foreign('Cod_Rol')->references('Cod_Rol')->on('roles');
             $table->foreign('Cod_Carrera')->references('Cod_Carrera')->on('carreras');
             $table->foreign('Cod_Universidad')->references('Cod_Universidad')->on('universidades');
-            $table->timestamps();
         });
-
     }
 
     /**
@@ -38,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('usuarios_campus_market');
+        Schema::dropIfExists('usuarios_campus_markets');
     }
 };
