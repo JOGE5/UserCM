@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'; // Importa funciones de Vue
 import { router } from '@inertiajs/vue3';
+import ReportModal from '@/Components/ReportModal.vue';
 
 // Definición de las props que recibe el componente
 const props = defineProps({
@@ -40,6 +41,10 @@ const props = defineProps({
     type: Boolean,
     default: false // Si el usuario actual es propietario
   },
+  initialIsFavorite: {
+    type: Boolean,
+    default: false
+  },
   estado: {
     type: String,
     default: 'activa' // Estado de la publicación
@@ -53,12 +58,39 @@ const props = defineProps({
 const showModal = ref(false); // Controla si el modal está abierto o cerrado
 const isFavorite = ref(false); // Controla si está en favoritos
 const isLoadingFavorite = ref(false); // Indica si se está procesando la petición
+const showReport = ref(false);
 
 const emit = defineEmits(["edit", "contact"]); // Eventos que el componente pueden emitir
 
-// Computed para aplicar la imagen de fondo si existe
+// Computed para obtener imágenes (max 3) y aplicar estilo de fondo según el índice del carrusel
+const images = computed(() => {
+  // preferir imagenes desde publicacion.Imagen_Publicacion
+  if (props.publicacion && props.publicacion.Imagen_Publicacion) {
+    try {
+      const ip = props.publicacion.Imagen_Publicacion;
+      if (Array.isArray(ip)) {
+        return ip.slice(0,3).map(i => `/files/publicaciones/${i.split('/').pop()}`);
+      }
+      const parsed = JSON.parse(ip);
+      if (Array.isArray(parsed)) {
+        return parsed.slice(0,3).map(i => `/files/publicaciones/${i.split('/').pop()}`);
+      }
+      return ip ? [`/files/publicaciones/${String(ip).split('/').pop()}`] : (props.image ? [props.image] : []);
+    } catch (e) {
+      const ip = props.publicacion.Imagen_Publicacion;
+      return ip ? [`/files/publicaciones/${String(ip).split('/').pop()}`] : (props.image ? [props.image] : []);
+    }
+  }
+  if (props.image) return [props.image];
+  return [];
+});
+
+const carouselIndex = ref(0);
+let carouselTimer = null;
+
 const imageStyle = computed(() => {
-  return props.image ? { backgroundImage: 'url(' + props.image + ')' } : null;
+  if (!images.value.length) return null;
+  return { backgroundImage: 'url(' + images.value[carouselIndex.value] + ')' };
 });
 
 // Función para abrir el modal
@@ -73,8 +105,42 @@ function close() {
 
 // Función que emite el evento "edit" y cierra el modal
 function doEdit() {
-  if (props.id) emit('edit', props.id);
-  close();
+  // Instrumentación: logs para depurar por qué la navegación a edición provoca pantalla blanca
+  console.log('CardPubli: doEdit start', { id: props.id });
+  try {
+    if (!props.id) {
+      console.warn('CardPubli: doEdit sin id');
+      return;
+    }
+
+    // Usar named route si está disponible para respetar bindings y middleware
+    let url = `/publicaciones/${props.id}/edit`;
+    try {
+      if (typeof route === 'function') {
+        url = route('publicaciones.edit', props.id);
+      }
+    } catch (e) {
+      // ignore, ya tenemos url por defecto
+    }
+
+    router.visit(url, {
+      onStart: () => console.log('CardPubli: router.visit onStart', { url }),
+      onSuccess: (page) => {
+        console.log('CardPubli: router.visit onSuccess', page);
+        close();
+      },
+      onError: (err) => {
+        console.error('CardPubli: router.visit onError', err);
+        // fallback: emitir evento para que el padre intente manejar la navegación
+        emit('edit', props.id);
+      },
+      onFinish: () => console.log('CardPubli: router.visit onFinish')
+    });
+
+  } catch (e) {
+    console.error('CardPubli: doEdit unexpected error', e);
+    emit('edit', props.id);
+  }
 }
 
 // Función que emite el evento "contact" y cierra el modal
@@ -85,6 +151,14 @@ function doContact() {
     emit('contact', props.id);
   }
   close();
+}
+
+function openReport() {
+  showReport.value = true;
+}
+
+function closeReport() {
+  showReport.value = false;
 }
 
 // Función para toggle favorito
@@ -108,17 +182,31 @@ function onKeydown(e) {
   if (e.key === 'Escape') close();
 }
 
-// Se añade el listener al montar el componente
-onMounted(() => window.addEventListener('keydown', onKeydown));
-// Se elimina el listener al desmontar el componente
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
+// Se añade el listener al montar el componente y se inicializa estado de favorito
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown);
+  if (props.initialIsFavorite) {
+    isFavorite.value = true;
+  }
+  // iniciar carrusel si hay varias imágenes
+  if (images.value.length > 1) {
+    carouselTimer = setInterval(() => {
+      carouselIndex.value = (carouselIndex.value + 1) % Math.min(images.value.length, 3);
+    }, 5000);
+  }
+});
+// Se elimina el listener al desmontar el componente y limpiar timer
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown);
+  if (carouselTimer) clearInterval(carouselTimer);
+});
 </script>
 
 <template>
   <!-- Card como botón que abre modal -->
   <button type="button" class="card" @click="open" aria-haspopup="dialog" :aria-expanded="showModal">
     <!-- Imagen de fondo de la card -->
-    <div v-if="props.image" class="image" :style="imageStyle"></div>
+    <div v-if="images.length" class="image" :style="imageStyle"></div>
     <!-- Contenido textual de la card -->
     <div class="content">
       <h2>{{ props.title }}</h2> <!-- Título -->
@@ -132,7 +220,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
       <!-- Botón para cerrar modal -->
       <button class="modal-close" @click.stop="close" aria-label="Cerrar">✕</button>
       <!-- Imagen dentro del modal -->
-      <div class="modal-image" v-if="props.image" :style="imageStyle"></div>
+      <div class="modal-image" v-if="images.length" :style="imageStyle"></div>
       <!-- Cuerpo del modal -->
       <div class="modal-body">
 
@@ -154,11 +242,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
         <div class="modal-footer">
           <!-- Fila 1: Favorito (no propietarios) + Editar (propietarios) -->
           <div class="flex gap-2">
-            <!-- Botón favorito para todos excepto el propietario -->
-            <button v-if="!props.isOwner && props.user && props.currentUserId && props.user.id !== props.currentUserId" 
-                    :class="{ 'btn-favorite': !isFavorite, 'btn-favorite-active': isFavorite }" 
+            <!-- Botón favorito: solo en publicaciones de terceros -->
+            <button v-if="props.publicacion && !props.isOwner"
+                    :class="{ 'btn-favorite': !isFavorite, 'btn-favorite-active': isFavorite }"
                     @click.stop="toggleFavorito"
-                    :disabled="isLoadingFavorite || !props.publicacion">
+                    :disabled="isLoadingFavorite">
               {{ isFavorite ? '♥ Favorito' : '♡ Favorito' }}
             </button>
             
@@ -168,9 +256,15 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
           
           <!-- Fila 2: Botón contactar (solo no propietarios) -->
           <button v-if="props.user && props.currentUserId && props.user.id !== props.currentUserId" class="btn-primary" @click.stop="doContact">Contactar</button>
+          <!-- Botón reportar (solo en publicaciones de terceros) -->
+          <button v-if="props.publicacion && !props.isOwner" class="btn-secondary" @click.stop="openReport">Reportar</button>
         </div>
       </div>
     </div>
+  </div>
+  <!-- Modal de reporte -->
+  <div v-if="showReport">
+    <ReportModal :publicacionId="props.publicacion ? props.publicacion.id : props.id" :ownerId="props.publicacion && props.publicacion.vendedor ? props.publicacion.vendedor.user_id : null" @close="closeReport" />
   </div>
 </template>
 
@@ -198,13 +292,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
 .card h2 {
   z-index: 1;                   /* Nivel de superposición */
-  color: white;                 /* Color blanco */
+  color: rgb(255, 252, 252);                 /* Color blanco */
   font-size: 1.25rem;           /* Tamaño del título */
   margin: 0;                    /* Sin margen */
 }
 
 .card .subtitle {
-  color: #000000a4;               /* Gris claro */
+  color: #fdeded;               /* Gris claro */
   font-size: 0.9rem;            /* Tamaño más pequeño que título */
   margin-top: 6px;              /* Espacio superior respecto al título */
 }

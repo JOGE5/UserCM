@@ -30,6 +30,10 @@ class Foro extends Model
         'Estado_Foro',
         'Imagen_Foro',
         'Cod_Categoria',
+        'moderation_status',
+        'moderation_scores',
+        'moderation_checked_at',
+        'moderation_reason',
     ];
 
     public $timestamps = true;

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'moderation' => [
+        'url' => env('MOD_SERVICE_URL', null),
+        'key' => env('MOD_SERVICE_KEY', null),
+        'timeout' => env('MOD_TIMEOUT', 10),
+    ],
+
 ];

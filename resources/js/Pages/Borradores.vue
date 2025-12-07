@@ -9,16 +9,8 @@ defineProps({
 });
 
 function handleEdit(id) {
-    try {
-        if (typeof route === 'function') {
-            router.visit(route('publicaciones.edit', id));
-        } else {
-            router.visit(`/publicaciones/${id}/edit`);
-        }
-    } catch (e) {
-        console.log('Editar publicación:', id, e);
-        alert('Navegar a edición: /publicaciones/' + id + '/edit');
-    }
+    // Redirige siempre usando la ruta absoluta
+    router.visit(`/publicaciones/${id}/edit`);
 }
 
 function handleContact(publicationId) {
@@ -46,7 +38,6 @@ function handleContact(publicationId) {
                         <CardPubli
                             :title="pub.Titulo_Publicacion"
                             :subtitle="`Bs ${pub.Precio_Publicacion}`"
-                            :image="pub.Imagen_Publicacion ? `/files/publicaciones/${pub.Imagen_Publicacion.split('/').pop()}` : null"
                             :description="pub.Descripcion_Publicacion"
                             :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
                             :id="pub.id"

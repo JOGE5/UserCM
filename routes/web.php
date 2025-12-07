@@ -3,6 +3,7 @@
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicacionesController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -145,4 +146,8 @@ Route::middleware([
     // Rutas para cambiar estado
     Route::patch('/publicaciones/{publicaciones}/draft', [PublicacionesController::class, 'toDraft'])->name('publicaciones.draft');
     Route::patch('/publicaciones/{publicaciones}/active', [PublicacionesController::class, 'toActive'])->name('publicaciones.active');
+
+    // Rutas para reportes (publicaciones y foros)
+    Route::post('/report/publicaciones/{publicacion}', [ReportController::class, 'storePublication'])->name('report.publicacion');
+    Route::post('/report/foros/{foro}', [ReportController::class, 'storeForo'])->name('report.foro');
 });

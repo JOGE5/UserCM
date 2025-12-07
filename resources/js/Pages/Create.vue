@@ -12,42 +12,92 @@ const form = useForm({
     Descripcion_Publicacion: '',
     Estado_Publicacion: true,
     Precio_Publicacion: '',
-    Imagen_Publicacion: null,
+    Imagen_Publicacion: [],
     Cod_Categoria: '',
 });
 
-const imagePreview = ref(null);
+const imagePreview = ref([]);
+const fileInput = ref(null);
 
 const submit = () => {
     form.post(route('publicaciones.store'));
 };
 
-const handleImageChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        // Validar que sea imagen
-        if (!file.type.startsWith('image/')) {
-            alert('Por favor selecciona un archivo de imagen válido (JPG, PNG, GIF, etc)');
-            event.target.value = '';
-            imagePreview.value = null;
-            return;
-        }
-        // Validar tamaño máximo 2MB
-        if (file.size > 2 * 1024 * 1024) {
-            alert('La imagen no puede superar 2MB');
-            event.target.value = '';
-            imagePreview.value = null;
-            return;
-        }
-        form.Imagen_Publicacion = file;
-        // Crear vista previa
+// Procesa un array de File (desde input o drop)
+function processFiles(files) {
+    const arr = Array.from(files || []);
+    if (arr.length === 0) return;
+    // Combinar con los ya seleccionados (asegurando que solo mantengamos File objects)
+    const existing = Array.isArray(form.Imagen_Publicacion) ? form.Imagen_Publicacion.filter(f => f instanceof File) : [];
+    // Deduplicar por nombre+size para evitar añadir el mismo archivo varias veces
+    const combined = existing.concat(arr).filter((f, idx, self) => {
+        return f instanceof File && self.findIndex(g => g.name === f.name && g.size === f.size) === idx;
+    });
+    const allowed = combined.slice(0, 3);
+    // Validar tamaño máximo 2MB por archivo
+    const tooLarge = allowed.find(f => f.size > 2 * 1024 * 1024);
+    if (tooLarge) {
+        alert('Una de las imágenes supera 2MB. Elige imágenes más pequeñas.');
+        imagePreview.value = [];
+        form.Imagen_Publicacion = [];
+        return;
+    }
+
+    form.Imagen_Publicacion = allowed;
+    // Recrear previews según las imagenes permitidas
+    imagePreview.value = [];
+    allowed.forEach(file => {
+        if (!file.type.startsWith('image/')) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-            imagePreview.value = e.target.result;
+            imagePreview.value.push(e.target.result);
         };
         reader.readAsDataURL(file);
-    }
+    });
+}
+
+const handleImageChange = (event) => {
+    processFiles(event.target.files);
+    // limpiar valor para permitir seleccionar los mismos archivos de nuevo o añadir más
+    try {
+        if (fileInput.value && fileInput.value instanceof HTMLInputElement) {
+            fileInput.value.value = null;
+        } else {
+            event.target.value = '';
+        }
+    } catch (e) {}
 };
+
+const handleDrop = (e) => {
+    e.preventDefault();
+    const dt = e.dataTransfer;
+    let files = [];
+    if (dt && dt.items && dt.items.length > 0) {
+        for (let i = 0; i < dt.items.length; i++) {
+            const item = dt.items[i];
+            if (item.kind === 'file') {
+                const f = item.getAsFile();
+                if (f) files.push(f);
+            }
+        }
+    } else if (dt && dt.files && dt.files.length > 0) {
+        files = Array.from(dt.files);
+    }
+
+    if (files.length > 0) processFiles(files);
+};
+
+// Eliminar imagen seleccionada antes de enviar
+function removeSelected(index) {
+    // remover preview
+    if (imagePreview.value && imagePreview.value.length > index) {
+        imagePreview.value.splice(index, 1);
+    }
+    // remover archivo correspondiente
+    if (form.Imagen_Publicacion && form.Imagen_Publicacion.length > index) {
+        form.Imagen_Publicacion.splice(index, 1);
+    }
+}
 </script>
 
 <template>
@@ -149,26 +199,35 @@ const handleImageChange = (event) => {
                                 <label for="imagen" class="block text-sm font-medium text-gray-700">
                                     Imagen
                                 </label>
-                                <input
-                                    id="imagen"
-                                    type="file"
-                                    accept="image/*"
-                                    @change="handleImageChange"
-                                    required
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2"
-                                />
+                                <div
+                                    @dragover.prevent
+                                    @drop.prevent="handleDrop"
+                                    class="relative mt-1 block w-full rounded-md border-dashed border-2 border-gray-300 p-4 text-center bg-gray-50"
+                                >
+                                    <input
+                                        id="imagen"
+                                        ref="fileInput"
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        @change="handleImageChange"
+                                        class="w-full opacity-0 absolute inset-0 h-full cursor-pointer"
+                                    />
+                                    <div class="relative">
+                                        <div class="pointer-events-none">
+                                            <p class="text-sm text-gray-600">Arrastra y suelta hasta 3 imágenes aquí, o haz clic para seleccionar</p>
+                                            <p class="text-xs text-gray-400">(Máx. 3 imágenes, 2MB cada una)</p>
+                                        </div>
+                                    </div>
+                                </div>
                                 <p v-if="form.errors.Imagen_Publicacion" class="text-red-500 text-sm mt-1">
                                     {{ form.errors.Imagen_Publicacion }}
                                 </p>
-                                <!-- Vista previa de imagen -->
-                                <div v-if="imagePreview" class="mt-4 flex justify-center">
-                                    <div class="relative drop-shadow-xl w-48 h-64 overflow-hidden rounded-xl bg-[#3d3c3d]">
-                                        <img
-                                            :src="imagePreview"
-                                            alt="Vista previa de imagen"
-                                            class="absolute inset-0 w-full h-full object-cover"
-                                        />
-                                        <div class="absolute w-56 h-48 bg-white blur-[50px] -left-1/2 -top-1/2"></div>
+                                <!-- Vistas previas de imagenes -->
+                                <div v-if="imagePreview && imagePreview.length > 0" class="mt-4 flex gap-4">
+                                    <div v-for="(src, idx) in imagePreview" :key="idx" class="relative drop-shadow-xl w-36 h-48 overflow-hidden rounded-xl bg-[#3d3c3d]">
+                                        <button @click.stop="removeSelected(idx)" class="absolute top-1 right-1 z-10 bg-white text-red-600 rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
+                                        <img :src="src" class="absolute inset-0 w-full h-full object-cover" />
                                     </div>
                                 </div>
                             </div>

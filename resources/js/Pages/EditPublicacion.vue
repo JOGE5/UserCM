@@ -13,11 +13,12 @@ const form = useForm({
     Descripcion_Publicacion: props.publicacion.Descripcion_Publicacion || '',
     Estado_Publicacion: props.publicacion.Estado_Publicacion ? true : false,
     Precio_Publicacion: props.publicacion.Precio_Publicacion || '',
-    Imagen_Publicacion: null,
+    Imagen_Publicacion: [],
     Cod_Categoria: props.publicacion.Cod_Categoria || '',
 });
 
-const imagePreview = ref(null);
+const imagePreview = ref([]);
+const fileInput = ref(null);
 
 const submit = () => {
     // Si no hay imagen seleccionada, no incluirla en el request
@@ -41,31 +42,50 @@ const handleDraft = () => {
 };
 
 const handleImageChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        // Validar que sea imagen
-        if (!file.type.startsWith('image/')) {
-            alert('Por favor selecciona un archivo de imagen válido (JPG, PNG, GIF, etc)');
-            event.target.value = '';
-            imagePreview.value = null;
-            return;
-        }
-        // Validar tamaño máximo 2MB
-        if (file.size > 2 * 1024 * 1024) {
-            alert('La imagen no puede superar 2MB');
-            event.target.value = '';
-            imagePreview.value = null;
-            return;
-        }
-        form.Imagen_Publicacion = file;
-        // Crear vista previa
+    const arr = Array.from(event.target.files || []);
+    if (arr.length === 0) return;
+    const existing = Array.isArray(form.Imagen_Publicacion) ? form.Imagen_Publicacion.filter(f => f instanceof File) : [];
+    const combined = existing.concat(arr).filter((f, idx, self) => {
+        return f instanceof File && self.findIndex(g => g.name === f.name && g.size === f.size) === idx;
+    });
+    const allowed = combined.slice(0, 3);
+    const tooLarge = allowed.find(f => f.size > 2 * 1024 * 1024);
+    if (tooLarge) {
+        alert('Una de las imágenes supera 2MB. Elige imágenes más pequeñas.');
+        try {
+            if (fileInput.value && fileInput.value instanceof HTMLInputElement) fileInput.value.value = null;
+            else event.target.value = '';
+        } catch (e) {}
+        imagePreview.value = [];
+        form.Imagen_Publicacion = [];
+        return;
+    }
+
+    form.Imagen_Publicacion = allowed;
+    imagePreview.value = [];
+    allowed.forEach(file => {
+        if (!file.type.startsWith('image/')) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-            imagePreview.value = e.target.result;
+            imagePreview.value.push(e.target.result);
         };
         reader.readAsDataURL(file);
-    }
+    });
+    try {
+        if (fileInput.value && fileInput.value instanceof HTMLInputElement) fileInput.value.value = null;
+        else event.target.value = '';
+    } catch (e) {}
 };
+
+// Eliminar imagen seleccionada antes de enviar (en edición)
+function removeSelected(index) {
+    if (imagePreview.value && imagePreview.value.length > index) {
+        imagePreview.value.splice(index, 1);
+    }
+    if (form.Imagen_Publicacion && form.Imagen_Publicacion.length > index) {
+        form.Imagen_Publicacion.splice(index, 1);
+    }
+}
 </script>
 
 <template>
@@ -169,41 +189,27 @@ const handleImageChange = (event) => {
                                 </label>
                                 <input
                                     id="imagen"
+                                    ref="fileInput"
                                     type="file"
                                     accept="image/*"
+                                    multiple
                                     @change="handleImageChange"
-                                    :required="!props.publicacion.Imagen_Publicacion"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2"
                                 />
                                 <p v-if="form.errors.Imagen_Publicacion" class="text-red-500 text-sm mt-1">
                                     {{ form.errors.Imagen_Publicacion }}
                                 </p>
-                                <!-- Vista previa de nueva imagen (si se sube) -->
-                                <div v-if="imagePreview" class="mt-4">
-                                    <p class="text-sm text-gray-600 mb-2">Vista previa (nueva imagen):</p>
-                                    <div class="flex justify-center">
-                                        <div class="relative drop-shadow-xl w-48 h-64 overflow-hidden rounded-xl bg-[#3d3c3d]">
-                                            <img
-                                                :src="imagePreview"
-                                                alt="Vista previa de nueva imagen"
-                                                class="absolute inset-0 w-full h-full object-cover"
-                                            />
-                                            <div class="absolute w-56 h-48 bg-white blur-[50px] -left-1/2 -top-1/2"></div>
-                                        </div>
+                                <!-- Vista previa de nueva(s) imagen(es) -->
+                                <div v-if="imagePreview && imagePreview.length > 0" class="mt-4 flex gap-4">
+                                    <div v-for="(src, idx) in imagePreview" :key="idx" class="relative drop-shadow-xl w-36 h-48 overflow-hidden rounded-xl bg-[#3d3c3d]">
+                                        <button @click.stop="removeSelected(idx)" class="absolute top-1 right-1 z-10 bg-white text-red-600 rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
+                                        <img :src="src" class="absolute inset-0 w-full h-full object-cover" />
                                     </div>
                                 </div>
-                                <!-- Imagen actual (si existe y no hay vista previa de nueva) -->
-                                <div v-else-if="props.publicacion.Imagen_Publicacion" class="mt-4">
-                                    <p class="text-sm text-gray-600 mb-2">Imagen actual:</p>
-                                    <div class="flex justify-center">
-                                        <div class="relative drop-shadow-xl w-48 h-64 overflow-hidden rounded-xl bg-[#3d3c3d]">
-                                            <img
-                                                :src="`/files/publicaciones/${props.publicacion.Imagen_Publicacion.split('/').pop()}`"
-                                                alt="Imagen actual"
-                                                class="absolute inset-0 w-full h-full object-cover"
-                                            />
-                                            <div class="absolute w-56 h-48 bg-white blur-[50px] -left-1/2 -top-1/2"></div>
-                                        </div>
+                                <!-- Imágenes actuales (si existen y no hay nuevas) -->
+                                <div v-else-if="props.publicacion.Imagen_Publicacion" class="mt-4 flex gap-4">
+                                    <div v-for="(img, idx) in (typeof props.publicacion.Imagen_Publicacion === 'string' ? (JSON.parse(props.publicacion.Imagen_Publicacion || '[]')) : props.publicacion.Imagen_Publicacion)" :key="idx" class="relative drop-shadow-xl w-36 h-48 overflow-hidden rounded-xl bg-[#3d3c3d]">
+                                        <img :src="`/files/publicaciones/${img.split('/').pop()}`" class="absolute inset-0 w-full h-full object-cover" />
                                     </div>
                                 </div>
                             </div>

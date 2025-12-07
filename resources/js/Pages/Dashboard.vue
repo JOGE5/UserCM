@@ -59,49 +59,46 @@ function handleEdit(id) {
 
 function handleContact(publicationId) {
     console.log('handleContact called with publicationId:', publicationId);
-    console.log('publicaciones:', publicaciones);
-    console.log('currentUserId:', currentUserId);
-    console.log('currentUserId from page:', $page.props.auth.user.id);
-
-    // Obtener el user_id del vendedor desde las publicaciones
+    // Buscar la publicación
     const publication = publicaciones.find(pub => pub.id === publicationId);
     console.log('publication found:', publication);
 
-    if (!publication || !publication.vendedor || !publication.vendedor.user) {
+    if (!publication || !publication.vendedor) {
         alert('No se pudo encontrar al vendedor.');
         return;
     }
 
-    const sellerUserId = publication.vendedor.user_id;
-    console.log('sellerUserId:', sellerUserId);
-    console.log('publication.vendedor:', publication.vendedor);
-    console.log('publication.vendedor.user:', publication.vendedor.user);
+    // Intentar obtener el teléfono del vendedor en varias rutas posibles
+    let sellerPhone = publication.vendedor.Telefono || publication.vendedor.telefono || null;
+    if (!sellerPhone && publication.vendedor.user) {
+        sellerPhone = publication.vendedor.user.Telefono || publication.vendedor.user.telefono || (publication.vendedor.user.usuarioCampusMarket && publication.vendedor.user.usuarioCampusMarket.Telefono) || null;
+    }
 
-    // Crear chat privado con el vendedor
-    fetch('/chats/private', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ seller_id: sellerUserId })
-    })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Response data:', data);
-        if (data.chat_id) {
-            router.visit('/chats/' + data.chat_id);
-        } else {
-            alert('Error al crear el chat: ' + (data.error || 'Respuesta inválida'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al contactar al vendedor: ' + error.message);
-    });
+    if (!sellerPhone) {
+        alert('El vendedor no tiene número de teléfono disponible.');
+        return;
+    }
+
+    // Número del comprador (usuario autenticado) si está disponible
+    const buyer = $page.props && $page.props.auth && $page.props.auth.user ? $page.props.auth.user : null;
+    const buyerName = buyer ? (buyer.name || '') : '';
+    const buyerPhone = buyer ? (buyer.Telefono || buyer.telefono || (buyer.usuarioCampusMarket && buyer.usuarioCampusMarket.Telefono) || '') : '';
+
+    // Normalizar número: quitar todo lo que no sea dígito
+    let normalized = String(sellerPhone).replace(/\D+/g, '');
+    if (!normalized) {
+        alert('El número de teléfono del vendedor no es válido.');
+        return;
+    }
+
+    // Construir mensaje prellenado
+    const title = publication.Titulo_Publicacion || publication.title || '';
+    const message = `Hola, soy ${buyerName}. Estoy interesado en tu publicación "${title}".` + (buyerPhone ? ` Mi teléfono es ${buyerPhone}.` : '');
+    const encoded = encodeURIComponent(message);
+
+    // Abrir chat de WhatsApp en nueva pestaña
+    const waUrl = `https://wa.me/${normalized}?text=${encoded}`;
+    window.open(waUrl, '_blank');
 }
 </script>
 
@@ -203,7 +200,6 @@ function handleContact(publicationId) {
                         <CardPubli
                             :title="pub.Titulo_Publicacion"
                             :subtitle="`Bs ${pub.Precio_Publicacion}`"
-                            :image="pub.Imagen_Publicacion ? `/files/publicaciones/${pub.Imagen_Publicacion.split('/').pop()}` : null"
                             :description="pub.Descripcion_Publicacion"
                             :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
                             :id="pub.id"

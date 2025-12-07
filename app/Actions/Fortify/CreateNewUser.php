@@ -104,13 +104,28 @@ class CreateNewUser implements CreatesNewUsers
             }
         }
 
-        // Crear registro perfil/usuario campus market
-        UsuarioCampusMarket::create([
-            'user_id' => $user->id,
-            'Cod_Carrera' => $codCarrera,
-            'Cod_Universidad' => $codUniversidad,
-            'Cod_Categoria_Default' => $categoriaDefaultId,
-        ]);
+        // Crear registro perfil/usuario campus market solo si vienen datos relevantes
+        // Construimos el array de datos sin incluir valores nulos o vacíos
+        $profileData = [
+            'user_id' => $user->getKey(),
+        ];
+
+        if ($codCarrera !== null && $codCarrera !== '') {
+            $profileData['Cod_Carrera'] = $codCarrera;
+        }
+
+        if ($codUniversidad !== null && $codUniversidad !== '') {
+            $profileData['Cod_Universidad'] = $codUniversidad;
+        }
+
+        if (!empty($categoriaDefaultId)) {
+            $profileData['Cod_Categoria_Default'] = (int) $categoriaDefaultId;
+        }
+
+        // Solo crear si hay más que el user_id (evita insertar filas con valores NULL/invalidos)
+        if (count($profileData) > 1) {
+            UsuarioCampusMarket::create($profileData);
+        }
 
         return $user;
     }
