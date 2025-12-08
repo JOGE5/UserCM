@@ -17,6 +17,15 @@ Route::get('/', function () {
     ]);
 });
 
+// Test route para debugging de reputación
+Route::post('/test-rating', function (\Illuminate\Http\Request $request) {
+    return response()->json([
+        'authenticated' => auth()->check(),
+        'user_id' => auth()->id(),
+        'input' => $request->all(),
+    ]);
+});
+
 // Ruta pública para servir imágenes de publicaciones (evita problemas con symlinks en Windows)
 Route::get('/files/publicaciones/{filename}', function ($filename) {
     $safe = basename($filename);

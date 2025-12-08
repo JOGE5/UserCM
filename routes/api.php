@@ -15,8 +15,8 @@ Route::get('/user', function (Request $request) {
 
 Route::get('/carreras', [CarreraController::class, 'index']);
 
-// Rutas de reputación - Autenticadas con auth:web
-Route::middleware('auth:web')->group(function () {
+// Rutas de reputación - Autenticadas (web o sanctum)
+Route::middleware(['auth:web,sanctum'])->group(function () {
     Route::post('/reputacion/{id}', [ReputacionController::class, 'store']);
     Route::get('/reputacion/{id}', [ReputacionController::class, 'show']);
 });

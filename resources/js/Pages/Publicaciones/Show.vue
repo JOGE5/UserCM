@@ -240,6 +240,7 @@ const submitRating = async () => {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
     const response = await fetch(`/api/reputacion/${userId}`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken || '' },
       body: JSON.stringify({ Puntuacion: selectedRating.value }),
     })
@@ -255,11 +256,12 @@ const submitRating = async () => {
       selectedRating.value = 0
     } else {
       const err = await response.json()
-      alert('Error: ' + (err.message || 'No se pudo enviar la calificación'))
+      console.error('Error response:', err)
+      alert('Error: ' + (err.error || err.message || 'No se pudo enviar la calificación'))
     }
   } catch (e) {
-    console.error(e)
-    alert('Error de conexión')
+    console.error('Catch error:', e)
+    alert('Error de conexión: ' + e.message)
   } finally {
     ratingSubmitting.value = false
   }

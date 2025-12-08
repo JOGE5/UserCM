@@ -24,40 +24,54 @@ class ReputacionController extends Controller
      */
     public function store(Request $request, $id)
     {
-        $validated = $request->validate([
-            'Puntuacion' => 'required|integer|min:1|max:5',
-            'Comentario' => 'nullable|string|max:500',
-        ]);
+        try {
+            $validated = $request->validate([
+                'Puntuacion' => 'required|integer|min:1|max:5',
+                'Comentario' => 'nullable|string|max:500',
+            ]);
 
-        /** @var int|null $authId */
-        $authId = auth()->id();
-        if (!$authId) {
-            return response()->json(['error' => 'No autenticado'], 401);
-        }
+            /** @var int|null $authId */
+            $authId = auth()->id();
+            if (!$authId) {
+                return response()->json(['error' => 'No autenticado', 'debug' => auth()->check()], 401);
+            }
 
-        /** @var int $userId */
-        $userId = (int)$id;
+            /** @var int $userId */
+            $userId = (int)$id;
 
-        ReputacionEntreUsuarios::create([
-            'ID_Usuario_Calificador' => $authId,
-            'ID_Usuario_Calificado' => $userId,
-            'Puntuacion' => $validated['Puntuacion'],
-            'Comentario' => $validated['Comentario'] ?? null,
-        ]);
+            // Validar que no se califique a sí mismo
+            if ($authId === $userId) {
+                return response()->json(['error' => 'No puedes calificarte a ti mismo'], 403);
+            }
 
-        // Actualizar estado del usuario calificado
-        $usuario = User::find($userId);
-        if ($usuario) {
-            $reputacion = $this->markovService->updateUserReputation($usuario);
-            
+            ReputacionEntreUsuarios::create([
+                'ID_Usuario_Calificador' => $authId,
+                'ID_Usuario_Calificado' => $userId,
+                'Puntuacion' => $validated['Puntuacion'],
+                'Comentario' => $validated['Comentario'] ?? null,
+            ]);
+
+            // Actualizar estado del usuario calificado
+            $usuario = User::find($userId);
+            if ($usuario) {
+                $reputacion = $this->markovService->updateUserReputation($usuario);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Calificación registrada',
+                    'reputacion' => $reputacion,
+                ], 201);
+            }
+
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        } catch (\Exception $e) {
             return response()->json([
-                'success' => true,
-                'message' => 'Calificación registrada',
-                'reputacion' => $reputacion,
-            ], 201);
+                'error' => 'Error al guardar la calificación',
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ], 500);
         }
-
-        return response()->json(['error' => 'Usuario no encontrado'], 404);
+    }
     }
 
     /**
