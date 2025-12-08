@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Publicaciones;
 use App\Models\UsuarioCampusMarket;
 use App\Models\Categorias;
+use App\Models\User;
+use App\Models\ReputacionEntreUsuarios;
 use App\Rules\NoProfanity;
+use App\Services\MarkovReputationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -117,7 +120,14 @@ class PublicacionesController extends Controller
      */
     public function show(Publicaciones $publicaciones)
     {
-        //
+        // Render the single-publication page (replaces modal view)
+        // Eager load relations used by the page
+        $publicaciones->load(['categoria', 'vendedor.user']);
+
+        return Inertia::render('Publicaciones/Show', [
+            'publicacion' => $publicaciones,
+            'currentUserId' => auth()->id(),
+        ]);
     }
 
     /**
@@ -252,5 +262,32 @@ class PublicacionesController extends Controller
         $publicaciones->update(['estado' => 'activa']);
 
         return redirect()->route('dashboard')->with('success', 'Publicación activada');
+    }
+
+    /**
+     * Calificar a un usuario con reputación
+     */
+    public function rateUser(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'Puntuacion' => 'required|integer|min:1|max:5',
+            'Comentario' => 'nullable|string|max:500',
+        ]);
+
+        /** @var int|null $authId */
+        $authId = auth()->id();
+        $validated['ID_Usuario_Calificador'] = $authId;
+        $validated['ID_Usuario_Calificado'] = $user->id;
+
+        ReputacionEntreUsuarios::create($validated);
+
+        // Actualizar estado de reputación del usuario calificado
+        $markovService = new MarkovReputationService();
+        $markovService->updateUserReputation($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Calificación registrada exitosamente',
+        ]);
     }
 }

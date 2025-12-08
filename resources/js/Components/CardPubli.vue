@@ -55,7 +55,7 @@ const props = defineProps({
   }
 });
 
-const showModal = ref(false); // Controla si el modal está abierto o cerrado
+// El modal ha sido removido: navegamos a la página de la publicación
 const isFavorite = ref(false); // Controla si está en favoritos
 const isLoadingFavorite = ref(false); // Indica si se está procesando la petición
 const showReport = ref(false);
@@ -93,14 +93,22 @@ const imageStyle = computed(() => {
   return { backgroundImage: 'url(' + images.value[carouselIndex.value] + ')' };
 });
 
-// Función para abrir el modal
+// Abrir la vista completa de la publicación (reemplaza el modal)
 function open() {
-  showModal.value = true;
-}
+  if (!props.id) return;
+  let url = `/publicaciones/${props.id}`;
+  try {
+    if (typeof route === 'function') {
+      url = route('publicaciones.show', props.id);
+    }
+  } catch (e) {
+    // ignore, usar url por defecto
+  }
 
-// Función para cerrar el modal
-function close() {
-  showModal.value = false;
+  router.visit(url, {
+    onStart: () => console.log('CardPubli: navegando a', url),
+    onError: (err) => console.error('CardPubli: error navegando', err),
+  });
 }
 
 // Función que emite el evento "edit" y cierra el modal
@@ -178,13 +186,10 @@ function toggleFavorito() {
 }
 
 // Función que cierra el modal al presionar Escape
-function onKeydown(e) {
-  if (e.key === 'Escape') close();
-}
+// ya no se usa onKeydown porque no hay modal
 
 // Se añade el listener al montar el componente y se inicializa estado de favorito
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown);
   if (props.initialIsFavorite) {
     isFavorite.value = true;
   }
@@ -197,7 +202,6 @@ onMounted(() => {
 });
 // Se elimina el listener al desmontar el componente y limpiar timer
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown);
   if (carouselTimer) clearInterval(carouselTimer);
 });
 </script>
@@ -212,56 +216,11 @@ onBeforeUnmount(() => {
       <h2>{{ props.title }}</h2> <!-- Título -->
       <p v-if="props.subtitle" class="subtitle">{{ props.subtitle }}</p> <!-- Subtítulo -->
     </div>
+    <!-- Botón Editar solo si es propietario -->
+    <button v-if="isOwner" @click.stop="doEdit" class="edit-button" title="Editar publicación">✏️</button>
   </button>
 
-  <!-- Modal que se muestra cuando showModal es true -->
-  <div v-if="showModal" class="modal-overlay" role="dialog" aria-modal="true">
-    <div class="modal">
-      <!-- Botón para cerrar modal -->
-      <button class="modal-close" @click.stop="close" aria-label="Cerrar">✕</button>
-      <!-- Imagen dentro del modal -->
-      <div class="modal-image" v-if="images.length" :style="imageStyle"></div>
-      <!-- Cuerpo del modal -->
-      <div class="modal-body">
-
-        <h3 class="modal-title">{{ props.title }}</h3> <!-- Título -->
-        <div class="vendedor" v-if="props.user">
-          <img v-if="props.user.usuarioCampusMarket && props.user.usuarioCampusMarket.Foto_de_perfil" :src="`/files/perfil/${props.user.usuarioCampusMarket.Foto_de_perfil.split('/').pop()}`" alt="Foto de perfil" class="profile-image" />
-          <span>Publicado por: {{ props.user.name }}</span>
-        </div>
-        <p class="modal-price" v-if="props.subtitle">{{ props.subtitle }}</p> <!-- Subtítulo -->
-        <p class="modal-category" v-if="props.category">Categoría: {{ props.category }}</p> <!-- Categoría -->
-        <p class="modal-description" v-if="props.description">{{ props.description }}</p> <!-- Descripción -->
-        
-        <!-- Badge de estado si es borrador -->
-        <div v-if="props.estado === 'borrador'" class="inline-block px-3 py-1 mt-2 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">
-          Borrador (solo visible para ti)
-        </div>
-
-        <!-- Pie del modal con botones -->
-        <div class="modal-footer">
-          <!-- Fila 1: Favorito (no propietarios) + Editar (propietarios) -->
-          <div class="flex gap-2">
-            <!-- Botón favorito: solo en publicaciones de terceros -->
-            <button v-if="props.publicacion && !props.isOwner"
-                    :class="{ 'btn-favorite': !isFavorite, 'btn-favorite-active': isFavorite }"
-                    @click.stop="toggleFavorito"
-                    :disabled="isLoadingFavorite">
-              {{ isFavorite ? '♥ Favorito' : '♡ Favorito' }}
-            </button>
-            
-            <!-- Botón de editar solo si es propietario -->
-            <button v-if="props.isOwner" class="btn-secondary" @click.stop="doEdit">Editar</button>
-          </div>
-          
-          <!-- Fila 2: Botón contactar (solo no propietarios) -->
-          <button v-if="props.user && props.currentUserId && props.user.id !== props.currentUserId" class="btn-primary" @click.stop="doContact">Contactar</button>
-          <!-- Botón reportar (solo en publicaciones de terceros) -->
-          <button v-if="props.publicacion && !props.isOwner" class="btn-secondary" @click.stop="openReport">Reportar</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- El modal fue removido: la tarjeta navega a la página de la publicación completa -->
   <!-- Modal de reporte -->
   <div v-if="showReport">
     <ReportModal :publicacionId="props.publicacion ? props.publicacion.id : props.id" :ownerId="props.publicacion && props.publicacion.vendedor ? props.publicacion.vendedor.user_id : null" @close="closeReport" />
@@ -337,87 +296,7 @@ onBeforeUnmount(() => {
 
 .card .content { z-index: 2; }  /* Por encima de la imagen */
 
-.modal-overlay {
-  position: fixed;           /* Fijo en pantalla */
-  inset: 0;                  /* Ocupa toda la pantalla */
-  background: rgba(0,0,0,0.5); /* Fondo negro semi-transparente */
-  display: flex;
-  align-items: center;       /* Centra vertical */
-  justify-content: center;   /* Centra horizontal */
-  z-index: 50;               /* Encima de todo */
-  padding: 1rem;
-}
-
-.modal {
-  background: white;         /* Fondo blanco */
-  max-width: 720px;
-  width: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Dos columnas: imagen y contenido */
-}
-
-.modal-close {
-  position: absolute;        /* Posición absoluta */
-  top: 8px;
-  right: 8px;
-  background: transparent;
-  border: none;
-  font-size: 1.25rem;
-  cursor: pointer;
-}
-
-.modal-image {
-  background-position: center;
-  background-size: cover;
-  min-height: 240px;
-}
-
-.modal-body {
-  padding: 1rem 1.5rem;
-}
-
-.modal-title {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.125rem;
-}
-
-.modal-category {
-  color: #6b7280;
-  margin-bottom: 0.75rem;
-}
-
-.modal-description {
-  color: #374151;
-}
-
-.modal-price {
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.vendedor {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #6b7280;
-  margin-bottom: 0.75rem;
-}
-
-.profile-image {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.modal-footer {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
+/* Modal removed: styles cleaned */
 
 .btn-primary {
   background: #09a775;
@@ -453,6 +332,36 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   border: 1px solid #d1d5db;
   cursor: pointer;
+}
+
+.edit-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.edit-button:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.edit-button:active {
+  transform: scale(0.95);
 }
 
 </style>

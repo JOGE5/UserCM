@@ -1,0 +1,685 @@
+<template>
+  <!-- CARD COMPACTA (Lista) -->
+  <div class="card" @click="openModal">
+    <div class="card-image">
+      <img
+        v-if="publicacion.Imagen_Publicacion"
+        :src="getImageUrl(publicacion.Imagen_Publicacion)"
+        :alt="publicacion.Titulo_Publicacion"
+        class="image"
+      />
+      <div v-else class="image-placeholder">📷</div>
+      <span class="price-tag">{{ formatPrice(publicacion.Precio_Publicacion) }}</span>
+    </div>
+    <div class="card-body">
+      <h3 class="title">{{ publicacion.Titulo_Publicacion }}</h3>
+      <p class="description">{{ publicacion.Descripcion_Publicacion.substring(0, 80) }}...</p>
+      <div class="card-footer">
+        <span class="vendor">{{ publicacion.vendedor?.user?.name || 'Vendedor' }}</span>
+        <span
+          v-if="publicacion.vendedor?.user?.reputacionEstado"
+          class="reputation-badge small"
+          :class="`badge-${publicacion.vendedor.user.reputacionEstado.estado_actual.toLowerCase()}`"
+        >
+          {{ publicacion.vendedor.user.reputacionEstado.estado_actual }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL (Grande) -->
+  <div v-if="showModal" class="modal-backdrop" @click="closeModal">
+    <div class="modal-container" @click.stop>
+      <button class="modal-close" @click="closeModal">✕</button>
+
+      <div class="modal-content-wrapper">
+        <!-- IZQUIERDA: Imagen -->
+        <div class="modal-left">
+          <img
+            v-if="publicacion.Imagen_Publicacion"
+            :src="getImageUrl(publicacion.Imagen_Publicacion)"
+            :alt="publicacion.Titulo_Publicacion"
+            class="modal-image"
+          />
+          <div v-else class="modal-image-placeholder">📷 Sin imagen</div>
+        </div>
+
+        <!-- DERECHA: Información -->
+        <div class="modal-right">
+          <!-- Título y precio -->
+          <div class="modal-header">
+            <h2 class="modal-title">{{ publicacion.Titulo_Publicacion }}</h2>
+            <div class="modal-price">{{ formatPrice(publicacion.Precio_Publicacion) }}</div>
+          </div>
+
+          <!-- Categoría -->
+          <p class="modal-category">{{ publicacion.categoria?.Nombre_Categoria || 'Categoría' }}</p>
+
+          <!-- Descripción -->
+          <div class="modal-section">
+            <h4>Descripción</h4>
+            <p>{{ publicacion.Descripcion_Publicacion }}</p>
+          </div>
+
+          <!-- Vendedor -->
+          <div class="modal-section">
+            <h4>Vendedor</h4>
+            <div class="vendor-card">
+              <span class="vendor-name">{{ publicacion.vendedor?.user?.name || 'Vendedor' }}</span>
+              <span
+                v-if="publicacion.vendedor?.user?.reputacionEstado"
+                class="reputation-badge"
+                :class="`badge-${publicacion.vendedor.user.reputacionEstado.estado_actual.toLowerCase()}`"
+              >
+                {{ publicacion.vendedor.user.reputacionEstado.estado_actual }}
+              </span>
+            </div>
+          </div>
+
+          <!-- ESTRELLAS -->
+          <div class="modal-section rating-box">
+            <h4>⭐ Calificar al vendedor</h4>
+            <div class="stars-wrapper">
+              <button
+                v-for="star in 5"
+                :key="star"
+                @click="selectedRating = star"
+                :class="{ active: selectedRating >= star }"
+                class="star-btn"
+              >
+                ⭐
+              </button>
+            </div>
+            <p v-if="selectedRating" class="rating-info">{{ selectedRating }} {{ selectedRating === 1 ? 'estrella' : 'estrellas' }}</p>
+            <button
+              v-if="selectedRating > 0"
+              @click="submitRating"
+              :disabled="ratingSubmitting"
+              class="btn-submit-rating"
+            >
+              {{ ratingSubmitting ? 'Enviando...' : '✓ Enviar Calificación' }}
+            </button>
+          </div>
+
+          <!-- BOTONES -->
+          <div class="modal-actions">
+            <button class="action-btn btn-contactar" @click="handleContact">
+              💬 Contactar
+            </button>
+            <button class="action-btn btn-favorito" @click="handleFavorite">
+              {{ isFavorite ? '❤️' : '🤍' }} Favorito
+            </button>
+            <button class="action-btn btn-reportar" @click="handleReport">
+              ⚠️ Reportar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+
+const props = defineProps({
+  publicacion: {
+    type: Object,
+    required: true,
+  },
+})
+
+const emit = defineEmits(['favorite', 'report', 'contact'])
+
+const showModal = ref(false)
+const isFavorite = ref(false)
+const selectedRating = ref(0)
+const ratingSubmitting = ref(false)
+
+const openModal = () => {
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+  selectedRating.value = 0
+}
+
+const getImageUrl = (imageData) => {
+  try {
+    const images = JSON.parse(imageData)
+    if (Array.isArray(images) && images.length > 0) {
+      return `/storage/${images[0]}`
+    }
+  } catch (e) {
+    return `/storage/${imageData}`
+  }
+  return '/images/placeholder.png'
+}
+
+const formatPrice = (price) => {
+  return `$${parseFloat(price).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`
+}
+
+const handleContact = () => {
+  emit('contact', props.publicacion)
+}
+
+const handleFavorite = (e) => {
+  e.stopPropagation()
+  isFavorite.value = !isFavorite.value
+  emit('favorite', props.publicacion)
+}
+
+const handleReport = (e) => {
+  e.stopPropagation()
+  if (confirm('¿Deseas reportar esta publicación?')) {
+    emit('report', props.publicacion)
+  }
+}
+
+const submitRating = async () => {
+  if (selectedRating.value === 0) return
+
+  const userId = props.publicacion.vendedor?.user?.id
+  if (!userId) {
+    alert('No se puede calificar. Vendedor no disponible.')
+    return
+  }
+
+  ratingSubmitting.value = true
+
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+    
+    const response = await fetch(`/api/reputacion/${userId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken || '',
+      },
+      body: JSON.stringify({
+        Puntuacion: selectedRating.value,
+        Comentario: 'Buena experiencia de compra',
+      }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      console.log('✅ Calificación enviada:', data)
+      
+      // Actualizar el estado del vendedor si es necesario
+      if (data.reputacion_estado) {
+        props.publicacion.vendedor.user.reputacionEstado = data.reputacion_estado
+      }
+      
+      selectedRating.value = 0
+      alert('✓ ¡Calificación enviada exitosamente!')
+    } else {
+      const error = await response.json()
+      alert('Error: ' + (error.message || 'No se pudo enviar la calificación'))
+    }
+  } catch (error) {
+    console.error('Error:', error)
+    alert('Error de conexión: ' + error.message)
+  } finally {
+    ratingSubmitting.value = false
+  }
+}
+
+const onRatingSubmitted = (data) => {
+  console.log('Rating submitted:', data)
+}
+</script>
+
+<style scoped>
+/* Card compacta */
+.card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.image,
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+}
+
+.image-placeholder svg {
+  width: 48px;
+  height: 48px;
+}
+
+.price-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #10b981;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.card-body {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: #1f2937;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.description {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 12px;
+  flex: 1;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.vendor {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.reputation-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.reputation-badge.small {
+  padding: 3px 6px;
+  font-size: 10px;
+}
+
+.badge-malo {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.badge-regular {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.badge-bueno {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.badge-excelente {
+  background-color: #dbeafe;
+  color: #0284c7;
+}
+
+/* Modal mejorado */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #f3f4f6;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #e5e7eb;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  padding: 32px;
+}
+
+.modal-image-section {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f3f4f6;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.modal-image,
+.modal-image-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-image-placeholder {
+  color: #d1d5db;
+}
+
+.modal-image-placeholder svg {
+  width: 64px;
+  height: 64px;
+}
+
+.modal-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.titulo {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: #1f2937;
+}
+
+.categoria {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 8px 0 0;
+}
+
+.precio-badge {
+  font-size: 32px;
+  font-weight: 700;
+  color: #10b981;
+  white-space: nowrap;
+}
+
+.descripcion-section h3,
+.vendor-section h3,
+.rating-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: #1f2937;
+}
+
+.descripcion-section p {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.vendor-info {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vendor-details {
+  flex: 1;
+}
+
+.vendor-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 6px;
+}
+
+.vendor-name + .reputation-badge {
+  display: inline-block;
+}
+
+.rating-section {
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 0;
+}
+
+.stars-container {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.star-wrapper {
+  position: relative;
+}
+
+.star-radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.star-label {
+  font-size: 40px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: block;
+  filter: brightness(0.6);
+}
+
+.star-label:hover {
+  transform: scale(1.2);
+  filter: brightness(1) drop-shadow(0 0 15px rgba(255, 193, 7, 0.8));
+}
+
+.star-radio:checked ~ .star-label,
+.star-label.active {
+  filter: brightness(1) drop-shadow(0 0 15px rgba(255, 193, 7, 0.8));
+  transform: scale(1.15);
+}
+
+.rating-text {
+  font-size: 14px;
+  color: #666;
+  margin: 12px 0 0;
+  font-weight: 500;
+}
+
+.submit-rating-btn {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  margin-top: 12px;
+}
+
+.submit-rating-btn:hover:not(.loading) {
+  background-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.submit-rating-btn.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background: #10b981;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+.btn-danger {
+  background: #fecaca;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.btn-danger:hover {
+  background: #fca5a5;
+}
+
+/* Animación modal */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-content,
+.modal-leave-to .modal-content {
+  transform: scale(0.95);
+}
+
+.modal-enter-active .modal-content,
+.modal-leave-active .modal-content {
+  transition: transform 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-body {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .modal-image-section {
+    aspect-ratio: 16 / 9;
+  }
+
+  .titulo {
+    font-size: 20px;
+  }
+
+  .precio-badge {
+    font-size: 24px;
+  }
+
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

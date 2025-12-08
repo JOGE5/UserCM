@@ -83,4 +83,28 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Chat::class, 'chat_users');
     }
+
+    /**
+     * Reputaciones recibidas por este usuario
+     */
+    public function reputacionesRecibidas()
+    {
+        return $this->hasMany(ReputacionEntreUsuarios::class, 'ID_Usuario_Calificado', 'id');
+    }
+
+    /**
+     * Reputaciones emitidas por este usuario
+     */
+    public function reputacionesEmitidas()
+    {
+        return $this->hasMany(ReputacionEntreUsuarios::class, 'ID_Usuario_Calificador', 'id');
+    }
+
+    /**
+     * Estado de reputación del usuario
+     */
+    public function reputacionEstado()
+    {
+        return $this->hasOne(ReputacionEstado::class, 'user_id', 'id');
+    }
 }
