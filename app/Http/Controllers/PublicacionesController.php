@@ -283,7 +283,7 @@ class PublicacionesController extends Controller
 
         // Actualizar estado de reputación del usuario calificado
         $markovService = new MarkovReputationService();
-        $markovService->updateUserReputation($user);
+        $markovService->actualizarEstado($user);
 
         return response()->json([
             'success' => true,

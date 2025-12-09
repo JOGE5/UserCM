@@ -54,7 +54,7 @@ class ReputacionController extends Controller
             // Actualizar estado del usuario calificado
             $usuario = User::find($userId);
             if ($usuario) {
-                $reputacion = $this->markovService->updateUserReputation($usuario);
+                $reputacion = $this->markovService->actualizarEstado($usuario);
                 
                 return response()->json([
                     'success' => true,
@@ -72,7 +72,6 @@ class ReputacionController extends Controller
             ], 500);
         }
     }
-    }
 
     /**
      * GET /api/reputacion/{id}
@@ -88,8 +87,8 @@ class ReputacionController extends Controller
             return response()->json(['error' => 'Usuario no encontrado'], 404);
         }
 
-        $reputacion = $this->markovService->getUserReputation($usuario);
-        $promedio = $this->markovService->getUserAverageScore($usuario);
+        $reputacion = $this->markovService->obtenerEstado($usuario);
+        $promedio = $this->markovService->calcularPromedioCalificaciones($usuario);
         $totalCalificaciones = ReputacionEntreUsuarios::where('ID_Usuario_Calificado', $userId)->count();
 
         return response()->json([
@@ -119,10 +118,10 @@ class ReputacionController extends Controller
                     $estadoOrdinal = 0;
                     
                     // Calcular promedio de calificaciones del vendedor
-                    $promedio = $this->markovService->getUserAverageScore($pub->vendedor?->user);
+                    $promedio = $this->markovService->calcularPromedioCalificaciones($pub->vendedor?->user);
 
                     if ($reputacion) {
-                        $estadoOrdinal = $this->markovService->getStateOrdinal($reputacion->estado_actual);
+                        $estadoOrdinal = $this->markovService->obtenerOrdinalEstado($reputacion->estado_actual);
                     }
 
                     return [

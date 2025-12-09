@@ -120,7 +120,7 @@ class MarkovReputationService
         $probabilidades = $this->aplicarTransicion($estadoBase);
         $estadoNuevo = $this->obtenerEstadoMayorProbabilidad($probabilidades);
 
-        $reputacion = ReputacionEstadoUsuario::updateOrCreate(
+        $reputacion = ReputacionEstado::updateOrCreate(
             ['user_id' => $userId],
             [
                 'estado_actual' => $estadoNuevo,
@@ -137,12 +137,12 @@ class MarkovReputationService
     /**
      * Obtiene el estado de reputación
      */
-    public function obtenerEstado(User $user): ?ReputacionEstadoUsuario
+    public function obtenerEstado(User $user): ?ReputacionEstado
     {
         /** @var int $userId */
         $userId = $user->id;
         
-        return ReputacionEstadoUsuario::where('user_id', $userId)->first();
+        return ReputacionEstado::where('user_id', $userId)->first();
     }
 
     /**
