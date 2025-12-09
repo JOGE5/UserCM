@@ -55,11 +55,16 @@ class ReputacionController extends Controller
             $usuario = User::find($userId);
             if ($usuario) {
                 $reputacion = $this->markovService->actualizarEstado($usuario);
-                
+                $promedio = $this->markovService->calcularPromedioCalificaciones($usuario);
+                $totalCalificaciones = \App\Models\ReputacionEntreUsuarios::where('ID_Usuario_Calificado', $usuario->id)->count();
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Calificación registrada',
-                    'reputacion' => $reputacion,
+                    // claves amigables para el frontend
+                    'reputacion_estado' => $reputacion,
+                    'promedio_puntuacion' => $promedio,
+                    'total_calificaciones' => $totalCalificaciones,
                 ], 201);
             }
 

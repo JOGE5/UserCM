@@ -7,6 +7,7 @@ use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Events\MessageSent;
 
 class ChatController extends Controller
 {
@@ -97,6 +98,13 @@ class ChatController extends Controller
             'sender_id' => Auth::id(),
             'contenido' => $request->contenido,
         ]);
+
+        // Broadcast the new message to others in the chat
+        try {
+            broadcast(new MessageSent($message))->toOthers();
+        } catch (\Throwable $e) {
+            \Log::error('Error broadcasting MessageSent', ['error' => $e->getMessage()]);
+        }
 
         return response()->json($message->load('sender'));
     }

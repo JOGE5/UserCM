@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categorias_articulos', function (Blueprint $table) {
-            $table->id('Cod_Categoria');
-            $table->string('Nombre_Categoria', 100);
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('categorias_articulos')) {
+            Schema::create('categorias_articulos', function (Blueprint $table) {
+                $table->id('Cod_Categoria');
+                $table->string('Nombre_Categoria', 100);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

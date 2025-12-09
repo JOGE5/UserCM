@@ -28,6 +28,18 @@ class FavoritoController extends Controller
     {
         $userId = auth()->id();
 
+        // No permitir que un usuario marque su propia publicación como favorito
+        try {
+            if ($publicacion->vendedor && $publicacion->vendedor->user_id === $userId) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['error' => 'No puedes marcar tu propia publicación como favorita.'], 403);
+                }
+                return back()->with('error', 'No puedes marcar tu propia publicación como favorita.');
+            }
+        } catch (\Throwable $e) {
+            // en caso de cualquier problema con la relación, seguir con la lógica (pero no bloquear)
+        }
+
         $existe = Favorito::where('user_id', $userId)
             ->where('publicacion_id', $publicacion->id)
             ->exists();

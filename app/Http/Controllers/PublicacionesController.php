@@ -36,6 +36,13 @@ class PublicacionesController extends Controller
      */
     public function store(Request $request)
     {
+        // Debug: registrar entrada a la acción para diagnosticar peticiones que se quedan "cargando"
+        \Log::info('PublicacionesController@store called', [
+            'user_id' => auth()->id(),
+            'input_keys' => array_keys($request->all()),
+            'has_files' => $request->hasFile('Imagen_Publicacion') || count($request->allFiles()) > 0,
+        ]);
+
         $validated = $request->validate([
             'Titulo_Publicacion' => ['required','string','max:200', new NoProfanity()],
             'Descripcion_Publicacion' => ['required','string', new NoProfanity()],
@@ -43,7 +50,8 @@ class PublicacionesController extends Controller
             'Cod_Categoria' => 'required|integer',
             'Estado_Publicacion' => 'boolean',
             // Soportar hasta 3 imágenes: se espera array de archivos
-            'Imagen_Publicacion' => 'required|array|min:1|max:3',
+            // Permitir que no se envíen imágenes (nullable) para evitar que el formulario falle
+            'Imagen_Publicacion' => 'nullable|array|max:3',
             'Imagen_Publicacion.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 

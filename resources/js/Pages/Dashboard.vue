@@ -7,6 +7,7 @@ import FunnelIcon from '@/Components/Icons/FunnelIcon.vue';
 
 const props = defineProps({
     publicaciones: Array,
+    mejores: { type: Array, default: () => [] },
     currentUserId: Number,
     userEstado: String,
 });
@@ -64,12 +65,24 @@ function handleEdit(id) {
 function handleContact(publicationId) {
     console.log('handleContact called with publicationId:', publicationId);
     // Buscar la publicación
-    const publication = publicaciones.find(pub => pub.id === publicationId);
+    const publication = props.publicaciones.find(pub => pub.id === publicationId);
     console.log('publication found:', publication);
 
     if (!publication || !publication.vendedor) {
         alert('No se pudo encontrar al vendedor.');
         return;
+    }
+
+    // Evitar contactar a uno mismo
+    try {
+        const ownerId = publication.vendedor?.user?.id ?? publication.vendedor?.user_id ?? null;
+        const meId = $page.props?.auth?.user?.id ?? null;
+        if (ownerId && meId && Number(ownerId) === Number(meId)) {
+            alert('No puedes contactar a tu propia publicación.');
+            return;
+        }
+    } catch (e) {
+        // ignore
     }
 
     // Intentar obtener el teléfono del vendedor en varias rutas posibles
@@ -157,6 +170,31 @@ function handleContact(publicationId) {
                 </div>
             </div>
         </template>
+
+        <!-- Sección Mejores Valorados -->
+        <div v-if="props.mejores && props.mejores.length > 0" class="py-8">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <h3 class="text-lg font-bold mb-4">MEJORES VALORADOS</h3>
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div v-for="pub in props.mejores" :key="pub.id" class="flex justify-center">
+                        <CardPubli
+                            :title="pub.Titulo_Publicacion"
+                            :subtitle="`Bs ${pub.Precio_Publicacion}`"
+                            :description="pub.Descripcion_Publicacion"
+                            :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
+                            :id="pub.id"
+                            :user="pub.vendedor && pub.vendedor.user ? pub.vendedor.user : null"
+                            :currentUserId="$page.props.auth.user.id"
+                            :isOwner="pub.vendedor && pub.vendedor.user_id === $page.props.auth.user.id"
+                            :estado="pub.estado"
+                            :publicacion="pub"
+                            @edit="handleEdit"
+                            @contact="handleContact"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">

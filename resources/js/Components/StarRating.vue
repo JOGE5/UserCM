@@ -56,7 +56,9 @@ const submitRating = async () => {
   try {
     const response = await fetch(`/api/reputacion/${props.userId}`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
       },
@@ -66,13 +68,31 @@ const submitRating = async () => {
       }),
     })
 
-    if (response.ok) {
+    // Manejar respuestas no-JSON para evitar "Unexpected token '<'"
+    const contentType = response.headers.get('content-type') || ''
+    if (!response.ok) {
+      if (contentType.includes('application/json')) {
+        const err = await response.json()
+        console.error('Rating error json:', err)
+        alert(err.message || err.error || 'Error al enviar la calificación')
+      } else {
+        const text = await response.text()
+        console.error('Rating error text:', text)
+        alert('Error al enviar la calificación (respuesta no JSON). Revisa la consola para más detalles.')
+      }
+      return
+    }
+
+    if (contentType.includes('application/json')) {
       const data = await response.json()
       emit('rating-submitted', data)
       selectedRating.value = 0
       alert('¡Calificación enviada exitosamente!')
     } else {
-      alert('Error al enviar la calificación')
+      // Caso raro: 200 pero HTML
+      const text = await response.text()
+      console.warn('Rating success but non-json response:', text)
+      alert('Calificación enviada (respuesta inesperada).')
     }
   } catch (error) {
     console.error('Error:', error)

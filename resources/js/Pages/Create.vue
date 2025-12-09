@@ -20,7 +20,28 @@ const imagePreview = ref([]);
 const fileInput = ref(null);
 
 const submit = () => {
-    form.post(route('publicaciones.store'));
+    // Forzar uso de FormData para asegurar envío correcto de archivos
+    // Añadir callbacks para capturar errores y finalizar el proceso visualmente
+    form.post(route('publicaciones.store'), {
+        forceFormData: true,
+        onStart: () => {
+            console.log('Enviando publicación...');
+        },
+        onError: (errors) => {
+            console.error('Errores de validación/servidor:', errors);
+            // Mostrar errores básicos al usuario para depuración rápida
+            try {
+                const msg = Object.values(errors).flat().join('\n');
+                if (msg) alert('Errores: \n' + msg);
+            } catch (e) {}
+        },
+        onFinish: () => {
+            console.log('Petición finalizada');
+        },
+        onSuccess: (page) => {
+            console.log('Publicación creada, redirigiendo...');
+        },
+    });
 };
 
 // Procesa un array de File (desde input o drop)

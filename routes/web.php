@@ -7,6 +7,7 @@ use App\Http\Controllers\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Services\MarkovReputationService;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -72,8 +73,29 @@ Route::middleware([
             ->where('estado', 'activa')
             ->get();
 
+        // Calcular 'Mejores valorados' usando el servicio de reputación
+        try {
+            $markov = new MarkovReputationService();
+            $mejores = \App\Models\Publicaciones::with(['categoria', 'vendedor.user.reputacionEstado'])
+                ->where('estado', 'activa')
+                ->get()
+                ->map(function ($pub) use ($markov) {
+                    $promedio = $markov->calcularPromedioCalificaciones($pub->vendedor?->user);
+                    return array_merge($pub->toArray(), ['calificacion_promedio' => $promedio]);
+                })
+                ->sortByDesc('calificacion_promedio')
+                ->values()
+                ->take(6)
+                ->all();
+        } catch (\Throwable $e) {
+            // Si algo falla, devolver lista vacía para no romper la vista
+            \Log::error('Error calculando mejores valorados: ' . $e->getMessage());
+            $mejores = [];
+        }
+
         return Inertia::render('Dashboard', [
             'publicaciones' => $publicaciones,
+            'mejores' => $mejores,
             'currentUserId' => $userId,
             'userEstado' => $userEstado,
         ]);
@@ -163,4 +185,8 @@ Route::middleware([
     // Rutas para reportes (publicaciones y foros)
     Route::post('/report/publicaciones/{publicacion}', [ReportController::class, 'storePublication'])->name('report.publicacion');
     Route::post('/report/foros/{foro}', [ReportController::class, 'storeForo'])->name('report.foro');
+
+    // Exponer endpoints de reputación también por web (soportar sesión de navegador)
+    Route::post('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'store']);
+    Route::get('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'show']);
 });

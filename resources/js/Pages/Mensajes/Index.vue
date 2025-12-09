@@ -5,6 +5,9 @@ import { Link } from '@inertiajs/vue3';
 defineProps({
     chats: Array,
 });
+
+// Debug: mostrar en consola los chats recibidos
+console.log('Mensajes/Index props.chats:', typeof chats !== 'undefined' ? chats : 'undefined');
 </script>
 
 <template>

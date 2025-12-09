@@ -59,8 +59,56 @@ const props = defineProps({
 const isFavorite = ref(false); // Controla si está en favoritos
 const isLoadingFavorite = ref(false); // Indica si se está procesando la petición
 const showReport = ref(false);
+const showModal = ref(false);
 
 const emit = defineEmits(["edit", "contact"]); // Eventos que el componente pueden emitir
+
+// Quitar borrador (activar publicación)
+function quitarBorrador() {
+  if (!props.publicacion || !props.publicacion.id) return;
+
+  // Confirmación simple
+  if (!confirm('¿Deseas publicar esta publicación y quitarla de borradores?')) return;
+
+  const pubId = props.publicacion.id;
+  try {
+    // Usar named route si está disponible
+    let routeUrl = `/publicaciones/${pubId}/active`;
+    try {
+      if (typeof route === 'function') {
+        routeUrl = route('publicaciones.active', pubId);
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // PATCH request via Inertia router
+    router.patch(routeUrl, {}, {
+      onStart: () => console.log('quitarBorrador: start', { routeUrl }),
+      onSuccess: (page) => {
+        console.log('quitarBorrador: success', page);
+        // Navegar a dashboard (lista de publicaciones)
+        try {
+          if (typeof route === 'function') {
+            router.visit(route('dashboard'));
+          } else {
+            router.visit('/dashboard');
+          }
+        } catch (e) {
+          window.location.href = '/dashboard';
+        }
+      },
+      onError: (err) => {
+        console.error('quitarBorrador error', err);
+        alert('No se pudo activar la publicación. Intenta de nuevo.');
+      }
+    });
+
+  } catch (e) {
+    console.error('quitarBorrador unexpected', e);
+    alert('Ocurrió un error inesperado');
+  }
+}
 
 // Computed para obtener imágenes (max 3) y aplicar estilo de fondo según el índice del carrusel
 const images = computed(() => {
@@ -135,7 +183,7 @@ function doEdit() {
       onStart: () => console.log('CardPubli: router.visit onStart', { url }),
       onSuccess: (page) => {
         console.log('CardPubli: router.visit onSuccess', page);
-        close();
+        // No hay modal en esta versión; simplemente loguear
       },
       onError: (err) => {
         console.error('CardPubli: router.visit onError', err);
@@ -154,11 +202,23 @@ function doEdit() {
 // Función que emite el evento "contact" y cierra el modal
 function doContact() {
   console.log('doContact called with id:', props.id);
+  try {
+    // Previene contactar a uno mismo
+    const ownerId = props.publicacion?.vendedor?.user?.id ?? props.publicacion?.vendedor?.user_id ?? null;
+    if (ownerId && props.currentUserId && Number(ownerId) === Number(props.currentUserId)) {
+      alert('No puedes contactarte a ti mismo.');
+      return;
+    }
+  } catch (e) {
+    // ignore
+  }
+
   if (props.id) {
     console.log('Emitting contact event with id:', props.id);
     emit('contact', props.id);
   }
-  close();
+  // No modal to close here; keep for compatibility
+  showModal.value = false;
 }
 
 function openReport() {
@@ -172,7 +232,18 @@ function closeReport() {
 // Función para toggle favorito
 function toggleFavorito() {
   if (!props.publicacion) return;
-  
+
+  // Evitar marcar favorito en publicaciones propias
+  try {
+    const ownerId = props.publicacion.vendedor?.user?.id ?? null;
+    if (ownerId && props.currentUserId && ownerId === props.currentUserId) {
+      alert('No puedes marcar tu propia publicación como favorita');
+      return;
+    }
+  } catch (e) {
+    // ignore and continue
+  }
+
   isLoadingFavorite.value = true;
   router.post(route('favoritos.toggle', props.publicacion.id), {}, {
     onSuccess: () => {
@@ -217,7 +288,9 @@ onBeforeUnmount(() => {
       <p v-if="props.subtitle" class="subtitle">{{ props.subtitle }}</p> <!-- Subtítulo -->
     </div>
     <!-- Botón Editar solo si es propietario -->
-    <button v-if="isOwner" @click.stop="doEdit" class="edit-button" title="Editar publicación">✏️</button>
+      <button v-if="isOwner" @click.stop="doEdit" class="edit-button" title="Editar publicación">✏️</button>
+      <!-- Botón para quitar borrador (activar) visible sólo si es borrador -->
+      <button v-if="isOwner && props.estado === 'borrador'" @click.stop="quitarBorrador" class="edit-button" title="Quitar borrador" style="right:60px; background:#10b981">✔️</button>
   </button>
 
   <!-- El modal fue removido: la tarjeta navega a la página de la publicación completa -->

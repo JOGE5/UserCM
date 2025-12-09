@@ -1,36 +1,53 @@
     <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { router } from '@inertiajs/vue3';
+import axios from 'axios';
 
-defineProps({
-    chat: Object,
+const props = defineProps({
+  chat: Object,
 });
+
+// Exponer `chat` como variable local para usar en el setup
+const chat = props.chat;
 
 const newMessage = ref('');
 const messagesEnd = ref(null);
+const processing = ref(false);
+
+// Copia reactiva de los mensajes para poder mutarlos localmente
+const messages = ref(chat.messages && Array.isArray(chat.messages) ? [...chat.messages] : []);
 
 const sendMessage = () => {
     if (!newMessage.value.trim()) return;
 
-    fetch(`/chats/${chat.id}/messages`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ contenido: newMessage.value })
-    })
-    .then(response => response.json())
-    .then(data => {
-        chat.messages.push(data);
-        newMessage.value = '';
-        scrollToBottom();
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al enviar el mensaje.');
-    });
+    processing.value = true;
+    axios.post(`/chats/${chat.id}/messages`, { contenido: newMessage.value })
+        .then(response => {
+            const data = response.data;
+            // Añadir al array local de mensajes
+            messages.value.push(data);
+            newMessage.value = '';
+            scrollToBottom();
+        })
+        .catch(error => {
+            console.error('Error enviando mensaje:', error);
+            if (error.response && error.response.data) {
+                try {
+                    const msg = typeof error.response.data === 'object' ? Object.values(error.response.data).flat().join('\n') : String(error.response.data);
+                    alert('Error al enviar el mensaje:\n' + msg);
+                } catch (e) {
+                    alert('Error al enviar el mensaje.');
+                }
+            } else if (error.message) {
+                alert('Error al enviar el mensaje: ' + error.message);
+            } else {
+                alert('Error al enviar el mensaje.');
+            }
+        })
+        .finally(() => {
+            processing.value = false;
+        });
 };
 
 const scrollToBottom = () => {
@@ -42,6 +59,38 @@ const scrollToBottom = () => {
 // Scroll al final al montar
 nextTick(() => {
     scrollToBottom();
+});
+
+onMounted(() => {
+  // Suscribirse a canal Echo si está disponible
+  try {
+  console.log('Mensajes/Show mounted - chat prop:', chat)
+  console.log('Mensajes/Show initial messages length:', messages.value.length)
+      if (window.Echo) {
+      window.Echo.private(`chat.${chat.id}`)
+        .listen('MessageSent', (e) => {
+          // Evitar duplicados: si ya existe el mensaje, no añadir
+          const exists = messages.value.some(m => m.id === e.message.id);
+          if (!exists) {
+            messages.value.push(e.message);
+            scrollToBottom();
+          }
+        });
+    } else {
+      console.warn('Echo no está configurado. Habilita Laravel Echo + Pusher/laravel-websockets para mensajes en tiempo real.');
+    }
+  } catch (e) {
+    console.error('Error suscribiéndose al canal Echo:', e);
+  }
+});
+
+onBeforeUnmount(() => {
+  try {
+    if (window.Echo) {
+      try { window.Echo.leave(`chat.${chat.id}`); } catch (e) {}
+      try { window.Echo.leaveChannel(`chat.${chat.id}`); } catch (e) {}
+    }
+  } catch (e) {}
 });
 </script>
 
@@ -71,8 +120,8 @@ nextTick(() => {
 
                         <!-- Mensajes -->
                         <div class="p-4 mb-4 overflow-y-auto border rounded h-96 bg-gray-50">
-                            <div v-if="chat.messages && chat.messages.length > 0">
-                                <div v-for="message in chat.messages" :key="message.id" class="mb-3">
+                          <div v-if="messages && messages.length > 0">
+                            <div v-for="message in messages" :key="message.id" class="mb-3">
                                     <div class="flex items-start space-x-2">
                                         <div class="flex-shrink-0">
                                             <div class="flex items-center justify-center w-8 h-8 text-sm font-medium text-white bg-blue-500 rounded-full">
@@ -195,6 +244,8 @@ nextTick(() => {
                                   </div>
                                   <button
                                     @click="sendMessage"
+                                    :disabled="processing"
+                                    :class="processing ? 'opacity-60 cursor-not-allowed' : ''"
                                     class="p-2 text-blue-500 transition-colors hover:text-blue-600"
                                     aria-label="Send message"
                                     type="button"

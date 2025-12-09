@@ -18,6 +18,11 @@
               <!-- Panel derecho: info y acciones (mantiene funcionalidades del modal) -->
               <div class="col-span-1">
                 <div class="space-y-4">
+                  <!-- DEBUG: mostrar valor crudo de Imagen_Publicacion -->
+                  <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                    <strong>DEBUG Imagen_Publicacion:</strong>
+                    <pre style="white-space:pre-wrap;">{{ publicacion.Imagen_Publicacion }}</pre>
+                  </div>
                   <div>
                     <div class="text-sm text-gray-500">Publicado por: {{ publicacion.vendedor?.user?.name || 'Vendedor' }}</div>
                     <div class="text-2xl font-bold text-gray-900 mt-2">{{ formatPrice(publicacion.Precio_Publicacion) }}</div>
@@ -69,6 +74,8 @@
                       </button>
                       <button @click="handleReport" class="w-full bg-yellow-100 hover:bg-yellow-200 border border-yellow-300 text-yellow-800 py-2 rounded font-semibold transition">⚠️ Reportar</button>
                       <button @click="sharePublication" class="w-full bg-gray-100 hover:bg-gray-200 border border-gray-300 py-2 rounded font-semibold transition">🔗 Compartir</button>
+                      <!-- Botón para quitar borrador si es propietario y está en estado 'borrador' -->
+                      <button v-if="isOwner && props.publicacion.estado === 'borrador'" @click="quitarBorrador" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold transition">📤 Quitar borrador</button>
                     </div>
 
                   <div class="mt-4 border-t pt-4">
@@ -95,7 +102,8 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { Link } from '@inertiajs/vue3'
 import { usePage, router } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
   // Inertia will provide 'publicacion' prop from the controller
@@ -120,15 +128,42 @@ const isFavorite = ref(false)
 
 const getImageUrl = (imageData) => {
   try {
-    const images = JSON.parse(imageData)
-    if (Array.isArray(images) && images.length > 0) {
-      return `/storage/${images[0]}`
+    if (!imageData) return '/images/placeholder.png'
+
+    let first = null
+
+    // Si viene como JSON array en string, parsear
+    if (typeof imageData === 'string') {
+      try {
+        const parsed = JSON.parse(imageData)
+        if (Array.isArray(parsed) && parsed.length) first = parsed[0]
+        else first = imageData
+      } catch (e) {
+        first = imageData
+      }
+    } else if (Array.isArray(imageData)) {
+      first = imageData[0]
+    } else {
+      first = String(imageData)
     }
+
+    // Extraer nombre de archivo y usar la ruta pública que sirve desde routes/web.php
+    const parts = String(first).split('/')
+    const filename = parts[parts.length - 1]
+    if (!filename) return '/images/placeholder.png'
+    return `/files/publicaciones/${filename}`
   } catch (e) {
-    return `/storage/${imageData}`
+    return '/images/placeholder.png'
   }
-  return '/images/placeholder.png'
 }
+
+onMounted(() => {
+  try {
+    console.log('Publicaciones/Show mounted - Imagen_Publicacion:', props.publicacion?.Imagen_Publicacion)
+  } catch (e) {
+    console.error('Error logging Imagen_Publicacion', e)
+  }
+})
 
 const formatPrice = (price) => {
   return `$${parseFloat(price).toLocaleString('es-ES', { minimumFractionDigits: 2 })}`
@@ -162,42 +197,69 @@ const handleContact = async () => {
   }
 
   try {
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content
-    const resp = await fetch('/chats/private', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': csrf || '',
-      },
-      body: JSON.stringify({ seller_id: sellerId }),
-    })
+    // Usar axios para aprovechar headers por defecto (CSRF ya configurado en bootstrap.js)
+    const response = await axios.post('/chats/private', { seller_id: sellerId })
 
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}))
-      alert('No se pudo iniciar el chat: ' + (err.message || resp.statusText))
+    if (!response || !response.data) {
+      alert('No se pudo iniciar el chat: respuesta vacía')
       return
     }
 
-    const data = await resp.json()
-    const chatId = data.chat_id
+    const chatId = response.data.chat_id
     if (chatId) {
-      // navegar usando el router de Inertia disponible en @inertiajs/vue3
+      // navegar usando Inertia. Usar opciones de callbacks para evitar estados inconsistentes
       let url = `/chats/${chatId}`
       try {
         if (typeof route === 'function') url = route('chats.show', chatId)
-      } catch (e) {}
-      router.visit(url)
+      } catch (e) {
+        // ignore
+      }
+
+      try {
+        router.visit(url, {
+          onStart: () => {
+            // opcional: mostrar indicador visual si hace falta
+            console.log('Iniciando navegación a chat', chatId)
+          },
+          onError: (errors) => {
+            console.error('Error en visit:', errors)
+            alert('No se pudo abrir el chat (error en la navegación).')
+          },
+          onFinish: () => {
+            console.log('Navegación a chat finalizada')
+          }
+        })
+      } catch (visitErr) {
+        console.error('router.visit error', visitErr)
+        // fallback a navegación completa
+        window.location.href = url
+      }
     } else {
       alert('Chat creado pero no se recibió ID')
     }
-  } catch (e) {
-    console.error('contact error', e)
-    alert('Error al iniciar el chat')
+  } catch (err) {
+    console.error('contact error', err)
+    // intento de obtener mensaje de respuesta útil
+    if (err.response && err.response.data) {
+      const msg = err.response.data.message || JSON.stringify(err.response.data)
+      alert('No se pudo iniciar el chat: ' + msg)
+    } else if (err.message) {
+      alert('Error al iniciar el chat: ' + err.message)
+    } else {
+      alert('Error al iniciar el chat')
+    }
   }
 }
 
 const toggleFavorite = () => {
   if (!props.publicacion || !props.publicacion.id) return
+
+  // No permitir favoritos en publicaciones propias
+  if (isOwner.value) {
+    alert('No puedes marcar tu propia publicación como favorita')
+    return
+  }
+
   isFavorite.value = !isFavorite.value
   // enviar al backend
   try {
@@ -241,10 +303,25 @@ const submitRating = async () => {
     const response = await fetch(`/api/reputacion/${userId}`, {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken || '' },
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken || '' },
       body: JSON.stringify({ Puntuacion: selectedRating.value }),
     })
-    if (response.ok) {
+
+    const contentType = response.headers.get('content-type') || ''
+    if (!response.ok) {
+      if (contentType.includes('application/json')) {
+        const err = await response.json()
+        console.error('Error response:', err)
+        alert('Error: ' + (err.error || err.message || 'No se pudo enviar la calificación'))
+      } else {
+        const text = await response.text()
+        console.error('Error non-json response:', text)
+        alert('Error al enviar la calificación (respuesta no JSON). Revisa la consola.')
+      }
+      return
+    }
+
+    if (contentType.includes('application/json')) {
       const data = await response.json()
       // actualizar estado local si el backend devuelve nueva info
       if (data.reputacion_estado) {
@@ -255,15 +332,39 @@ const submitRating = async () => {
       alert('Calificación enviada')
       selectedRating.value = 0
     } else {
-      const err = await response.json()
-      console.error('Error response:', err)
-      alert('Error: ' + (err.error || err.message || 'No se pudo enviar la calificación'))
+      const text = await response.text()
+      console.warn('Success but non-json response:', text)
+      alert('Calificación enviada (respuesta inesperada).')
     }
   } catch (e) {
     console.error('Catch error:', e)
     alert('Error de conexión: ' + e.message)
   } finally {
     ratingSubmitting.value = false
+  }
+}
+
+// Función para quitar borrador (activar publicación)
+const quitarBorrador = async () => {
+  if (!props.publicacion || !props.publicacion.id) return
+  if (!confirm('¿Deseas publicar esta publicación y quitarla de borradores?')) return
+
+  try {
+    let url = `/publicaciones/${props.publicacion.id}/active`
+    try { if (typeof route === 'function') url = route('publicaciones.active', props.publicacion.id) } catch (e) {}
+
+    // Usar fetch/inertia via router.patch
+    router.patch(url, {}, {
+      onStart: () => console.log('quitarBorrador start', url),
+      onSuccess: () => {
+        try { if (typeof route === 'function') { router.visit(route('dashboard')) } else { router.visit('/dashboard') } } catch (e) { window.location.href = '/dashboard' }
+      },
+      onError: (err) => { console.error('quitarBorrador error', err); alert('No se pudo activar la publicación.') }
+    })
+
+  } catch (e) {
+    console.error('quitarBorrador unexpected', e)
+    alert('Ocurrió un error inesperado')
   }
 }
 </script>
