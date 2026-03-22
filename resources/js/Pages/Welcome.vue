@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Autoplay, EffectFade } from 'swiper/modules';
 import 'swiper/swiper-bundle.css';
 import { ShoppingBag, BookOpen, Users, Zap, Shield, ChevronRight, Search, Sparkles } from 'lucide-vue-next';
+import EmojiParticles from '@/Components/EmojiParticles.vue';
 
 defineProps({
     canLogin: { type: Boolean },
@@ -20,6 +21,9 @@ let swiperInstance = null;
 const showIntro = ref(true);
 const scrollY = ref(0);
 const isScrolledNav = ref(false);
+const sedesSection = ref(null);
+const isHoverSede1 = ref(false);
+const isHoverSede2 = ref(false);
 
 const handleScroll = () => {
     scrollY.value = window.scrollY;
@@ -44,6 +48,26 @@ const videos = [
         poster: '/images/posters/poster3.jpg',
         title: 'Intercambio Seguro',
         description: 'Todas las transacciones protegidas con reputación y validación entre estudiantes.'
+    },
+    {
+        src: '/videos/Clip4.mp4',
+        title: 'Conexión Estudiantil',
+        description: 'Expande tu red de contactos y colabora con compañeros de diversas facultades.'
+    },
+    {
+        src: '/videos/Clip5.mp4',
+        title: 'Material Accesible',
+        description: 'Consigue apuntes, libros y herramientas académicas al alcance de tu bolsillo.'
+    },
+    {
+        src: '/videos/Coder.mp4',
+        title: 'Impulso Tecnológico',
+        description: 'Desarrolla tus proyectos con el equipo adecuado. Compra y vende laptops o accesorios.'
+    },
+    {
+        src: '/videos/Waza21.mp4',
+        title: 'Comunidad Dinámica',
+        description: 'Simplifica tu vida en el campus descubriendo oportunidades únicas cada día.'
     }
 ];
 
@@ -87,6 +111,18 @@ onMounted(() => {
     }, 3300);
 
     window.addEventListener('scroll', handleScroll);
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+            }
+        });
+    }, { threshold: 0.2 });
+
+    if (sedesSection.value) {
+        observer.observe(sedesSection.value);
+    }
 });
 
 onUnmounted(() => {
@@ -110,48 +146,57 @@ const features = [
     <Head title="Bienvenido | Campus Market" />
 
     <!-- Intro Premium Oscuro -->
-    <div v-if="showIntro" class="fixed inset-0 z-[100] flex flex-col items-center justify-center transition-opacity ease-in-out duration-1000 bg-black">
-        <div class="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat opacity-20 bg-[url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop')] mix-blend-screen"></div>
-        <div class="relative z-10 flex flex-col items-center">
-            <div class="flex items-center justify-center mb-10 w-28 h-28 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 shadow-[0_0_80px_rgba(139,92,246,0.3)] animate-pulse-logo">
-                <Sparkles class="w-12 h-12 text-white/90" />
+    <Transition name="intro-fade">
+        <div v-if="showIntro" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black overflow-hidden">
+            <!-- Capa de iluminación para efecto de transición -->
+            <div class="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.7)_0%,transparent_60%)] opacity-0 intro-light-overlay"></div>
+
+            <div class="relative z-10 flex flex-col items-center">
+                <div class="flex items-center justify-center gap-6 mb-10 md:gap-12">
+                    <div class="flex items-center justify-center w-40 h-40 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 shadow-[0_0_80px_rgba(139,92,246,0.3)] animate-pulse-logo overflow-hidden">
+                        <img src="/images/posters/logo-team.png" alt="Team Logo" class="object-cover w-full h-full p-2" />
+                    </div>
+                    <div class="flex items-center justify-center w-40 h-40 bg-white/5 backdrop-blur-2xl rounded-full border border-white/10 shadow-[0_0_80px_rgba(56,189,248,0.3)] animate-pulse-logo overflow-hidden" style="animation-delay: 0.5s;">
+                        <img src="/images/posters/university-logo.png" alt="University Logo" class="object-cover w-full h-full scale-[1.10]" />
+                    </div>
+                </div>
+                <h1 class="mb-3 text-5xl font-extrabold tracking-tight text-transparent opacity-0 bg-clip-text bg-gradient-to-br from-white via-gray-300 to-gray-500 animate-slide-up" style="animation-fill-mode: forwards; animation-delay: 0.2s;">
+                    Campus Market
+                </h1>
+                <p class="text-xl font-light tracking-wide text-gray-400 opacity-0 animate-slide-up" style="animation-fill-mode: forwards; animation-delay: 0.5s;">
+                    Tu ecosistema. Elevado.
+                </p>
             </div>
-            <h1 class="mb-3 text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-gray-300 to-gray-500 animate-slide-up opacity-0" style="animation-fill-mode: forwards; animation-delay: 0.2s;">
-                Campus Market
-            </h1>
-            <p class="text-xl font-light tracking-wide text-gray-400 animate-slide-up opacity-0" style="animation-fill-mode: forwards; animation-delay: 0.5s;">
-                Tu ecosistema. Elevado.
-            </p>
         </div>
-    </div>
+    </Transition>
 
     <!-- Barra de Navegación Glassmorphism Premium -->
-    <nav :class="[ 
+    <nav :class="[
         'fixed top-0 inset-x-0 z-50 transition-all duration-500 ease-out border-b py-4',
-        isScrolledNav ? 'bg-black/80 backdrop-blur-xl border-white/10 shadow-2xl' : 'bg-gradient-to-b from-black/80 to-transparent border-transparent py-6'
+        isScrolledNav ? 'bg-black/80 backdrop-blur-xl border-white/10 shadow-2xl' : 'bg-gradient-to-b from-translusent/80 to-transparent border-transparent py-6'
     ]">
-        <div class="container px-6 mx-auto lg:max-w-7xl flex items-center justify-between">
+        <div class="container flex items-center justify-between px-6 mx-auto lg:max-w-7xl">
             <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.4)]">
-                    <Sparkles class="w-5 h-5 text-white" />
+                <div class="flex items-center justify-center w-20 h-20 bg-white/10 rounded-xl overflow-hidden shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                    <img src="/images/posters/logo-team.png" alt="Logo" class="object-cover w-full h-full p-1" />
                 </div>
                 <span class="text-xl font-bold tracking-tighter text-white">
                     Campus<span class="text-indigo-400">Market</span>
                 </span>
             </div>
 
-            <div v-if="canLogin" class="flex gap-4 items-center">
+            <div v-if="canLogin" class="flex items-center gap-4">
                 <Link
                     v-if="$page.props.auth.user"
                     :href="route('dashboard')"
                     class="px-6 py-2.5 text-sm font-semibold tracking-wide text-white transition-all rounded-full bg-white/10 hover:bg-white/20 border border-white/5 backdrop-blur-md"
                 >
-                    Mi Panel 
+                    Mi Panel
                 </Link>
                 <template v-else>
                     <Link
                         :href="route('login')"
-                        class="hidden sm:block px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:text-white"
+                        class="hidden px-4 py-2 text-sm font-medium text-gray-300 transition-colors sm:block hover:text-white"
                     >
                         Ingresar
                     </Link>
@@ -174,7 +219,7 @@ const features = [
     <!-- Sección Hero de Alto Impacto -->
     <Transition name="smooth-reveal">
         <div v-show="!showIntro" class="relative h-screen min-h-[700px] overflow-hidden bg-black">
-            
+
             <Swiper
                 :modules="modules"
                 :slides-per-view="1"
@@ -203,29 +248,29 @@ const features = [
                         <!-- Sombras ultra HD superpuestas en el video para texto legible -->
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/30"></div>
                         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]"></div>
-                        
+
                         <!-- Contenido Hero Centrado -->
                         <div class="absolute inset-0 flex items-center justify-center p-6">
-                            <div class="max-w-4xl text-center z-10" :style="{ transform: `translateY(${scrollY * 0.15}px)` }">
+                            <div class="z-10 max-w-4xl text-center" :style="{ transform: `translateY(${scrollY * 0.15}px)` }">
                                 <div class="inline-flex items-center gap-2 px-4 py-1.5 mb-8 text-xs font-semibold tracking-widest text-indigo-300 uppercase bg-indigo-500/10 border border-indigo-500/20 rounded-full backdrop-blur-md">
                                     <span class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></span>
                                     La Siguiente Generación
                                 </div>
-                                <h2 class="mb-6 text-6xl font-black tracking-tighter text-white md:text-8xl drop-shadow-2xl">
+                                <h2 class="mb-6 text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300 md:text-8xl drop-shadow-2xl">
                                     {{ video.title }}
                                 </h2>
                                 <p class="max-w-2xl mx-auto mb-12 text-xl font-light leading-relaxed text-gray-300 md:text-2xl">
                                     {{ video.description }}
                                 </p>
                                 <div class="flex flex-col items-center justify-center gap-5 sm:flex-row">
-                                    <a href="#explorar" class="group relative flex h-14 items-center justify-center gap-2 overflow-hidden rounded-full bg-white px-8 font-bold text-black transition-transform hover:scale-105">
+                                    <a href="#explorar" class="relative flex items-center justify-center gap-2 px-8 overflow-hidden font-bold text-black transition-transform bg-white rounded-full group h-14 hover:scale-105">
                                         Explorar Entorno
                                         <Search class="w-5 h-5 transition-transform group-hover:rotate-12" />
                                     </a>
                                     <Link
                                         v-if="!$page.props.auth.user"
                                         :href="route('register')"
-                                        class="flex h-14 items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-8 font-semibold text-white backdrop-blur-lg transition-all hover:bg-white/10 hover:border-white/40"
+                                        class="flex items-center justify-center gap-2 px-8 font-semibold text-white transition-all border rounded-full h-14 border-white/20 bg-white/5 backdrop-blur-lg hover:bg-white/10 hover:border-white/40"
                                     >
                                         Comenzar Ahora
                                     </Link>
@@ -237,14 +282,14 @@ const features = [
             </Swiper>
 
             <!-- Barra inferior e indicadores de Slider -->
-            <div class="absolute inset-x-0 bottom-0 z-30 h-32 bg-gradient-to-t from-black to-transparent pointer-events-none"></div>
-            <div class="absolute inset-x-0 bottom-10 z-40 flex flex-col items-center justify-center gap-6">
+            <div class="absolute inset-x-0 bottom-0 z-30 h-32 pointer-events-none bg-gradient-to-t from-black to-transparent"></div>
+            <div class="absolute inset-x-0 z-40 flex flex-col items-center justify-center gap-6 bottom-10">
                 <div class="flex gap-4">
                     <button
                         v-for="(_, idx) in videos"
                         :key="idx"
                         @click="swiperInstance?.slideTo(idx)"
-                        :class="[   
+                        :class="[
                             'h-1 rounded-full transition-all duration-500',
                             currentSlide === idx ? 'w-16 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]' : 'w-6 bg-white/20 hover:bg-white/40'
                         ]"
@@ -255,17 +300,17 @@ const features = [
     </Transition>
 
     <!-- Sección Oscura Principal (Características) -->
-    <div id="explorar" class="relative z-10 bg-black text-white">
+    <div id="explorar" class="relative z-10 text-white bg-black">
         <!-- Textura / Grilla de fondo -->
         <div class="absolute inset-0 z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik02MCAwaC0yVjYwSDYweiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjAyIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz4KPC9zdmc+')] opacity-50"></div>
         <div class="absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b from-black to-transparent pointer-events-none"></div>
-        
+
         <div class="relative z-10 py-32 sm:py-40">
             <div class="px-6 mx-auto max-w-7xl lg:px-8">
-                
+
                 <div class="max-w-3xl mx-auto text-center">
                     <h2 class="text-sm font-semibold tracking-widest text-indigo-400 uppercase">Perfección Tecnológica</h2>
-                    <p class="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl text-gradient bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-500">
+                    <p class="mt-4 text-4xl font-black tracking-tight text-transparent text-white sm:text-5xl lg:text-6xl text-gradient bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-500">
                         Diseñado para tu éxito.
                     </p>
                     <p class="mt-6 text-lg tracking-wide text-gray-400">
@@ -275,20 +320,20 @@ const features = [
 
                 <div class="mx-auto mt-20 max-w-7xl sm:mt-24 lg:mt-32">
                     <dl class="grid max-w-xl grid-cols-1 gap-8 mx-auto lg:max-w-none lg:grid-cols-4">
-                        <div v-for="feature in features" :key="feature.name" 
+                        <div v-for="feature in features" :key="feature.name"
                             class="group relative flex flex-col items-center p-8 text-center transition-all duration-500 bg-white/5 border border-white/5 rounded-[2rem] hover:bg-white/10 hover:border-white/20 hover:-translate-y-2 overflow-hidden backdrop-blur-sm">
                             <!-- Destello de fondo en hover -->
-                            <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
-                            
-                            <dt class="flex flex-col items-center gap-y-5 z-10">
-                                <div :class="['flex items-center justify-center w-20 h-20 rounded-[1.5rem] border transition-transform group-hover:scale-110 duration-500', feature.color]">
-                                    <component :is="feature.icon" class="w-10 h-10" aria-hidden="true" />
+                            <div class="absolute inset-0 transition-opacity duration-500 opacity-0 bg-gradient-to-br from-white/5 to-transparent group-hover:opacity-100"></div>
+
+                            <dt class="z-10 flex flex-col items-center gap-y-5">
+                                <div :class="['flex items-center justify-center w-20 h-20 rounded-[1.5rem] border transition-transform group-hover:scale-110 duration-500 shadow-lg', feature.color]">
+                                    <component :is="feature.icon" class="w-10 h-10 animate-float" aria-hidden="true" />
                                 </div>
-                                <h3 class="text-2xl font-bold text-white tracking-tight">
+                                <h3 class="text-2xl font-bold tracking-tight text-white">
                                     {{ feature.name }}
                                 </h3>
                             </dt>
-                            <dd class="mt-4 text-base leading-relaxed text-gray-400 z-10">
+                            <dd class="z-10 mt-4 text-base leading-relaxed text-gray-400">
                                 {{ feature.description }}
                             </dd>
                         </div>
@@ -298,17 +343,87 @@ const features = [
             </div>
         </div>
 
+        <!-- Sección Sedes (Animación Lateral y Stickers) -->
+        <div ref="sedesSection" class="relative z-10 py-32 overflow-hidden bg-black border-t border-white/5 reveal-section">
+            <!-- Background Glows -->
+            <div class="absolute top-1/2 left-0 -translate-y-1/2 w-[300px] h-[300px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+            <div class="absolute top-1/2 right-0 -translate-y-1/2 w-[300px] h-[300px] bg-fuchsia-500/10 blur-[120px] rounded-full pointer-events-none"></div>
+            
+            <div class="relative z-10 px-6 mx-auto max-w-7xl lg:px-8">
+                <div class="mb-20 text-center slide-element slide-down">
+                    <h2 class="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400 sm:text-6xl">
+                        Nuestra Presencia 🎓
+                    </h2>
+                    <p class="mt-6 text-xl text-gray-400">
+                        El Campus Market cuenta con entregas e intercambios cerca de ti. 😎✨
+                    </p>
+                </div>
+
+                <div class="grid items-center grid-cols-1 gap-12 md:grid-cols-2 lg:gap-20">
+                    <!-- Sede El Alto (Ingresa por izquierda) -->
+                    <div class="flex flex-col items-center slide-element slide-left">
+                        <div 
+                            class="relative w-full overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(99,102,241,0.15)] group aspect-[4/3] bg-white/5"
+                            @mouseenter="isHoverSede1 = true"
+                            @mouseleave="isHoverSede1 = false"
+                        >
+                            <img src="/images/posters/SedeElAlto.jpg" alt="Sede El Alto" class="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-110" />
+                            <!-- Un degradado sólido que mantiene el texto altamente legible -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent"></div>
+                            
+                            <!-- Emojis flotantes interactivos desde el componente -->
+                            <EmojiParticles :active="isHoverSede1" :maxParticles="12" />
+
+                            <!-- Texto principal encima de los stickers (z-10) -->
+                            <div class="absolute z-10 inset-x-0 bottom-0 p-10 transform transition-transform duration-500 translate-y-4 group-hover:translate-y-0 text-shadow-md">
+                                <span class="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-bold border rounded-full text-indigo-300 bg-indigo-500/20 border-indigo-500/30 backdrop-blur-md">
+                                    📍 Disponible
+                                </span>
+                                <h3 class="text-4xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">Sede El Alto</h3>
+                                <p class="mt-3 text-lg font-medium text-gray-200 transition-opacity duration-500 opacity-0 group-hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">Expande tu campus, conecta con nuestra mayor comunidad. 🔥</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sede La Paz (Ingresa por derecha) -->
+                    <div class="flex flex-col items-center slide-element slide-right">
+                        <div 
+                            class="relative w-full overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(217,70,239,0.15)] group aspect-[4/3] bg-white/5"
+                            @mouseenter="isHoverSede2 = true"
+                            @mouseleave="isHoverSede2 = false"
+                        >
+                            <img src="/images/posters/SedeLaPaz.jpg" alt="Sede La Paz" class="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-110" />
+                            <!-- Degradado fuerte y estático para lectura -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent"></div>
+                            
+                            <!-- Emojis flotantes interactivos desde el componente -->
+                            <EmojiParticles :active="isHoverSede2" :maxParticles="12" />
+
+                            <!-- Textos Inferiores Legibles (z-10) -->
+                            <div class="absolute z-10 inset-x-0 bottom-0 p-10 transform transition-transform duration-500 translate-y-4 group-hover:translate-y-0">
+                                <span class="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-bold border rounded-full text-fuchsia-300 bg-fuchsia-500/20 border-fuchsia-500/30 backdrop-blur-md">
+                                    📍 Disponible
+                                </span>
+                                <h3 class="text-4xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">Sede La Paz</h3>
+                                <p class="mt-3 text-lg font-medium text-gray-200 transition-opacity duration-500 opacity-0 group-hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">El centro tecnológico del conocimiento paceño te espera. 📈</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Banner de Llamada a la Acción (CTA) Espectacular -->
         <div class="relative py-24 overflow-hidden border-t sm:py-32 border-white/10">
-            <div class="absolute inset-0 -z-10 bg-black"></div>
+            <div class="absolute inset-0 bg-black -z-10"></div>
             <!-- Luces Aurora -->
             <div class="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/30 rounded-full blur-[120px] mix-blend-screen opacity-50"></div>
             <div class="absolute -z-10 top-1/2 left-1/4 -translate-y-1/2 w-[400px] h-[400px] bg-purple-600/20 rounded-full blur-[100px] mix-blend-screen opacity-40"></div>
-            
-            <div class="px-6 mx-auto max-w-7xl lg:px-8 relative z-10">
+
+            <div class="relative z-10 px-6 mx-auto max-w-7xl lg:px-8">
                 <div class="max-w-3xl mx-auto text-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-[3rem] p-12 lg:p-20 shadow-[0_0_100px_rgba(0,0,0,0.5)]">
                     <h2 class="text-4xl font-black tracking-tighter text-white sm:text-6xl">
-                        Es hora de <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">evolucionar</span>.
+                        Es hora de <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">evolucionar</span>.
                     </h2>
                     <p class="mt-6 text-xl text-gray-300">
                         Súmate a la experiencia inmersiva del mercado estudiantil definitivo. Rápido, seguro y diseñado con pasión.
@@ -317,7 +432,7 @@ const features = [
                         <Link :href="route('register')" class="w-full sm:w-auto px-10 py-4 text-lg font-bold text-black transition-all bg-white rounded-full hover:bg-gray-200 hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
                             Crear Cuenta Gratis
                         </Link>
-                        <Link :href="route('login')" class="group flex items-center justify-center gap-2 w-full sm:w-auto px-10 py-4 text-lg font-bold text-white transition-all bg-white/5 border border-white/10 rounded-full hover:bg-white/10">
+                        <Link :href="route('login')" class="flex items-center justify-center w-full gap-2 px-10 py-4 text-lg font-bold text-white transition-all border rounded-full group sm:w-auto bg-white/5 border-white/10 hover:bg-white/10">
                             Iniciar Sesión
                             <ChevronRight class="w-5 h-5 transition-transform group-hover:translate-x-1" />
                         </Link>
@@ -327,19 +442,21 @@ const features = [
         </div>
 
         <!-- Footer Dark Premium -->
-        <footer class="border-t border-white/10 bg-black">
+        <footer class="bg-black border-t border-white/10">
             <div class="px-6 py-16 mx-auto max-w-7xl md:flex md:items-center md:justify-between lg:px-8">
                 <div class="flex justify-center md:justify-start">
                     <div class="flex items-center gap-3">
-                        <Sparkles class="w-6 h-6 text-indigo-500" />
+                        <div class="flex items-center justify-center w-40 h-40 overflow-hidden rounded-lg bg-white/10">
+                            <img src="/images/posters/logo-team.png" alt="Logo" class="object-cover w-full h-full p-1" />
+                        </div>
                         <span class="text-xl font-bold tracking-tighter text-white">CampusMarket</span>
                     </div>
                 </div>
-                <div class="mt-8 flex flex-col items-center md:items-end md:mt-0">
-                    <p class="text-sm text-gray-500 font-medium">
+                <div class="flex flex-col items-center mt-8 md:items-end md:mt-0">
+                    <p class="text-sm font-medium text-gray-500">
                         &copy; {{ new Date().getFullYear() }} Proyectos Universitarios. Todos los derechos reservados.
                     </p>
-                    <div class="flex items-center gap-4 mt-3 text-xs font-mono text-gray-600">
+                    <div class="flex items-center gap-4 mt-3 font-mono text-xs text-gray-600">
                         <span>Laravel v{{ laravelVersion }}</span>
                         <span class="w-1 h-1 bg-gray-700 rounded-full"></span>
                         <span>PHP v{{ phpVersion }}</span>
@@ -367,6 +484,17 @@ body {
 .smooth-reveal-enter-active, .smooth-reveal-leave-active {
     transition: filter 1s ease-in-out, opacity 1s ease-in-out;
 }
+.intro-fade-leave-active {
+    transition: opacity 1.5s ease-in-out, filter 1.5s ease-in-out;
+}
+.intro-fade-leave-active .intro-light-overlay {
+    transition: opacity 1.5s ease-in-out;
+    opacity: 1;
+}
+.intro-fade-leave-to {
+    opacity: 0;
+    filter: brightness(3) drop-shadow(0 0 100px white);
+}
 .smooth-reveal-enter-from, .smooth-reveal-leave-to {
     opacity: 0;
     filter: brightness(0);
@@ -386,11 +514,39 @@ body {
     100% { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+    animation: float 4s ease-in-out infinite;
+}
+
 .animate-pulse-logo {
     animation: pulse-logo 3s ease-in-out infinite;
 }
 
 .animate-slide-up {
     animation: slide-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scroll Reveal Animations */
+.reveal-section .slide-element {
+    opacity: 0;
+    transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-section .slide-left {
+    transform: translateX(-150px) rotate(-2deg);
+}
+.reveal-section .slide-right {
+    transform: translateX(150px) rotate(2deg);
+}
+.reveal-section .slide-down {
+    transform: translateY(-50px);
+}
+.reveal-section.is-visible .slide-element {
+    opacity: 1;
+    transform: translate(0) rotate(0deg);
 }
 </style>
