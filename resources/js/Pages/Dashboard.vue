@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Link, router } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import CardPubli from '@/Components/CardPubli.vue';
-import FunnelIcon from '@/Components/Icons/FunnelIcon.vue';
+import { Filter, Search, Plus, ArchiveX } from 'lucide-vue-next';
 
 const props = defineProps({
     publicaciones: Array,
@@ -12,13 +12,11 @@ const props = defineProps({
     userEstado: String,
 });
 
-
-
+const page = usePage();
 
 const selectedCategory = ref(null);
 const isDropdownOpen = ref(false);
 
-// Extraer categorías únicas de las publicaciones
 const categories = computed(() => {
     if (!props.publicaciones || props.publicaciones.length === 0) return [];
     const unique = new Map();
@@ -32,11 +30,10 @@ const categories = computed(() => {
     return Array.from(unique, ([id, name]) => ({ Cod_Categoria: id, Nombre_Categoria: name }));
 });
 
-// Filtrar publicaciones según categoría seleccionada
 const searchTerm = ref("");
 
 const filteredPublicaciones = computed(() => {
-    let pubs = props.publicaciones;
+    let pubs = props.publicaciones || [];
     if (selectedCategory.value) {
         pubs = pubs.filter(pub => pub.Cod_Categoria === selectedCategory.value);
     }
@@ -48,44 +45,34 @@ const filteredPublicaciones = computed(() => {
 });
 
 function handleEdit(id) {
-    // Intenta navegar a la ruta de edición si existe; en caso contrario, muestra consola
     try {
-        // si Ziggy `route` está disponible
         if (typeof route === 'function') {
             router.visit(route('publicaciones.edit', id));
         } else {
             router.visit(`/publicaciones/${id}/edit`);
         }
     } catch (e) {
-        console.log('Editar publicación:', id, e);
-        alert('Navegar a edición: /publicaciones/' + id + '/edit (si la ruta existe).');
+        console.error('Editar publicación:', e);
     }
 }
 
 function handleContact(publicationId) {
-    console.log('handleContact called with publicationId:', publicationId);
-    // Buscar la publicación
     const publication = props.publicaciones.find(pub => pub.id === publicationId);
-    console.log('publication found:', publication);
 
     if (!publication || !publication.vendedor) {
         alert('No se pudo encontrar al vendedor.');
         return;
     }
 
-    // Evitar contactar a uno mismo
     try {
         const ownerId = publication.vendedor?.user?.id ?? publication.vendedor?.user_id ?? null;
-        const meId = $page.props?.auth?.user?.id ?? null;
+        const meId = page.props?.auth?.user?.id ?? null;
         if (ownerId && meId && Number(ownerId) === Number(meId)) {
             alert('No puedes contactar a tu propia publicación.');
             return;
         }
-    } catch (e) {
-        // ignore
-    }
+    } catch (e) {}
 
-    // Intentar obtener el teléfono del vendedor en varias rutas posibles
     let sellerPhone = publication.vendedor.Telefono || publication.vendedor.telefono || null;
     if (!sellerPhone && publication.vendedor.user) {
         sellerPhone = publication.vendedor.user.Telefono || publication.vendedor.user.telefono || (publication.vendedor.user.usuarioCampusMarket && publication.vendedor.user.usuarioCampusMarket.Telefono) || null;
@@ -96,24 +83,20 @@ function handleContact(publicationId) {
         return;
     }
 
-    // Número del comprador (usuario autenticado) si está disponible
-    const buyer = $page.props && $page.props.auth && $page.props.auth.user ? $page.props.auth.user : null;
-    const buyerName = buyer ? (buyer.name || '') : '';
-    const buyerPhone = buyer ? (buyer.Telefono || buyer.telefono || (buyer.usuarioCampusMarket && buyer.usuarioCampusMarket.Telefono) || '') : '';
+    const buyer = page.props?.auth?.user || null;
+    const buyerName = buyer?.name || '';
+    const buyerPhone = buyer?.Telefono || buyer?.telefono || buyer?.usuarioCampusMarket?.Telefono || '';
 
-    // Normalizar número: quitar todo lo que no sea dígito
     let normalized = String(sellerPhone).replace(/\D+/g, '');
     if (!normalized) {
         alert('El número de teléfono del vendedor no es válido.');
         return;
     }
 
-    // Construir mensaje prellenado
     const title = publication.Titulo_Publicacion || publication.title || '';
     const message = `Hola, soy ${buyerName}. Estoy interesado en tu publicación "${title}".` + (buyerPhone ? ` Mi teléfono es ${buyerPhone}.` : '');
     const encoded = encodeURIComponent(message);
 
-    // Abrir chat de WhatsApp en nueva pestaña
     const waUrl = `https://wa.me/${normalized}?text=${encoded}`;
     window.open(waUrl, '_blank');
 }
@@ -122,138 +105,154 @@ function handleContact(publicationId) {
 <template>
     <AppLayout title="Inicio">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                    PUBLICACIONES
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <h2 class="text-2xl font-bold tracking-tight text-gray-900">
+                    Mercado Universitario
                 </h2>
 
-                <div class="flex items-center space-x-4">
-                    <!-- Botón Filtro de Categorías -->
-                    <div class="relative">
-                        <button
-                            @click="isDropdownOpen = !isDropdownOpen"
-                            class="flex items-center px-4 py-2 space-x-2 text-white transition bg-gray-600 rounded hover:bg-gray-700"
-                        >
-                            <FunnelIcon class="w-5 h-5" />
-                            <span>Categories</span>
-                        </button>
-
-                        <!-- Desplegable -->
-                        <div
-                            v-if="isDropdownOpen"
-                            class="absolute right-0 z-50 w-48 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg"
-                        >
-                            <div class="p-2">
-                                <button
-                                    @click="selectedCategory = null; isDropdownOpen = false"
-                                    class="block w-full px-4 py-2 text-sm text-left rounded hover:bg-gray-100"
-                                    :class="{ 'bg-blue-100 font-semibold': selectedCategory === null }"
-                                >
-                                    Todas las categorías
-                                </button>
-                                <button
-                                    v-for="cat in categories"
-                                    :key="cat.Cod_Categoria"
-                                    @click="selectedCategory = cat.Cod_Categoria; isDropdownOpen = false"
-                                    class="block w-full px-4 py-2 text-sm text-left rounded hover:bg-gray-100"
-                                    :class="{ 'bg-blue-100 font-semibold': selectedCategory === cat.Cod_Categoria }"
-                                >
-                                    {{ cat.Nombre_Categoria }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <Link :href="route('dashboard.create')" class="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700">
+                <div class="flex items-center gap-3">
+                    <Link 
+                        :href="route('dashboard.create')" 
+                        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition-all bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-500 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 active:scale-95"
+                    >
+                        <Plus class="w-4 h-4" />
                         Crear Publicación
                     </Link>
                 </div>
             </div>
         </template>
 
-        <!-- Sección Mejores Valorados -->
-        <div v-if="props.mejores && props.mejores.length > 0" class="py-8">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <h3 class="text-lg font-bold mb-4">MEJORES VALORADOS</h3>
-                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    <div v-for="pub in props.mejores" :key="pub.id" class="flex justify-center">
-                        <CardPubli
-                            :title="pub.Titulo_Publicacion"
-                            :subtitle="`Bs ${pub.Precio_Publicacion}`"
-                            :description="pub.Descripcion_Publicacion"
-                            :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
-                            :id="pub.id"
-                            :user="pub.vendedor && pub.vendedor.user ? pub.vendedor.user : null"
-                            :currentUserId="$page.props.auth.user.id"
-                            :isOwner="pub.vendedor && pub.vendedor.user_id === $page.props.auth.user.id"
-                            :estado="pub.estado"
-                            :publicacion="pub"
-                            @edit="handleEdit"
-                            @contact="handleContact"
-                        />
+        <!-- Panel de Inhabilitado -->
+        <div v-if="userEstado === 'Inactivo'" class="max-w-7xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center p-4 border-l-4 border-red-500 bg-red-50 rounded-r-lg">
+                <div class="flex-1">
+                    <h3 class="text-sm font-medium text-red-800">Cuenta Inhabilitada</h3>
+                    <div class="mt-1 text-sm text-red-700">
+                        Usted ha sido inhabilitado por administración. Por favor contacte con soporte a través de WhatsApp: 
+                        <a href="https://wa.me/73527947" target="_blank" class="font-semibold underline hover:text-red-900">73527947</a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="py-12">
+        <div class="py-10">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                
+                <!-- Barra de Herramientas Premium -->
+                <div class="flex flex-col gap-4 p-4 mb-8 bg-white border border-gray-100 shadow-sm sm:flex-row sm:items-center sm:justify-between rounded-xl">
+                    <!-- Búsqueda -->
+                    <div class="relative flex-1 max-w-lg">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <Search class="w-5 h-5 text-gray-400" />
+                        </div>
+                        <input
+                            type="text"
+                            v-model="searchTerm"
+                            class="block w-full py-2.5 pl-10 pr-3 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                            placeholder="Buscar artículos, libros..."
+                        >
+                    </div>
 
-                <!-- Panel for inactive user -->
-                <div v-if="userEstado === 'Inactivo'" class="p-4 mb-6 font-semibold text-red-700 bg-red-100 border border-red-400 rounded">
-                    Usted ha sido inhabilitado por administración. Por favor contacte con soporte a través de WhatsApp: <a href="https://wa.me/73527947" target="_blank" class="underline">73527947</a>
-                </div>
+                    <!-- Filtros -->
+                    <div class="relative z-20 flex items-center gap-2">
+                        <div class="relative">
+                            <button
+                                @click="isDropdownOpen = !isDropdownOpen"
+                                :class="[
+                                    'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all border rounded-lg',
+                                    selectedCategory ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                                ]"
+                            >
+                                <Filter class="w-4 h-4" />
+                                <span>{{ selectedCategory ? categories.find(c => c.Cod_Categoria === selectedCategory)?.Nombre_Categoria : 'Categorías' }}</span>
+                            </button>
 
-                <!-- Barra de búsqueda de publicaciones -->
-                <div class="flex justify-end pb-2 mt-0">
-                    <div class="p-5 bg-gray-200 rounded-lg">
-                        <form @submit.prevent="() => {}" class="flex">
-                            <div class="flex items-center justify-center w-10 p-5 bg-white border-r border-gray-200 rounded-tl-lg rounded-bl-lg">
-                                <svg viewBox="0 0 20 20" aria-hidden="true" class="absolute w-5 transition pointer-events-none fill-gray-500">
-                                    <path d="M16.72 17.78a.75.75 0 1 0 1.06-1.06l-1.06 1.06ZM9 14.5A5.5 5.5 0 0 1 3.5 9H2a7 7 0 0 0 7 7v-1.5ZM3.5 9A5.5 5.5 0 0 1 9 3.5V2a7 7 0 0 0-7 7h1.5ZM9 3.5A5.5 5.5 0 0 1 14.5 9H16a7 7 0 0 0-7-7v1.5Zm3.89 10.45 3.83 3.83 1.06-1.06-3.83-3.83-1.06 1.06ZM14.5 9a5.48 5.48 0 0 1-1.61 3.89l1.06 1.06A6.98 6.98 0 0 0 16 9h-1.5Zm-1.61 3.89A5.48 5.48 0 0 1 9 14.5V16a6.98 6.98 0 0 0 4.95-2.05l-1.06-1.06Z"></path>
-                                </svg>
+                            <!-- Dropdown -->
+                            <div
+                                v-show="isDropdownOpen"
+                                @click.away="isDropdownOpen = false"
+                                class="absolute right-0 w-56 mt-2 origin-top-right bg-white border border-gray-100 rounded-xl shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none"
+                            >
+                                <div class="p-1">
+                                    <button
+                                        @click="selectedCategory = null; isDropdownOpen = false"
+                                        :class="[
+                                            'flex w-full items-center px-4 py-2 text-sm rounded-lg transition-colors',
+                                            selectedCategory === null ? 'bg-indigo-50 font-semibold text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
+                                        ]"
+                                    >
+                                        Todas las categorías
+                                    </button>
+                                    <button
+                                        v-for="cat in categories"
+                                        :key="cat.Cod_Categoria"
+                                        @click="selectedCategory = cat.Cod_Categoria; isDropdownOpen = false"
+                                        :class="[
+                                            'flex w-full items-center px-4 py-2 text-sm rounded-lg transition-colors mt-1',
+                                            selectedCategory === cat.Cod_Categoria ? 'bg-indigo-50 font-semibold text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
+                                        ]"
+                                    >
+                                        {{ cat.Nombre_Categoria }}
+                                    </button>
+                                </div>
                             </div>
-                            <input
-                                type="text"
-                                class="w-full max-w-[160px] bg-white pl-2 text-base font-semibold outline-0"
-                                placeholder="Buscar por título..."
-                                v-model="searchTerm"
-                                @keyup.enter.prevent
-                            >
-                            <input
-                                type="button"
-                                value="Buscar"
-                                class="p-2 font-semibold text-white transition-colors bg-blue-500 rounded-tr-lg rounded-br-lg hover:bg-blue-800"
-                                @click="searchTerm = searchTerm"
-                            >
-                        </form>
+                        </div>
+
+                        <button 
+                            v-if="selectedCategory || searchTerm"
+                            @click="selectedCategory = null; searchTerm = ''"
+                            class="px-3 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900"
+                        >
+                            Limpiar
+                        </button>
                     </div>
                 </div>
 
-                <!-- Mostrar categoría seleccionada (opcional) -->
-                <div v-if="selectedCategory" class="p-4 mb-4 border border-blue-200 rounded bg-blue-50">
-                    <p class="text-sm text-gray-700">
-                        Filtrando por: <strong>{{ categories.find(c => c.Cod_Categoria === selectedCategory)?.Nombre_Categoria }}</strong>
-                        <button
-                            @click="selectedCategory = null"
-                            class="ml-2 text-blue-600 underline hover:text-blue-800"
-                        >
-                            (limpiar filtro)
-                        </button>
-                    </p>
+                <!-- Sección Mejores Valorados (Sólo si no hay búsqueda/filtro) -->
+                <div v-if="!selectedCategory && !searchTerm && props.mejores && props.mejores.length > 0" class="mb-12">
+                    <div class="flex items-center gap-3 mb-6">
+                        <h3 class="text-xl font-bold tracking-tight text-gray-900">Destacados</h3>
+                        <div class="h-px bg-gray-200 flex-1"></div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <div v-for="pub in props.mejores" :key="pub.id" class="flex justify-center transition-transform hover:-translate-y-1">
+                            <CardPubli
+                                :title="pub.Titulo_Publicacion"
+                                :subtitle="`Bs ${pub.Precio_Publicacion}`"
+                                :description="pub.Descripcion_Publicacion"
+                                :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
+                                :id="pub.id"
+                                :user="pub.vendedor?.user || null"
+                                :currentUserId="page.props.auth.user.id"
+                                :isOwner="pub.vendedor?.user_id === page.props.auth.user.id"
+                                :estado="pub.estado"
+                                :publicacion="pub"
+                                @edit="handleEdit"
+                                @contact="handleContact"
+                            />
+                        </div>
+                    </div>
                 </div>
 
-                <div v-if="filteredPublicaciones && filteredPublicaciones.length > 0" class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    <div v-for="pub in filteredPublicaciones" :key="pub.id" class="flex justify-center">
+                <!-- Lista de Publicaciones Normales -->
+                <div class="flex items-center gap-3 mb-6">
+                    <h3 class="text-xl font-bold tracking-tight text-gray-900">
+                        {{ searchTerm ? 'Resultados de Búsqueda' : (selectedCategory ? 'Resultados de Categoría' : 'Recientes') }}
+                    </h3>
+                    <div class="h-px bg-gray-200 flex-1"></div>
+                </div>
+
+                <div v-if="filteredPublicaciones && filteredPublicaciones.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div v-for="pub in filteredPublicaciones" :key="pub.id" class="flex justify-center transition-transform hover:-translate-y-1">
                         <CardPubli
                             :title="pub.Titulo_Publicacion"
                             :subtitle="`Bs ${pub.Precio_Publicacion}`"
                             :description="pub.Descripcion_Publicacion"
                             :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
                             :id="pub.id"
-                            :user="pub.vendedor ? pub.vendedor.user : null"
-                            :currentUserId="$page.props.auth.user.id"
-                            :isOwner="pub.vendedor && pub.vendedor.user_id === $page.props.auth.user.id"
+                            :user="pub.vendedor?.user || null"
+                            :currentUserId="page.props.auth.user.id"
+                            :isOwner="pub.vendedor?.user_id === page.props.auth.user.id"
                             :estado="pub.estado"
                             :publicacion="pub"
                             @edit="handleEdit"
@@ -261,12 +260,32 @@ function handleContact(publicationId) {
                         />
                     </div>
                 </div>
-                <div v-else-if="selectedCategory" class="p-6 text-center text-gray-500 bg-white rounded-lg shadow-md">
-                    <p>No hay publicaciones en esta categoría.</p>
+
+                <!-- Empty States (Estado Vacío) -->
+                <div v-else class="flex flex-col items-center justify-center p-12 text-center bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <div class="flex items-center justify-center w-16 h-16 mb-4 bg-gray-50 rounded-full">
+                        <ArchiveX class="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 class="mb-1 text-lg font-bold text-gray-900">No se encontraron resultados</h3>
+                    <p class="mb-6 text-sm text-gray-500 max-w-sm">
+                        {{ selectedCategory || searchTerm ? 'Intenta ajustando tus filtros de búsqueda o eliminando palabras.' : 'Aún no hay publicaciones en el sistema. ¡Sé el primero en vender algo!' }}
+                    </p>
+                    <button 
+                        v-if="selectedCategory || searchTerm"
+                        @click="selectedCategory = null; searchTerm = ''" 
+                        class="px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                    >
+                        Limpiar Filtros
+                    </button>
+                    <Link 
+                        v-else
+                        :href="route('dashboard.create')" 
+                        class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors shadow-sm"
+                    >
+                        Crear Publicación
+                    </Link>
                 </div>
-                <div v-else class="p-6 text-center text-gray-500 bg-white rounded-lg shadow-md">
-                    <p>No hay publicaciones con ese nombre</p>
-                </div>
+
             </div>
         </div>
     </AppLayout>

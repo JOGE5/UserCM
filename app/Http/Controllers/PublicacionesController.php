@@ -12,6 +12,8 @@ use App\Services\MarkovReputationService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PublicacionesController extends Controller
 {
@@ -37,8 +39,8 @@ class PublicacionesController extends Controller
     public function store(Request $request)
     {
         // Debug: registrar entrada a la acción para diagnosticar peticiones que se quedan "cargando"
-        \Log::info('PublicacionesController@store called', [
-            'user_id' => auth()->id(),
+        Log::info('PublicacionesController@store called', [
+            'user_id' => Auth::id(),
             'input_keys' => array_keys($request->all()),
             'has_files' => $request->hasFile('Imagen_Publicacion') || count($request->allFiles()) > 0,
         ]);
@@ -56,7 +58,7 @@ class PublicacionesController extends Controller
         ]);
 
         // Obtener o crear registro en usuarios_campus_markets para el usuario autenticado
-        $userId = auth()->id();
+        $userId = Auth::id();
         $vendor = UsuarioCampusMarket::where('user_id', $userId)->first();
 
         if (! $vendor) {
@@ -80,42 +82,8 @@ class PublicacionesController extends Controller
         // Por defecto, las nuevas publicaciones son 'activas'
         $validated['estado'] = 'activa';
 
-        // Guardar imágenes (hasta 3)
-        $paths = [];
-        // Intentar obtener la colección normal de archivos
-        $files = $request->file('Imagen_Publicacion');
-
-        // Si no hay 'Imagen_Publicacion' como array, buscar en allFiles() (p. ej. keys Imagen_Publicacion.0)
-        if (empty($files)) {
-            $all = $request->allFiles();
-            $collected = [];
-            foreach ($all as $key => $val) {
-                if (strpos($key, 'Imagen_Publicacion') === 0) {
-                    if (is_array($val)) {
-                        $collected = array_merge($collected, $val);
-                    } else {
-                        $collected[] = $val;
-                    }
-                }
-            }
-            if (!empty($collected)) $files = $collected;
-        }
-
-        if (!empty($files)) {
-            $count = 0;
-            foreach ($files as $file) {
-                if (! $file) continue;
-                if ($count >= 3) break;
-                try {
-                    $paths[] = $file->store('publicaciones', 'public');
-                } catch (\Throwable $e) {
-                    // si ocurre un error con un archivo específico, ignorarlo pero seguir
-                    continue;
-                }
-                $count++;
-            }
-        }
-
+        // Procesar y guardar imágenes (hasta 3) usando el método helper
+        $paths = $this->handleImageUploads($request);
         $validated['Imagen_Publicacion'] = json_encode($paths);
 
         Publicaciones::create($validated);
@@ -134,7 +102,7 @@ class PublicacionesController extends Controller
 
         return Inertia::render('Publicaciones/Show', [
             'publicacion' => $publicaciones,
-            'currentUserId' => auth()->id(),
+            'currentUserId' => Auth::id(),
         ]);
     }
 
@@ -186,38 +154,8 @@ class PublicacionesController extends Controller
             } catch (\Throwable $e) {
                 // ignore
             }
-            // Recolectar archivos incluso si vienen como Imagen_Publicacion.0, Imagen_Publicacion.1, etc.
-            $files = $request->file('Imagen_Publicacion');
-            if (empty($files)) {
-                $all = $request->allFiles();
-                $collected = [];
-                foreach ($all as $key => $val) {
-                    if (strpos($key, 'Imagen_Publicacion') === 0) {
-                        if (is_array($val)) {
-                            $collected = array_merge($collected, $val);
-                        } else {
-                            $collected[] = $val;
-                        }
-                    }
-                }
-                if (!empty($collected)) $files = $collected;
-            }
-
-            $paths = [];
-            $count = 0;
-            if (!empty($files)) {
-                foreach ($files as $file) {
-                    if (! $file) continue;
-                    if ($count >= 3) break;
-                    try {
-                        $paths[] = $file->store('publicaciones', 'public');
-                    } catch (\Throwable $e) {
-                        continue;
-                    }
-                    $count++;
-                }
-            }
-
+            // Procesar y guardar nuevas imágenes
+            $paths = $this->handleImageUploads($request);
             $validated['Imagen_Publicacion'] = json_encode($paths);
         }
 
@@ -232,7 +170,7 @@ class PublicacionesController extends Controller
     public function destroy(Publicaciones $publicaciones)
     {
         // Verificar que sea el propietario
-        if ($publicaciones->vendedor->user_id !== auth()->id()) {
+        if ($publicaciones->vendedor->user_id !== Auth::id()) {
             abort(403, 'No tienes permiso para eliminar esta publicación');
         }
 
@@ -248,7 +186,7 @@ class PublicacionesController extends Controller
     public function toDraft(Publicaciones $publicaciones)
     {
         // Verificar que sea el propietario
-        if ($publicaciones->vendedor->user_id !== auth()->id()) {
+        if ($publicaciones->vendedor->user_id !== Auth::id()) {
             abort(403, 'No tienes permiso para cambiar esta publicación a borrador');
         }
 
@@ -263,7 +201,7 @@ class PublicacionesController extends Controller
     public function toActive(Publicaciones $publicaciones)
     {
         // Verificar que sea el propietario
-        if ($publicaciones->vendedor->user_id !== auth()->id()) {
+        if ($publicaciones->vendedor->user_id !== Auth::id()) {
             abort(403, 'No tienes permiso para activar esta publicación');
         }
 
@@ -283,7 +221,7 @@ class PublicacionesController extends Controller
         ]);
 
         /** @var int|null $authId */
-        $authId = auth()->id();
+        $authId = Auth::id();
         $validated['ID_Usuario_Calificador'] = $authId;
         $validated['ID_Usuario_Calificado'] = $user->id;
 
@@ -297,5 +235,44 @@ class PublicacionesController extends Controller
             'success' => true,
             'message' => 'Calificación registrada exitosamente',
         ]);
+    }
+
+    /**
+     * Procesar y almacenar de 1 a 3 imágenes de la publicación.
+     */
+    private function handleImageUploads(Request $request): array
+    {
+        $files = $request->file('Imagen_Publicacion');
+        
+        if (empty($files)) {
+            $collected = [];
+            foreach ($request->allFiles() as $key => $val) {
+                if (strpos($key, 'Imagen_Publicacion') === 0) {
+                    if (is_array($val)) {
+                        $collected = array_merge($collected, $val);
+                    } else {
+                        $collected[] = $val;
+                    }
+                }
+            }
+            $files = $collected;
+        }
+
+        $paths = [];
+        $count = 0;
+        if (!empty($files)) {
+            foreach ($files as $file) {
+                if (! $file) continue;
+                if ($count >= 3) break;
+                try {
+                    $paths[] = $file->store('publicaciones', 'public');
+                    $count++;
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+        }
+
+        return $paths;
     }
 }
