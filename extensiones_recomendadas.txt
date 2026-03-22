@@ -1,0 +1,54 @@
+=========================================================
+   EXTENSIONES DE VS CODE RECOMENDADAS
+=========================================================
+Instalen estas extensiones clave para que todos estemos
+sincronizados, tengamos el mismo autocompletado y
+evitemos conflictos de código (errores sintácticos).
+
+Para instalarlas rápido, pueden buscar los "identificadores"
+(el texto con punto) en la pestaña Extensions de VS Code.
+
+1. CORE: LARAVEL & PHP (Backend)
+---------------------------------------------------------
+- bmewburn.vscode-intelephense-client
+  (¡OJO! Instalen solo esta extensión de Intellisense para PHP y eviten las demás. Si tienen varias, VS Code se satura).
+- amiralizadeh9480.laravel-extra-intellisense
+  (Autocompletado mágico para rutas y vistas en Laravel).
+- shufo.vscode-blade-formatter
+  (Obligatorio para darle formato brillante a archivos .blade).
+- ryannaddy.laravel-artisan
+  (Permite ejecutar comandos artisan con barra de comandos).
+- open-southeners.laravel-pint
+  (Estandariza todo tu código PHP de inmediato).
+
+2. CORE: VUE 3, INERTIA Y TAILWIND (Frontend)
+---------------------------------------------------------
+- vue.volar
+  (La oficial y obligatoria para código en Vue 3).
+- bradlc.vscode-tailwindcss
+  (Autocompletado brutal para las clases utilitarias, sin ella estás ciego en el front).
+- nhedger.inertia
+  (Un "must". Te permite navegar con Ctrl+Click desde el controlador de regreso a tu componente `.vue`).
+- esbenp.prettier-vscode
+  (El formateador universal por excelencia).
+
+3. 🛠️ PRODUCTIVIDAD (Visual y de calidad de vida)
+---------------------------------------------------------
+- usernamehw.errorlens
+  (Te pinta la línea exacta del error a todo color antes de que siquiera intentes correr la página. Imprescindible).
+- aaron-bond.better-comments
+  (Comentarios coloridos según si utilizas !WARNING, ?PREGUNTA o TODO, ideal para trabajar en equipo).
+- eamodio.gitlens
+  (Para saber con exactitud quién y cuándo escribió cada línea de código).
+- cweijan.vscode-mysql-client2
+  (Administra tus bases de datos directo dentro de VS Code).
+
+4. PERSONALIZACIÓN (Opcionales que dan estilo)
+---------------------------------------------------------
+- pkief.material-icon-theme
+  (Iconos visualmente claros para todas las carpetas).
+- akamud.vscode-theme-onedark o arifbudimanar.arifcode-theme
+  (Temas oscuros y premiums para la interfaz).
+- ttoowa.in-your-face-incredible
+  (Extensión graciosa: pone la cara del Doom Guy abajo y esta sangra o se enoja si tu código tiene errores).
+=========================================================

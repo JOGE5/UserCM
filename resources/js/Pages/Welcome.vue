@@ -24,6 +24,8 @@ const isScrolledNav = ref(false);
 const sedesSection = ref(null);
 const isHoverSede1 = ref(false);
 const isHoverSede2 = ref(false);
+const isHoverSede3 = ref(false);
+const isHoverSede4 = ref(false);
 
 const handleScroll = () => {
     scrollY.value = window.scrollY;
@@ -161,7 +163,7 @@ const features = [
                     </div>
                 </div>
                 <h1 class="mb-3 text-5xl font-extrabold tracking-tight text-transparent opacity-0 bg-clip-text bg-gradient-to-br from-white via-gray-300 to-gray-500 animate-slide-up" style="animation-fill-mode: forwards; animation-delay: 0.2s;">
-                    Campus Market
+                    Campus Market X Unifranz
                 </h1>
                 <p class="text-xl font-light tracking-wide text-gray-400 opacity-0 animate-slide-up" style="animation-fill-mode: forwards; animation-delay: 0.5s;">
                     Tu ecosistema. Elevado.
@@ -181,7 +183,7 @@ const features = [
                     <img src="/images/posters/logo-team.png" alt="Logo" class="object-cover w-full h-full p-1" />
                 </div>
                 <span class="text-xl font-bold tracking-tighter text-white">
-                    Campus<span class="text-indigo-400">Market</span>
+                    Campus<span class="text-indigo-400">Market</span> X <span class="text-orange-300">Unifranz</span>
                 </span>
             </div>
 
@@ -348,7 +350,7 @@ const features = [
             <!-- Background Glows -->
             <div class="absolute top-1/2 left-0 -translate-y-1/2 w-[300px] h-[300px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div class="absolute top-1/2 right-0 -translate-y-1/2 w-[300px] h-[300px] bg-fuchsia-500/10 blur-[120px] rounded-full pointer-events-none"></div>
-            
+
             <div class="relative z-10 px-6 mx-auto max-w-7xl lg:px-8">
                 <div class="mb-20 text-center slide-element slide-down">
                     <h2 class="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-fuchsia-400 sm:text-6xl">
@@ -362,7 +364,7 @@ const features = [
                 <div class="grid items-center grid-cols-1 gap-12 md:grid-cols-2 lg:gap-20">
                     <!-- Sede El Alto (Ingresa por izquierda) -->
                     <div class="flex flex-col items-center slide-element slide-left">
-                        <div 
+                        <div
                             class="relative w-full overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(99,102,241,0.15)] group aspect-[4/3] bg-white/5"
                             @mouseenter="isHoverSede1 = true"
                             @mouseleave="isHoverSede1 = false"
@@ -370,13 +372,13 @@ const features = [
                             <img src="/images/posters/SedeElAlto.jpg" alt="Sede El Alto" class="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-110" />
                             <!-- Un degradado sólido que mantiene el texto altamente legible -->
                             <div class="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent"></div>
-                            
+
                             <!-- Emojis flotantes interactivos desde el componente -->
                             <EmojiParticles :active="isHoverSede1" :maxParticles="12" />
 
                             <!-- Texto principal encima de los stickers (z-10) -->
-                            <div class="absolute z-10 inset-x-0 bottom-0 p-10 transform transition-transform duration-500 translate-y-4 group-hover:translate-y-0 text-shadow-md">
-                                <span class="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-bold border rounded-full text-indigo-300 bg-indigo-500/20 border-indigo-500/30 backdrop-blur-md">
+                            <div class="absolute inset-x-0 bottom-0 z-10 p-10 transition-transform duration-500 transform translate-y-4 group-hover:translate-y-0 text-shadow-md">
+                                <span class="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-md">
                                     📍 Disponible
                                 </span>
                                 <h3 class="text-4xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">Sede El Alto</h3>
@@ -387,7 +389,7 @@ const features = [
 
                     <!-- Sede La Paz (Ingresa por derecha) -->
                     <div class="flex flex-col items-center slide-element slide-right">
-                        <div 
+                        <div
                             class="relative w-full overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(217,70,239,0.15)] group aspect-[4/3] bg-white/5"
                             @mouseenter="isHoverSede2 = true"
                             @mouseleave="isHoverSede2 = false"
@@ -395,17 +397,67 @@ const features = [
                             <img src="/images/posters/SedeLaPaz.jpg" alt="Sede La Paz" class="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-110" />
                             <!-- Degradado fuerte y estático para lectura -->
                             <div class="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent"></div>
-                            
+
                             <!-- Emojis flotantes interactivos desde el componente -->
                             <EmojiParticles :active="isHoverSede2" :maxParticles="12" />
 
                             <!-- Textos Inferiores Legibles (z-10) -->
-                            <div class="absolute z-10 inset-x-0 bottom-0 p-10 transform transition-transform duration-500 translate-y-4 group-hover:translate-y-0">
+                            <div class="absolute inset-x-0 bottom-0 z-10 p-10 transition-transform duration-500 transform translate-y-4 group-hover:translate-y-0">
                                 <span class="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-bold border rounded-full text-fuchsia-300 bg-fuchsia-500/20 border-fuchsia-500/30 backdrop-blur-md">
                                     📍 Disponible
                                 </span>
                                 <h3 class="text-4xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">Sede La Paz</h3>
                                 <p class="mt-3 text-lg font-medium text-gray-200 transition-opacity duration-500 opacity-0 group-hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">El centro tecnológico del conocimiento paceño te espera. 📈</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sede Cochabamba (Ingresa por izquierda) -->
+                    <div class="flex flex-col items-center slide-element slide-left">
+                        <div
+                            class="relative w-full overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(245,158,11,0.15)] group aspect-[4/3] bg-white/5"
+                            @mouseenter="isHoverSede3 = true"
+                            @mouseleave="isHoverSede3 = false"
+                        >
+                            <img src="/images/posters/SedeCochabamba.png" alt="Sede Cochabamba" class="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-110" />
+                            <!-- Degradado fuerte y estático para lectura -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent"></div>
+
+                            <!-- Emojis flotantes interactivos desde el componente -->
+                            <EmojiParticles :active="isHoverSede3" :maxParticles="12" />
+
+                            <!-- Textos Inferiores Legibles (z-10) -->
+                            <div class="absolute inset-x-0 bottom-0 z-10 p-10 transition-transform duration-500 transform translate-y-4 group-hover:translate-y-0 text-shadow-md">
+                                <span class="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-bold border rounded-full text-amber-300 bg-amber-500/20 border-amber-500/30 backdrop-blur-md">
+                                    📍 Disponible
+                                </span>
+                                <h3 class="text-4xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">Sede Cochabamba</h3>
+                                <p class="mt-3 text-lg font-medium text-gray-200 transition-opacity duration-500 opacity-0 group-hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">El corazón estudiantil de Bolivia se suma a la red. 🌱</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sede Santa Cruz (Ingresa por derecha) -->
+                    <div class="flex flex-col items-center slide-element slide-right">
+                        <div
+                            class="relative w-full overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_0_50px_rgba(16,185,129,0.15)] group aspect-[4/3] bg-white/5"
+                            @mouseenter="isHoverSede4 = true"
+                            @mouseleave="isHoverSede4 = false"
+                        >
+                            <img src="/images/posters/SedeSantaCruz.png" alt="Sede Santa Cruz" class="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-110" />
+                            <!-- Degradado fuerte y estático para lectura -->
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent"></div>
+
+                            <!-- Emojis flotantes interactivos desde el componente -->
+                            <EmojiParticles :active="isHoverSede4" :maxParticles="12" />
+
+                            <!-- Textos Inferiores Legibles (z-10) -->
+                            <div class="absolute inset-x-0 bottom-0 z-10 p-10 transition-transform duration-500 transform translate-y-4 group-hover:translate-y-0 text-shadow-md">
+                                <span class="inline-flex items-center gap-2 px-4 py-2 mb-4 text-sm font-bold border rounded-full text-emerald-300 bg-emerald-500/20 border-emerald-500/30 backdrop-blur-md">
+                                    📍 Disponible
+                                </span>
+                                <h3 class="text-4xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,1)]">Sede Santa Cruz</h3>
+                                <p class="mt-3 text-lg font-medium text-gray-200 transition-opacity duration-500 opacity-0 group-hover:opacity-100 drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">Innovación y clima cálido en el oriente boliviano. 🌴</p>
                             </div>
                         </div>
                     </div>

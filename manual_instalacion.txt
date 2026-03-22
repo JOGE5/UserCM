@@ -1,0 +1,45 @@
+=========================================================
+      GUÍA DE INSTALACIÓN - PROYECTO USER CM
+=========================================================
+
+1. REQUISITOS PREVIOS
+---------------------------------------------------------
+Asegúrate de tener instalados los siguientes programas:
+- Node.js (versión 18 o superior)
+- NPM (viene incluido con Node.js)
+- PHP y Composer (para el backend en Laravel)
+
+2. EL PROBLEMA CON "npm install"
+---------------------------------------------------------
+Si al ejecutar "npm install" te aparece este error:
+
+  npm error code ERESOLVE
+  npm error ERESOLVE could not resolve
+  npm error Conflicting peer dependency: vue@2.7.16
+
+MOTIVO:
+Este error ocurre porque estamos usando versiones modernas 
+de Vue (3.x) y Vite (6.x/7.x), pero algunos paquetes de
+iconos como "lucide-vue" o plugins piden versiones más
+viejas. NPM por seguridad bloquea la instalación.
+
+3. LA SOLUCIÓN DEFINITIVA
+---------------------------------------------------------
+Para instalar el proyecto correctamente y que NPM ignore 
+estos conflictos de versiones estandarizadas, SIEMPRE
+debes usar este comando:
+
+➔ npm install --legacy-peer-deps
+
+4. CÓMO ARRANCAR EL PROYECTO
+---------------------------------------------------------
+Una vez que el comando anterior finalice sin errores:
+
+En la Terminal 1 (Backend):
+➔ php artisan serve
+
+En la Terminal 2 (Frontend):
+➔ npm run dev
+
+¡Listo! Con esto el proyecto funcionará perfectamente.
+=========================================================
