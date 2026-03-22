@@ -1,0 +1,40 @@
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: undefined@undefined
+npm warn Found: vite@7.2.2
+npm warn node_modules/vite
+npm warn   dev vite@"^6.0.0" from the root project
+npm warn   2 more (@tailwindcss/vite, laravel-vite-plugin)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer vite@"^7.0.0" from laravel-vite-plugin@2.0.1
+npm warn node_modules/laravel-vite-plugin
+npm warn   dev laravel-vite-plugin@"^2.0.0" from the root project
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: lucide-vue@0.517.0
+npm error Found: vue@3.5.24
+npm error node_modules/vue
+npm error   dev vue@"^3.3.13" from the root project
+npm error   peer vue@"^3.0.0" from @inertiajs/vue3@2.2.15
+npm error   node_modules/@inertiajs/vue3
+npm error     dev @inertiajs/vue3@"^2.0" from the root project
+npm error   3 more (@vitejs/plugin-vue, @vue/server-renderer, lucide-vue-next)
+npm error
+npm error Could not resolve dependency:
+npm error peer vue@"^2.6.12" from lucide-vue@0.517.0
+npm error node_modules/lucide-vue
+npm error   lucide-vue@"^0.517.0" from the root project
+npm error
+npm error Conflicting peer dependency: vue@2.7.16
+npm error node_modules/vue
+npm error   peer vue@"^2.6.12" from lucide-vue@0.517.0
+npm error   node_modules/lucide-vue
+npm error     lucide-vue@"^0.517.0" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry this command with --force or --legacy-peer-deps to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error C:\Users\MK\AppData\Local\npm-cache\_logs\2026-03-16T18_58_01_813Z-eresolve-report.txt
+npm error A complete log of this run can be found in: C:\Users\MK\AppData\Local\npm-cache\_logs\2026-03-16T18_58_01_813Z-debug-0.log
