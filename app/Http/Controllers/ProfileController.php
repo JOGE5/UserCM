@@ -27,7 +27,7 @@ class ProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
             'Apellidos' => 'required|string|max:255',
-            'Genero' => 'required|in:Hombre,Mujer,Prefiero no decirlo',
+            'Genero' => 'required|in:Masculino,Femenino,Otro',
             'Telefono' => 'required|string|max:20',
             'Foto_de_perfil' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Foto_de_portada' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -40,23 +40,6 @@ class ProfileController extends Controller
         }
 
         $user = $request->user();
-
-        // Verificar que no exista ya un perfil para este usuario
-        if ($user->usuarioCampusMarket) {
-            // Si ya existe, actualizar el perfil existente
-            $user->usuarioCampusMarket->update([
-                'Apellidos' => trim($request->Apellidos),
-                'Genero' => trim($request->Genero),
-                'Estado' => 'Habilitado',
-                'Telefono' => trim($request->Telefono),
-                'Foto_de_perfil' => $fotoPerfilPath,
-                'Foto_de_portada' => $fotoPortadaPath,
-                'Cod_Rol' => $codRol,
-                'Cod_Carrera' => $request->Cod_Carrera,
-                'Cod_Universidad' => $request->Cod_Universidad,
-            ]);
-            return redirect()->route('dashboard')->with('success', 'Perfil actualizado exitosamente.');
-        }
 
         // Guardar imágenes si se proporcionan
         $fotoPerfilPath = null;
@@ -73,6 +56,27 @@ class ProfileController extends Controller
         // Asignar rol por defecto (Estudiante)
         $rolPorDefecto = Roles::where('Nombre_Rol', 'Estudiante')->first();
         $codRol = $rolPorDefecto ? $rolPorDefecto->Cod_Rol : null;
+
+        // Verificar que no exista ya un perfil para este usuario
+        if ($user->usuarioCampusMarket) {
+            // Si ya existe, actualizar el perfil existente
+            $updateData = [
+                'Apellidos' => trim($request->Apellidos),
+                'Genero' => trim($request->Genero),
+                'Estado' => 'Habilitado',
+                'Telefono' => trim($request->Telefono),
+                'Cod_Rol' => $codRol,
+                'Cod_Carrera' => $request->Cod_Carrera,
+                'Cod_Universidad' => $request->Cod_Universidad,
+            ];
+
+            if ($fotoPerfilPath) $updateData['Foto_de_perfil'] = $fotoPerfilPath;
+            if ($fotoPortadaPath) $updateData['Foto_de_portada'] = $fotoPortadaPath;
+
+            $user->usuarioCampusMarket->update($updateData);
+            
+            return redirect()->route('dashboard')->with('success', 'Perfil actualizado exitosamente.');
+        }
 
         // Crear el perfil extendido
         UsuarioCampusMarket::create([
