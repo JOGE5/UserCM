@@ -1,49 +1,48 @@
-    <script setup>
+<script setup>
+import { ref, nextTick, onMounted, onBeforeUnmount, computed } from 'vue';
+import { router, usePage, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { router } from '@inertiajs/vue3';
 import axios from 'axios';
+import { 
+    Send, 
+    ArrowLeft, 
+    User, 
+    MoreVertical, 
+    Image, 
+    Paperclip,
+    ChevronLeft,
+    Clock,
+    Circle,
+    Info
+} from 'lucide-vue-next';
 
 const props = defineProps({
   chat: Object,
 });
 
-// Exponer `chat` como variable local para usar en el setup
+const page = usePage();
 const chat = props.chat;
-
 const newMessage = ref('');
 const messagesEnd = ref(null);
 const processing = ref(false);
+const currentUserId = page.props.auth.user.id;
 
-// Copia reactiva de los mensajes para poder mutarlos localmente
+// Copia reactiva de los mensajes
 const messages = ref(chat.messages && Array.isArray(chat.messages) ? [...chat.messages] : []);
 
+const otherParticipant = computed(() => {
+    return chat.users.find(u => u.id !== currentUserId) || chat.users[0] || { name: 'Usuario' };
+});
+
 const sendMessage = () => {
-    if (!newMessage.value.trim()) return;
+    if (!newMessage.value.trim() || processing.value) return;
 
     processing.value = true;
     axios.post(`/chats/${chat.id}/messages`, { contenido: newMessage.value })
         .then(response => {
-            const data = response.data;
-            // Añadir al array local de mensajes
-            messages.value.push(data);
+            messages.value.push(response.data);
             newMessage.value = '';
             scrollToBottom();
-        })
-        .catch(error => {
-            console.error('Error enviando mensaje:', error);
-            if (error.response && error.response.data) {
-                try {
-                    const msg = typeof error.response.data === 'object' ? Object.values(error.response.data).flat().join('\n') : String(error.response.data);
-                    alert('Error al enviar el mensaje:\n' + msg);
-                } catch (e) {
-                    alert('Error al enviar el mensaje.');
-                }
-            } else if (error.message) {
-                alert('Error al enviar el mensaje: ' + error.message);
-            } else {
-                alert('Error al enviar el mensaje.');
-            }
         })
         .finally(() => {
             processing.value = false;
@@ -56,225 +55,156 @@ const scrollToBottom = () => {
     });
 };
 
-// Scroll al final al montar
-nextTick(() => {
-    scrollToBottom();
-});
+nextTick(scrollToBottom);
 
 onMounted(() => {
-  // Suscribirse a canal Echo si está disponible
-  try {
-  console.log('Mensajes/Show mounted - chat prop:', chat)
-  console.log('Mensajes/Show initial messages length:', messages.value.length)
-      if (window.Echo) {
-      window.Echo.private(`chat.${chat.id}`)
-        .listen('MessageSent', (e) => {
-          // Evitar duplicados: si ya existe el mensaje, no añadir
-          const exists = messages.value.some(m => m.id === e.message.id);
-          if (!exists) {
-            messages.value.push(e.message);
-            scrollToBottom();
-          }
-        });
-    } else {
-      console.warn('Echo no está configurado. Habilita Laravel Echo + Pusher/laravel-websockets para mensajes en tiempo real.');
-    }
-  } catch (e) {
-    console.error('Error suscribiéndose al canal Echo:', e);
+  if (window.Echo) {
+    window.Echo.private(`chat.${chat.id}`)
+      .listen('MessageSent', (e) => {
+        const exists = messages.value.some(m => m.id === e.message.id);
+        if (!exists) {
+          messages.value.push(e.message);
+          scrollToBottom();
+        }
+      });
   }
 });
 
 onBeforeUnmount(() => {
-  try {
     if (window.Echo) {
-      try { window.Echo.leave(`chat.${chat.id}`); } catch (e) {}
-      try { window.Echo.leaveChannel(`chat.${chat.id}`); } catch (e) {}
+        window.Echo.leave(`chat.${chat.id}`);
     }
-  } catch (e) {}
 });
+
+const formatMsgTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 </script>
 
 <template>
-    <AppLayout :title="`Chat - ${chat.tipo === 'privado' ? 'Privado' : chat.nombre}`">
+    <AppLayout :title="`Chat con ${otherParticipant.name}`">
         <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                    Chat
-                </h2>
-                <button @click="router.visit(route('mensajes.index'))" class="px-4 py-2 text-sm text-gray-600 bg-gray-200 rounded hover:bg-gray-300">
-                    ← Volver a Mensajes
+            <div class="flex items-center gap-4">
+                <button @click="router.visit(route('mensajes.index'))" class="p-2 -ml-2 text-gray-400 hover:text-brand-600 transition-colors">
+                    <ChevronLeft class="w-6 h-6" />
                 </button>
+                <div class="flex items-center gap-3">
+                    <div class="relative w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white text-sm font-black ring-2 ring-brand-500/20">
+                        {{ otherParticipant.name.charAt(0).toUpperCase() }}
+                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-dark-border rounded-full"></div>
+                    </div>
+                    <div class="flex flex-col">
+                        <h2 class="text-base font-black text-gray-900 dark:text-white leading-none mb-1">
+                            {{ chat.tipo === 'privado' ? otherParticipant.name : chat.nombre }}
+                        </h2>
+                        <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">En línea</span>
+                    </div>
+                </div>
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <h3 class="mb-4 text-lg font-medium">
-                            {{ chat.tipo === 'privado' ? 'Chat Privado' : chat.nombre }}
-                        </h3>
-                        <p class="mb-4 text-sm text-gray-600">
-                            Participantes: {{ chat.users.map(u => u.name).join(', ') }}
-                        </p>
+        <div class="max-w-4xl mx-auto h-[calc(100vh-280px)] min-h-[500px] flex flex-col bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[3rem] shadow-2xl shadow-black/5 overflow-hidden relative mb-10 overflow-hidden">
+            <!-- Capa de decoración de fondo -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-                        <!-- Mensajes -->
-                        <div class="p-4 mb-4 overflow-y-auto border rounded h-96 bg-gray-50">
-                          <div v-if="messages && messages.length > 0">
-                            <div v-for="message in messages" :key="message.id" class="mb-3">
-                                    <div class="flex items-start space-x-2">
-                                        <div class="flex-shrink-0">
-                                            <div class="flex items-center justify-center w-8 h-8 text-sm font-medium text-white bg-blue-500 rounded-full">
-                                                {{ message.sender.name.charAt(0).toUpperCase() }}
-                                            </div>
-                                        </div>
-                                        <div class="flex-1">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="text-sm font-medium">{{ message.sender.name }}</span>
-                                                <span class="text-xs text-gray-500">{{ new Date(message.created_at).toLocaleString() }}</span>
-                                            </div>
-                                            <p class="mt-1 text-sm text-gray-800">{{ message.contenido }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else class="text-center text-gray-500">
-                                No hay mensajes aún. ¡Envía el primero!
-                            </div>
-                            <div ref="messagesEnd"></div>
-                        </div>
+            <!-- Área de Mensajes -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-gray-50/30 dark:bg-black/10 relative z-10">
+                <div v-for="(msg, idx) in messages" :key="msg.id" 
+                    :class="[
+                        'flex flex-col max-w-[80%]',
+                        msg.sender_id === currentUserId ? 'ml-auto items-end' : 'mr-auto items-start'
+                    ]"
+                >
+                    <!-- Indicador de fecha/hora si es primer mensaje o cambio de bloque -->
+                    <div v-if="idx === 0" class="w-full flex justify-center my-6">
+                        <span class="px-3 py-1 bg-white/50 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-full text-[9px] font-black text-gray-400 uppercase tracking-widest">Chat Iniciado</span>
+                    </div>
 
-                        <!-- From Uiverse.io by dorian_8749 -->
-                        <div class="min-w-full p-4">
-                          <div class="relative">
-                            <div
-                              class="relative flex flex-col bg-black border border-white/10 rounded-xl"
-                            >
-                              <div class="overflow-y-auto">
-                                <textarea
-                                  v-model="newMessage"
-                                  rows="3"
-                                  style="overflow: hidden; outline: none"
-                                  class="w-full px-4 py-3 resize-none bg-transparent border-none focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-white/50 align-top leading-normal min-h-[80px] text-white"
-                                  placeholder="Escribe un mensaje..."
-                                  @keydown.enter.exact.prevent="sendMessage"
-                                ></textarea>
-                              </div>
-                              <div class="h-14">
-                                <div
-                                  class="absolute flex items-center justify-between left-3 right-3 bottom-3"
-                                >
-                                  <div class="flex items-center gap-2">
-                                    <button
-                                      class="p-2 transition-colors border rounded-lg text-white/50 hover:text-white border-white/10 hover:border-white/20"
-                                      aria-label="Attach file"
-                                      type="button"
-                                    >
-                                      <svg
-                                        class="w-4 h-4"
-                                        stroke-linejoin="round"
-                                        stroke-linecap="round"
-                                        stroke-width="2"
-                                        stroke="currentColor"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        height="16"
-                                        width="16"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                      >
-                                        <path
-                                          d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"
-                                        ></path>
-                                      </svg>
-                                    </button>
-                                    <button
-                                      class="p-2 transition-colors border rounded-lg text-white/50 hover:text-white border-white/10 hover:border-white/20"
-                                      aria-label="Attach web link"
-                                      type="button"
-                                    >
-                                      <svg
-                                        class="w-4 h-4 text-blue-500"
-                                        stroke-linejoin="round"
-                                        stroke-linecap="round"
-                                        stroke-width="2"
-                                        stroke="currentColor"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        height="16"
-                                        width="16"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                      >
-                                        <circle r="10" cy="12" cx="12"></circle>
-                                        <path
-                                          d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"
-                                        ></path>
-                                        <path d="M2 12h20"></path>
-                                      </svg>
-                                    </button>
-                                    <button
-                                      class="p-2 transition-colors border rounded-lg text-white/50 hover:text-white border-white/10 hover:border-white/20"
-                                      aria-label="Attach Figma link"
-                                      type="button"
-                                    >
-                                      <svg
-                                        class="w-4 h-4 text-pink-500"
-                                        stroke-linejoin="round"
-                                        stroke-linecap="round"
-                                        stroke-width="2"
-                                        stroke="currentColor"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        height="16"
-                                        width="16"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                      >
-                                        <path
-                                          d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z"
-                                        ></path>
-                                        <path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z"></path>
-                                        <path d="M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z"></path>
-                                        <path
-                                          d="M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z"
-                                        ></path>
-                                        <path
-                                          d="M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z"
-                                        ></path>
-                                      </svg>
-                                    </button>
-                                  </div>
-                                  <button
-                                    @click="sendMessage"
-                                    :disabled="processing"
-                                    :class="processing ? 'opacity-60 cursor-not-allowed' : ''"
-                                    class="p-2 text-blue-500 transition-colors hover:text-blue-600"
-                                    aria-label="Send message"
-                                    type="button"
-                                  >
-                                    <svg
-                                      class="w-6 h-6"
-                                      stroke-linejoin="round"
-                                      stroke-linecap="round"
-                                      stroke-width="2"
-                                      stroke="currentColor"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      height="24"
-                                      width="24"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                      <circle r="10" cy="12" cx="12"></circle>
-                                      <path d="m16 12-4-4-4 4"></path>
-                                      <path d="M12 16V8"></path>
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                    <div :class="[
+                        'relative px-5 py-3.5 rounded-[2rem] shadow-sm font-medium text-sm leading-relaxed transition-all duration-300',
+                        msg.sender_id === currentUserId 
+                            ? 'bg-brand-600 text-white rounded-tr-none' 
+                            : 'bg-white dark:bg-black/40 text-gray-800 dark:text-gray-200 border border-light-border dark:border-dark-border rounded-tl-none'
+                    ]">
+                        {{ msg.contenido }}
+                        
+                        <div :class="[
+                            'absolute top-full mt-1.5 flex items-center gap-1.2 text-[8px] font-bold uppercase tracking-widest opacity-60',
+                            msg.sender_id === currentUserId ? 'right-0' : 'left-0'
+                        ]">
+                            <Clock class="w-2.5 h-2.5" />
+                            {{ formatMsgTime(msg.created_at) }}
                         </div>
+                    </div>
+                </div>
+                
+                <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center">
+                    <div class="p-6 rounded-full bg-brand-500/5 border border-brand-500/10 mb-6">
+                        <MessageSquare class="w-12 h-12 text-brand-500/50" />
+                    </div>
+                    <p class="text-sm font-bold text-gray-500 uppercase tracking-widest">Aún no hay mensajes</p>
+                    <p class="text-xs text-gray-400 mt-2">Dile hola a {{ otherParticipant.name }}</p>
+                </div>
+                <div ref="messagesEnd"></div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-6 bg-white dark:bg-dark-surface border-t border-light-border dark:border-dark-border relative z-20">
+                <div class="relative group">
+                    <textarea 
+                        v-model="newMessage"
+                        rows="1"
+                        @keydown.enter.exact.prevent="sendMessage"
+                        class="w-full pl-6 pr-16 py-4 bg-gray-100/50 dark:bg-black/40 border-2 border-transparent focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10 rounded-[2rem] text-sm text-gray-900 dark:text-white placeholder-gray-400 transition-all resize-none leading-relaxed outline-none"
+                        placeholder="Escribe algo brillante..."
+                    ></textarea>
+                    
+                    <button 
+                        @click="sendMessage"
+                        :disabled="!newMessage.trim() || processing"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-brand-600 text-white rounded-full shadow-lg shadow-brand-500/30 hover:bg-brand-500 disabled:opacity-30 disabled:grayscale transition-all hover:scale-105 active:scale-95"
+                    >
+                        <Send class="w-5 h-5" />
+                    </button>
+                    
+                    <div class="absolute left-6 -top-2 px-2 bg-white dark:bg-dark-surface text-[8px] font-black text-brand-500 uppercase tracking-tighter opacity-0 group-focus-within:opacity-100 transition-opacity">
+                        Mensaje Directo
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4 mt-4 px-4">
+                    <button class="flex items-center gap-1.5 text-[9px] font-black text-gray-400 hover:text-brand-500 uppercase tracking-widest transition-colors">
+                        <Paperclip class="w-3 h-3" />
+                        Archivo
+                    </button>
+                    <button class="flex items-center gap-1.5 text-[9px] font-black text-gray-400 hover:text-brand-500 uppercase tracking-widest transition-colors">
+                        <Image class="w-3 h-3" />
+                        Imagen
+                    </button>
+                    <div class="flex-1"></div>
+                    <div class="flex items-center gap-1 text-[9px] font-bold text-gray-300 dark:text-gray-600 italic">
+                        <Info class="w-3 h-3" />
+                        Presiona Enter para enviar
                     </div>
                 </div>
             </div>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 58, 237, 0.3);
+}
+</style>

@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@layer base {
+    :root {
+        --bg-color: #f7f7f8;
+        --surface-color: #ffffff;
+        --border-color: #eef0f2;
+        --text-primary: #1a1a1e;
+        --text-secondary: #64748b;
+    }
+
+    .dark {
+        --bg-color: #0a0a0d;
+        --surface-color: #16161a;
+        --border-color: #232329;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+    }
+
+    body {
+        @apply transition-colors duration-500 bg-[var(--bg-color)] text-[var(--text-primary)] antialiased;
+        font-family: 'Inter', sans-serif;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-bold tracking-tight text-[var(--text-primary)];
+    }
+}
+
 [x-cloak] {
     display: none;
 }

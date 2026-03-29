@@ -8,8 +8,8 @@ const hasActions = computed(() => !! useSlots().actions);
 </script>
 
 <template>
-    <div class="md:grid md:grid-cols-3 md:gap-6">
-        <SectionTitle>
+    <div class="md:grid md:grid-cols-3 md:gap-10">
+        <SectionTitle class="mb-6 md:mb-0">
             <template #title>
                 <slot name="title" />
             </template>
@@ -18,18 +18,23 @@ const hasActions = computed(() => !! useSlots().actions);
             </template>
         </SectionTitle>
 
-        <div class="mt-5 md:mt-0 md:col-span-2">
-            <form @submit.prevent="$emit('submitted')">
+        <div class="md:col-span-2">
+            <form @submit.prevent="$emit('submitted')" class="relative group">
+                <!-- Decoración de fondo (Brillo sutil) -->
+                <div class="absolute -inset-1 bg-gradient-to-r from-brand-500/10 to-transparent rounded-[2.5rem] blur opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                
                 <div
-                    class="px-4 py-5 bg-white sm:p-6 shadow"
-                    :class="hasActions ? 'sm:rounded-tl-md sm:rounded-tr-md' : 'sm:rounded-md'"
+                    class="relative bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border shadow-2xl shadow-black/5 overflow-hidden"
+                    :class="hasActions ? 'rounded-t-[2.5rem]' : 'rounded-[2.5rem]'"
                 >
-                    <div class="grid grid-cols-6 gap-6">
-                        <slot name="form" />
+                    <div class="px-8 py-10 sm:p-10">
+                        <div class="grid grid-cols-6 gap-8">
+                            <slot name="form" />
+                        </div>
                     </div>
                 </div>
 
-                <div v-if="hasActions" class="flex items-center justify-end px-4 py-3 bg-gray-50 text-end sm:px-6 shadow sm:rounded-bl-md sm:rounded-br-md">
+                <div v-if="hasActions" class="relative flex items-center justify-end px-8 py-5 bg-gray-50/50 dark:bg-black/20 border-x border-b border-light-border dark:border-dark-border text-end sm:px-10 rounded-b-[2.5rem]">
                     <slot name="actions" />
                 </div>
             </form>

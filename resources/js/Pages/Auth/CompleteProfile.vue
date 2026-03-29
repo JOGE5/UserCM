@@ -3,7 +3,7 @@ import { Head, useForm, Link } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios';
 import InputError from '@/Components/InputError.vue';
-import { User, Mail, Phone, Users, Image as ImageIcon, Camera, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Check, ChevronDown } from 'lucide-vue-next';
+import { User, Mail, Phone, Users, Image as ImageIcon, Camera, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Check, ChevronDown, Upload, X, RefreshCw } from 'lucide-vue-next';
 
 const props = defineProps({
     user: Object,
@@ -13,6 +13,24 @@ const props = defineProps({
 const currentStep = ref(1);
 const selectedUniversidad = ref(null);
 const carreras = ref([]);
+
+// Estados para previsualización y carga
+const profilePreview = ref(null);
+const bannerPreview = ref(null);
+const profileLoading = ref(false);
+const bannerLoading = ref(false);
+const profileProgress = ref(0);
+const bannerProgress = ref(0);
+const isDraggingProfile = ref(false);
+const isDraggingBanner = ref(false);
+const profileError = ref('');
+const bannerError = ref('');
+
+// Estados para la animación final de envío
+const isSubmitting = ref(false);
+const submitStatus = ref('Subiendo su información...');
+const submitProgress = ref(0);
+const showSuccess = ref(false);
 
 const openGenero = ref(false);
 const openUniversidad = ref(false);
@@ -128,10 +146,135 @@ const prevStep = () => {
     }
 };
 
+const simulateUpload = (type) => {
+    const progress = type === 'profile' ? profileProgress : bannerProgress;
+    const loading = type === 'profile' ? profileLoading : bannerLoading;
+
+    loading.value = true;
+    progress.value = 0;
+
+    const interval = setInterval(() => {
+        progress.value += Math.random() * 30;
+        if (progress.value >= 100) {
+            progress.value = 100;
+            clearInterval(interval);
+            setTimeout(() => {
+                loading.value = false;
+            }, 500);
+        }
+    }, 200);
+};
+
+const validateImage = (file, type) => {
+    return new Promise((resolve) => {
+        const allowedProfile = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        const allowedBanner = ['image/jpeg', 'image/jpg', 'image/png'];
+
+        if (type === 'profile' && !allowedProfile.includes(file.type)) {
+            resolve('Formato no válido (Usa GIF, JPG o PNG)');
+            return;
+        }
+        if (type === 'banner' && !allowedBanner.includes(file.type)) {
+            resolve('Para el banner solo JPG o PNG');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            resolve('La imagen supera los 5MB');
+            return;
+        }
+
+        if (type === 'banner') {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(img.src);
+                if (img.width < 1500 || img.height < 500) {
+                    resolve('Tamaño insuficiente (Min 1500x500px)');
+                } else {
+                    resolve(null);
+                }
+            };
+        } else {
+            resolve(null);
+        }
+    });
+};
+
+const handleFileSelect = async (event, type) => {
+    const file = event.target.files?.[0] || event.dataTransfer?.files?.[0];
+    if (!file) return;
+
+    const errorRef = type === 'profile' ? profileError : bannerError;
+    const previewRef = type === 'profile' ? profilePreview : bannerPreview;
+    const formKey = type === 'profile' ? 'Foto_de_perfil' : 'Foto_de_portada';
+
+    errorRef.value = ''; // Limpiar errores previos
+
+    const error = await validateImage(file, type);
+    if (error) {
+        errorRef.value = error;
+        return;
+    }
+
+    // Revocar URL anterior para evitar fugas de memoria
+    if (previewRef.value) {
+        URL.revokeObjectURL(previewRef.value);
+    }
+
+    form[formKey] = file;
+    previewRef.value = URL.createObjectURL(file);
+    simulateUpload(type);
+};
+
+const removeImage = (type) => {
+    if (type === 'profile') {
+        if (profilePreview.value) URL.revokeObjectURL(profilePreview.value);
+        form.Foto_de_perfil = null;
+        profilePreview.value = null;
+        profileProgress.value = 0;
+        profileError.value = '';
+    } else {
+        if (bannerPreview.value) URL.revokeObjectURL(bannerPreview.value);
+        form.Foto_de_portada = null;
+        bannerPreview.value = null;
+        bannerProgress.value = 0;
+        bannerError.value = '';
+    }
+};
+
 const submit = () => {
     if (isStep3Valid.value) {
         form.post(route('profile.complete'), {
             forceFormData: true,
+            onStart: () => {
+                isSubmitting.value = true;
+                submitStatus.value = 'Subiendo su información...';
+                submitProgress.value = 10;
+            },
+            onProgress: (progress) => {
+                if (progress.percentage) {
+                    // Mapeo de progreso: los primeros 80% son la subida real
+                    submitProgress.value = Math.min(progress.percentage * 0.8, 80);
+                }
+            },
+            onSuccess: () => {
+                submitStatus.value = 'Cargando datos...';
+                submitProgress.value = 90;
+                
+                setTimeout(() => {
+                    submitStatus.value = 'Proceso completado';
+                    submitProgress.value = 100;
+                    showSuccess.value = true;
+                }, 800);
+            },
+            onFinish: () => {
+                // El redireccionamiento ocurrirá automáticamente por Inertia, 
+                // pero si queremos asegurar el "check" verde, podemos manejarlo así:
+                if (showSuccess.value) {
+                    // Mantener la pantalla de éxito 1.5s antes de que Inertia cambie la página
+                }
+            }
         });
     }
 };
@@ -292,51 +435,126 @@ const submit = () => {
 
                 <!--================ PASO 2: FOTOS ================-->
                 <Transition name="fade-slide" mode="out-in">
-                    <div v-if="currentStep === 2" key="step2" class="space-y-6">
-                        <!-- Foto de Perfil -->
-                        <div class="space-y-2">
-                            <label class="block ml-1 text-sm font-medium text-gray-300">Foto de Perfil (Opcional)</label>
-                            <label for="Foto_de_perfil" class="flex flex-col items-center justify-center w-full min-h-[160px] cursor-pointer transition-all duration-300 bg-black/40 border-2 border-dashed border-white/20 rounded-3xl hover:border-indigo-400 hover:bg-black/60 group backdrop-blur-sm p-6 overflow-hidden relative">
-                                <input id="Foto_de_perfil" name="Foto_de_perfil" type="file" @change="form.Foto_de_perfil = $event.target.files[0]" accept="image/*" class="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer" />
-                                <div v-if="!form.Foto_de_perfil" class="flex flex-col items-center justify-center space-y-3 text-center">
-                                    <div class="p-4 transition-transform rounded-full bg-white/5 group-hover:scale-110 group-hover:bg-indigo-500/20">
-                                        <Camera class="w-8 h-8 text-gray-400 group-hover:text-indigo-400" />
+                    <div v-if="currentStep === 2" key="step2" class="space-y-10">
+                        
+                        <!-- Sección Foto de Perfil (Diseño Formal) -->
+                        <div class="flex flex-col items-center justify-center space-y-6">
+                            <h3 class="text-sm font-black tracking-widest text-indigo-300 uppercase">Avatar de Usuario</h3>
+                            
+                            <div 
+                                @dragover.prevent="isDraggingProfile = true"
+                                @dragleave.prevent="isDraggingProfile = false"
+                                @drop.prevent="isDraggingProfile = false; handleFileSelect($event, 'profile')"
+                                class="relative p-1.5 rounded-full border-2 border-dashed transition-all duration-500 hover:scale-105 active:scale-95"
+                                :class="isDraggingProfile ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5'"
+                            >
+                                <label for="Foto_de_perfil" class="relative block w-40 h-40 overflow-hidden rounded-full cursor-pointer group">
+                                    <input id="Foto_de_perfil" type="file" @change="handleFileSelect($event, 'profile')" accept="image/*" class="hidden" />
+                                    
+                                    <!-- Preview Existente -->
+                                    <div v-if="profilePreview" class="absolute inset-0 z-10">
+                                        <img :src="profilePreview" class="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110" />
+                                        <div class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/60 backdrop-blur-sm group-hover:opacity-100">
+                                            <RefreshCw class="w-8 h-8 text-white animate-spin-slow" />
+                                        </div>
                                     </div>
-                                    <p class="text-sm font-medium text-gray-300 group-hover:text-indigo-300">Haz clic o arrastra una imagen</p>
-                                    <p class="text-xs text-gray-500">PNG, JPG hasta 5MB</p>
-                                </div>
-                                <div v-else class="flex flex-col items-center justify-center text-center">
-                                    <div class="p-3 text-emerald-400 bg-emerald-400/10 rounded-full mb-3 shadow-[0_0_20px_rgba(52,211,153,0.2)]">
-                                        <Check class="w-8 h-8" />
+
+                                    <!-- Loading State -->
+                                    <div v-if="profileLoading" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+                                        <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                        <span class="mt-2 text-[10px] font-bold text-indigo-400">{{ Math.round(profileProgress) }}%</span>
                                     </div>
-                                    <p class="text-sm font-bold text-emerald-300">{{ form.Foto_de_perfil.name }}</p>
-                                    <p class="mt-1 text-xs text-gray-400">Haz clic para cambiar</p>
-                                </div>
-                            </label>
-                            <InputError class="mt-1 text-xs text-red-500" :message="form.errors.Foto_de_perfil" />
+
+                                    <!-- Placeholder Vacío -->
+                                    <div v-else-if="!profilePreview" class="flex flex-col items-center justify-center w-full h-full bg-black/40 group-hover:bg-black/60 transition-colors">
+                                        <Camera class="w-10 h-10 text-gray-500 transition-colors group-hover:text-indigo-400" />
+                                        <span class="mt-2 text-[10px] font-bold text-gray-500 group-hover:text-indigo-300">AÑADIR FOTO</span>
+                                    </div>
+                                </label>
+
+                                <!-- Botón de eliminar si hay imagen -->
+                                <button v-if="profilePreview && !profileLoading" @click.prevent="removeImage('profile')" class="absolute top-0 right-0 z-30 p-2 text-white transition-transform bg-rose-500 rounded-full shadow-lg hover:scale-110 active:scale-90">
+                                    <X class="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div class="text-center">
+                                <p class="text-xs text-gray-400">Recomendado: Imagen cuadrada de perfil formal</p>
+                                <Transition name="fade">
+                                    <p v-if="profileError" class="mt-2 text-xs font-bold text-rose-500 flex items-center justify-center gap-1.5 animate-bounce">
+                                        <X class="w-3.5 h-3.5" /> {{ profileError }}
+                                    </p>
+                                </Transition>
+                            </div>
                         </div>
 
-                        <!-- Foto de Portada -->
-                        <div class="space-y-2">
-                            <label class="block ml-1 text-sm font-medium text-gray-300">Foto de Portada (Opcional)</label>
-                            <label for="Foto_de_portada" class="flex flex-col items-center justify-center w-full min-h-[160px] cursor-pointer transition-all duration-300 bg-black/40 border-2 border-dashed border-white/20 rounded-3xl hover:border-indigo-400 hover:bg-black/60 group backdrop-blur-sm p-6 overflow-hidden relative">
-                                <input id="Foto_de_portada" name="Foto_de_portada" type="file" @change="form.Foto_de_portada = $event.target.files[0]" accept="image/*" class="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer" />
-                                <div v-if="!form.Foto_de_portada" class="flex flex-col items-center justify-center space-y-3 text-center">
-                                    <div class="p-4 transition-transform rounded-full bg-white/5 group-hover:scale-110 group-hover:bg-indigo-500/20">
-                                        <ImageIcon class="w-8 h-8 text-gray-400 group-hover:text-indigo-400" />
+                        <div class="w-full h-px bg-white/5"></div>
+
+                        <!-- Sección Banner (Diseño Formal Panorámico) -->
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between px-2">
+                                <h3 class="text-sm font-black tracking-widest text-purple-300 uppercase">Encabezado de Perfil</h3>
+                                <span class="text-[10px] font-black text-gray-500 tracking-wider">RECOMENDADO 1500×500</span>
+                            </div>
+
+                            <div 
+                                @dragover.prevent="isDraggingBanner = true"
+                                @dragleave.prevent="isDraggingBanner = false"
+                                @drop.prevent="isDraggingBanner = false; handleFileSelect($event, 'banner')"
+                                class="relative group"
+                            >
+                                <label 
+                                    for="Foto_de_portada" 
+                                    class="relative block w-full aspect-[3/1] rounded-[2rem] overflow-hidden transition-all duration-500 border-2 border-dashed bg-white/5 backdrop-blur-md cursor-pointer"
+                                    :class="[
+                                        isDraggingBanner ? 'border-purple-500 bg-purple-500/10' : 'border-white/10 hover:border-purple-500/50',
+                                        bannerPreview ? 'border-solid border-white/20' : ''
+                                    ]"
+                                >
+                                    <input id="Foto_de_portada" type="file" @change="handleFileSelect($event, 'banner')" accept="image/*" class="hidden" />
+
+                                    <!-- Preview Existente -->
+                                    <div v-if="bannerPreview" class="absolute inset-0 z-10 w-full h-full">
+                                        <img :src="bannerPreview" class="object-cover w-full h-full transition-transform duration-1000 group-hover:scale-105" />
+                                        <div class="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 backdrop-blur-sm group-hover:opacity-100">
+                                            <div class="flex items-center gap-3 px-6 py-3 bg-white/10 rounded-2xl backdrop-blur-xl border border-white/20 shadow-2xl scale-90 group-hover:scale-100 transition-transform">
+                                                <RefreshCw class="w-5 h-5 text-white animate-spin-slow" />
+                                                <span class="text-xs font-bold text-white">REEMPLAZAR BANNER</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p class="text-sm font-medium text-gray-300 group-hover:text-indigo-300">Haz clic o arrastra una imagen</p>
-                                    <p class="text-xs text-gray-500">Panorámica recomendada, JPG/PNG</p>
-                                </div>
-                                <div v-else class="flex flex-col items-center justify-center text-center">
-                                    <div class="p-3 text-emerald-400 bg-emerald-400/10 rounded-full mb-3 shadow-[0_0_20px_rgba(52,211,153,0.2)]">
-                                        <Check class="w-8 h-8" />
+
+                                    <!-- Loading State -->
+                                    <div v-if="bannerLoading" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+                                        <div class="w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                            <div class="h-full bg-purple-500 transition-all duration-300" :style="{ width: bannerProgress + '%' }"></div>
+                                        </div>
+                                        <span class="mt-3 text-[10px] font-black tracking-widest text-purple-400">CARGANDO {{ Math.round(bannerProgress) }}%</span>
                                     </div>
-                                    <p class="text-sm font-bold text-emerald-300">{{ form.Foto_de_portada.name }}</p>
-                                    <p class="mt-1 text-xs text-gray-400">Haz clic para cambiar</p>
-                                </div>
-                            </label>
-                            <InputError class="mt-1 text-xs text-red-500" :message="form.errors.Foto_de_portada" />
+
+                                    <!-- Placeholder Vacío -->
+                                    <div v-else-if="!bannerPreview" class="flex flex-col items-center justify-center w-full h-full space-y-3 p-6 text-center">
+                                        <div class="p-4 rounded-2xl bg-white/5 group-hover:bg-purple-500/20 transition-all group-hover:scale-110 shadow-xl">
+                                            <ImageIcon class="w-8 h-8 text-gray-500 group-hover:text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-gray-300">Arrastra o selecciona el banner</p>
+                                            <p class="text-[10px] text-gray-500 font-bold">1500 × 500 px • Máx 5MB</p>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <!-- Botón de eliminar si hay imagen -->
+                                <button v-if="bannerPreview && !bannerLoading" @click.prevent="removeImage('banner')" class="absolute top-4 right-4 z-30 p-2.5 text-white transition-transform bg-rose-500/80 hover:bg-rose-500 rounded-xl shadow-xl hover:scale-110 active:scale-90 backdrop-blur-sm">
+                                    <X class="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <Transition name="fade">
+                                <p v-if="bannerError" class="text-xs font-bold text-rose-500 flex items-center justify-start gap-2 ml-2 px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl max-w-fit">
+                                    <X class="w-4 h-4" /> {{ bannerError }}
+                                </p>
+                            </Transition>
                         </div>
                     </div>
                 </Transition>
@@ -493,20 +711,152 @@ const submit = () => {
             </form>
         </div>
     </div>
+
+    <!--================ OVERLAY DE CARGA / SUBIDA FINAL ================-->
+    <Transition name="fade-overlay">
+        <div v-if="isSubmitting" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-2xl">
+            <!-- Partículas de fondo suaves -->
+            <div class="absolute inset-0 z-0 overflow-hidden opacity-30">
+                <div class="absolute w-[500px] h-[500px] bg-indigo-500/20 rounded-full blur-[120px] top-1/4 -left-1/4 animate-pulse"></div>
+                <div class="absolute w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[120px] bottom-1/4 -right-1/4 animate-pulse" style="animation-delay: 2s"></div>
+            </div>
+
+            <div class="relative z-10 w-full max-w-md p-8 text-center">
+                <!-- Icono Dinámico / Check de Éxito -->
+                <div class="flex justify-center mb-10">
+                    <div v-if="!showSuccess" class="relative">
+                        <div class="w-24 h-24 border-4 border-indigo-500/20 rounded-full"></div>
+                        <div 
+                            class="absolute top-0 left-0 w-24 h-24 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"
+                            :style="{ animationDuration: '1s' }"
+                        ></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <Upload class="w-8 h-8 text-indigo-400 animate-bounce" />
+                        </div>
+                    </div>
+                    
+                    <!-- Check Animado (SVG Path) -->
+                    <div v-else class="success-checkmark">
+                        <div class="check-icon">
+                            <span class="icon-line line-tip"></span>
+                            <span class="icon-line line-long"></span>
+                            <div class="icon-circle"></div>
+                            <div class="icon-fix"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="mb-4 text-2xl font-black tracking-tighter text-white uppercase sm:text-3xl">
+                    {{ submitStatus }}
+                </h3>
+                
+                <div class="relative w-full h-2 mb-4 overflow-hidden rounded-full bg-white/10 shadow-inner">
+                    <div 
+                        class="absolute h-full transition-all duration-700 ease-out bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.6)]"
+                        :style="{ width: `${submitProgress}%` }"
+                    ></div>
+                </div>
+                
+                <p class="text-xs font-bold tracking-widest text-gray-500 uppercase">
+                    {{ Math.round(submitProgress) }}% completado
+                </p>
+
+                <div v-if="showSuccess" class="mt-8 transition-all duration-500 animate-fade-in">
+                    <p class="text-sm font-medium text-indigo-300">¡Bienvenido a Campus Market!</p>
+                    <p class="text-[10px] text-gray-500 mt-1">Redirigiendo al Dashboard...</p>
+                </div>
+            </div>
+        </div>
+    </Transition>
 </template>
 
 <style scoped>
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-    transition: all 0.4s ease;
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
-.fade-slide-enter-from {
-    opacity: 0;
-    transform: translateX(30px);
+.animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
 }
-.fade-slide-leave-to {
+
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
     opacity: 0;
-    transform: translateX(-30px);
+}
+
+.fade-overlay-enter-active, .fade-overlay-leave-active {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fade-overlay-enter-from, .fade-overlay-leave-to {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+}
+
+/* Success Checkmark Animation Styles */
+.success-checkmark {
+    width: 80px;
+    height: 115px;
+    margin: 0 auto;
+}
+.success-checkmark .check-icon {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    border-radius: 50%;
+    box-sizing: content-box;
+    border: 4px solid #10b981;
+}
+.success-checkmark .check-icon::before {
+    top: 3px; left: -2px; width: 30px; transform-origin: 100% 50%; border-radius: 100px 0 0 100px;
+}
+.success-checkmark .check-icon::after {
+    top: 0; left: 30px; width: 60px; transform-origin: 0 50%; border-radius: 0 100px 100px 0; animation: rotate-circle 4.25s ease-in;
+}
+.success-checkmark .check-icon .icon-line {
+    height: 5px; background-color: #10b981; display: block; border-radius: 2px; position: absolute; z-index: 10;
+}
+.success-checkmark .check-icon .icon-line.line-tip {
+    top: 46px; left: 14px; width: 25px; transform: rotate(45deg); animation: icon-line-tip 0.75s;
+}
+.success-checkmark .check-icon .icon-line.line-long {
+    top: 38px; right: 8px; width: 47px; transform: rotate(-45deg); animation: icon-line-long 0.75s;
+}
+.success-checkmark .check-icon .icon-circle {
+    top: -4px; left: -4px; z-index: 10; width: 80px; height: 80px; border-radius: 50%; border: 4px solid rgba(16, 185, 129, 0.2); position: absolute; box-sizing: content-box;
+}
+.success-checkmark .check-icon .icon-fix {
+    top: 8px; width: 5px; left: 26px; z-index: 1; height: 85px; position: absolute; transform: rotate(-45deg); background-color: transparent;
+}
+
+@keyframes icon-line-tip {
+    0% { width: 0; left: 1px; top: 19px; }
+    54% { width: 0; left: 1px; top: 19px; }
+    70% { width: 50px; left: -8px; top: 37px; }
+    84% { width: 17px; left: 21px; top: 48px; }
+    100% { width: 25px; left: 14px; top: 46px; }
+}
+@keyframes icon-line-long {
+    0% { width: 0; right: 46px; top: 54px; }
+    65% { width: 0; right: 46px; top: 54px; }
+    84% { width: 55px; right: 0px; top: 35px; }
+    100% { width: 47px; right: 8px; top: 38px; }
+}
+
+@keyframes rotate-circle {
+    0% { transform: rotate(-45deg); }
+    5% { transform: rotate(-45deg); }
+    12% { transform: rotate(-405deg); }
+    100% { transform: rotate(-405deg); }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.8s ease-out forwards;
+}
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .dropdown-enter-active,

@@ -3,34 +3,39 @@ import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import CardPubli from '@/Components/CardPubli.vue';
-import { Filter, Search, Plus, ArchiveX } from 'lucide-vue-next';
+import { 
+    Filter, 
+    Search, 
+    Plus, 
+    ArchiveX, 
+    TrendingUp, 
+    Sparkles, 
+    AlertCircle,
+    Layers,
+    ArrowRight
+} from 'lucide-vue-next';
 
 const props = defineProps({
-    publicaciones: Array,
+    publicaciones: { type: Array, default: () => [] },
     mejores: { type: Array, default: () => [] },
     currentUserId: Number,
     userEstado: String,
 });
 
 const page = usePage();
-
 const selectedCategory = ref(null);
-const isDropdownOpen = ref(false);
+const searchTerm = ref("");
 
 const categories = computed(() => {
-    if (!props.publicaciones || props.publicaciones.length === 0) return [];
+    if (!props.publicaciones?.length) return [];
     const unique = new Map();
     props.publicaciones.forEach(pub => {
         if (pub.categoria && pub.Cod_Categoria) {
-            if (!unique.has(pub.Cod_Categoria)) {
-                unique.set(pub.Cod_Categoria, pub.categoria.Nombre_Categoria);
-            }
+            unique.set(pub.Cod_Categoria, pub.categoria.Nombre_Categoria);
         }
     });
     return Array.from(unique, ([id, name]) => ({ Cod_Categoria: id, Nombre_Categoria: name }));
 });
-
-const searchTerm = ref("");
 
 const filteredPublicaciones = computed(() => {
     let pubs = props.publicaciones || [];
@@ -39,254 +44,206 @@ const filteredPublicaciones = computed(() => {
     }
     if (searchTerm.value.trim() !== "") {
         const term = searchTerm.value.trim().toLowerCase();
-        pubs = pubs.filter(pub => pub.Titulo_Publicacion && pub.Titulo_Publicacion.toLowerCase().includes(term));
+        pubs = pubs.filter(pub => pub.Titulo_Publicacion?.toLowerCase().includes(term));
     }
     return pubs;
 });
 
-function handleEdit(id) {
-    try {
-        if (typeof route === 'function') {
-            router.visit(route('publicaciones.edit', id));
-        } else {
-            router.visit(`/publicaciones/${id}/edit`);
-        }
-    } catch (e) {
-        console.error('Editar publicación:', e);
-    }
-}
-
 function handleContact(publicationId) {
     const publication = props.publicaciones.find(pub => pub.id === publicationId);
+    if (!publication?.vendedor) return;
 
-    if (!publication || !publication.vendedor) {
-        alert('No se pudo encontrar al vendedor.');
-        return;
-    }
-
-    try {
-        const ownerId = publication.vendedor?.user?.id ?? publication.vendedor?.user_id ?? null;
-        const meId = page.props?.auth?.user?.id ?? null;
-        if (ownerId && meId && Number(ownerId) === Number(meId)) {
-            alert('No puedes contactar a tu propia publicación.');
-            return;
-        }
-    } catch (e) {}
-
-    let sellerPhone = publication.vendedor.Telefono || publication.vendedor.telefono || null;
-    if (!sellerPhone && publication.vendedor.user) {
-        sellerPhone = publication.vendedor.user.Telefono || publication.vendedor.user.telefono || (publication.vendedor.user.usuarioCampusMarket && publication.vendedor.user.usuarioCampusMarket.Telefono) || null;
-    }
-
+    const sellerPhone = publication.vendedor.Telefono || publication.vendedor.user?.Telefono;
     if (!sellerPhone) {
         alert('El vendedor no tiene número de teléfono disponible.');
         return;
     }
 
-    const buyer = page.props?.auth?.user || null;
-    const buyerName = buyer?.name || '';
-    const buyerPhone = buyer?.Telefono || buyer?.telefono || buyer?.usuarioCampusMarket?.Telefono || '';
-
-    let normalized = String(sellerPhone).replace(/\D+/g, '');
-    if (!normalized) {
-        alert('El número de teléfono del vendedor no es válido.');
-        return;
-    }
-
-    const title = publication.Titulo_Publicacion || publication.title || '';
-    const message = `Hola, soy ${buyerName}. Estoy interesado en tu publicación "${title}".` + (buyerPhone ? ` Mi teléfono es ${buyerPhone}.` : '');
-    const encoded = encodeURIComponent(message);
-
-    const waUrl = `https://wa.me/${normalized}?text=${encoded}`;
-    window.open(waUrl, '_blank');
+    const buyerName = page.props.auth.user.name;
+    const title = publication.Titulo_Publicacion;
+    const message = `Hola, soy ${buyerName}. Estoy interesado en tu publicación "${title}" en Campus Market.`;
+    window.open(`https://wa.me/${String(sellerPhone).replace(/\D+/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
 }
 </script>
 
 <template>
-    <AppLayout title="Inicio">
+    <AppLayout title="Dashboard">
         <template #header>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h2 class="text-2xl font-bold tracking-tight text-gray-900">
-                    Mercado Universitario
-                </h2>
-
-                <div class="flex items-center gap-3">
-                    <Link 
-                        :href="route('dashboard.create')" 
-                        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition-all bg-indigo-600 rounded-lg shadow-sm hover:bg-indigo-500 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 active:scale-95"
-                    >
-                        <Plus class="w-4 h-4" />
-                        Crear Publicación
-                    </Link>
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2 text-brand-500 dark:text-brand-400 font-black tracking-widest text-[10px] uppercase">
+                    <TrendingUp class="w-3 h-3" />
+                    <span>Plataforma de Intercambio</span>
                 </div>
+                <h1 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+                    Explora el <span class="text-brand-600 dark:text-brand-400">Marketplace</span>
+                </h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-2xl">
+                    Descubre artículos, libros y servicios exclusivos de la comunidad universitaria Unifranz.
+                </p>
             </div>
         </template>
 
-        <!-- Panel de Inhabilitado -->
-        <div v-if="userEstado === 'Inactivo'" class="max-w-7xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center p-4 border-l-4 border-red-500 bg-red-50 rounded-r-lg">
-                <div class="flex-1">
-                    <h3 class="text-sm font-medium text-red-800">Cuenta Inhabilitada</h3>
-                    <div class="mt-1 text-sm text-red-700">
-                        Usted ha sido inhabilitado por administración. Por favor contacte con soporte a través de WhatsApp: 
-                        <a href="https://wa.me/73527947" target="_blank" class="font-semibold underline hover:text-red-900">73527947</a>
-                    </div>
+        <!-- Banner de Inactivo -->
+        <div v-if="userEstado === 'Inactivo'" class="mb-10 overflow-hidden rounded-[2.5rem] bg-rose-500 shadow-[0_20px_40px_-10px_rgba(244,63,94,0.3)] border border-rose-400 animate-in fade-in slide-in-from-top-4 duration-700">
+            <div class="flex flex-col md:flex-row items-center gap-8 p-10">
+                <div class="p-5 rounded-3xl bg-white/20 backdrop-blur-md border border-white/20 shrink-0">
+                    <AlertCircle class="w-12 h-12 text-white" />
                 </div>
+                <div class="flex-1 text-center md:text-left">
+                    <h3 class="text-2xl font-black text-white mb-2">Acceso Restringido</h3>
+                    <p class="text-rose-50 text-base font-medium leading-relaxed opacity-90">
+                        Tu cuenta ha sido inhabilitada temporalmente por la administración. Para resolver esta situación, por favor contacta a nuestro equipo de soporte.
+                    </p>
+                </div>
+                <a href="https://wa.me/73527947" target="_blank" class="flex items-center gap-3 px-8 py-4 bg-white text-rose-600 font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-2xl">
+                    Soporte Técnico
+                    <ArrowRight class="w-5 h-5" />
+                </a>
             </div>
         </div>
 
-        <div class="py-10">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                
-                <!-- Barra de Herramientas Premium -->
-                <div class="flex flex-col gap-4 p-4 mb-8 bg-white border border-gray-100 shadow-sm sm:flex-row sm:items-center sm:justify-between rounded-xl">
-                    <!-- Búsqueda -->
-                    <div class="relative flex-1 max-w-lg">
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <Search class="w-5 h-5 text-gray-400" />
-                        </div>
-                        <input
-                            type="text"
-                            v-model="searchTerm"
-                            class="block w-full py-2.5 pl-10 pr-3 text-sm border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                            placeholder="Buscar artículos, libros..."
-                        >
-                    </div>
-
-                    <!-- Filtros -->
-                    <div class="relative z-20 flex items-center gap-2">
-                        <div class="relative">
-                            <button
-                                @click="isDropdownOpen = !isDropdownOpen"
-                                :class="[
-                                    'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all border rounded-lg',
-                                    selectedCategory ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                                ]"
-                            >
-                                <Filter class="w-4 h-4" />
-                                <span>{{ selectedCategory ? categories.find(c => c.Cod_Categoria === selectedCategory)?.Nombre_Categoria : 'Categorías' }}</span>
-                            </button>
-
-                            <!-- Dropdown -->
-                            <div
-                                v-show="isDropdownOpen"
-                                @click.away="isDropdownOpen = false"
-                                class="absolute right-0 w-56 mt-2 origin-top-right bg-white border border-gray-100 rounded-xl shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none"
-                            >
-                                <div class="p-1">
-                                    <button
-                                        @click="selectedCategory = null; isDropdownOpen = false"
-                                        :class="[
-                                            'flex w-full items-center px-4 py-2 text-sm rounded-lg transition-colors',
-                                            selectedCategory === null ? 'bg-indigo-50 font-semibold text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
-                                        ]"
-                                    >
-                                        Todas las categorías
-                                    </button>
-                                    <button
-                                        v-for="cat in categories"
-                                        :key="cat.Cod_Categoria"
-                                        @click="selectedCategory = cat.Cod_Categoria; isDropdownOpen = false"
-                                        :class="[
-                                            'flex w-full items-center px-4 py-2 text-sm rounded-lg transition-colors mt-1',
-                                            selectedCategory === cat.Cod_Categoria ? 'bg-indigo-50 font-semibold text-indigo-700' : 'text-gray-700 hover:bg-gray-50'
-                                        ]"
-                                    >
-                                        {{ cat.Nombre_Categoria }}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button 
-                            v-if="selectedCategory || searchTerm"
-                            @click="selectedCategory = null; searchTerm = ''"
-                            class="px-3 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900"
-                        >
-                            Limpiar
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Sección Mejores Valorados (Sólo si no hay búsqueda/filtro) -->
-                <div v-if="!selectedCategory && !searchTerm && props.mejores && props.mejores.length > 0" class="mb-12">
-                    <div class="flex items-center gap-3 mb-6">
-                        <h3 class="text-xl font-bold tracking-tight text-gray-900">Destacados</h3>
-                        <div class="h-px bg-gray-200 flex-1"></div>
-                    </div>
-                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        <div v-for="pub in props.mejores" :key="pub.id" class="flex justify-center transition-transform hover:-translate-y-1">
-                            <CardPubli
-                                :title="pub.Titulo_Publicacion"
-                                :subtitle="`Bs ${pub.Precio_Publicacion}`"
-                                :description="pub.Descripcion_Publicacion"
-                                :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
-                                :id="pub.id"
-                                :user="pub.vendedor?.user || null"
-                                :currentUserId="page.props.auth.user.id"
-                                :isOwner="pub.vendedor?.user_id === page.props.auth.user.id"
-                                :estado="pub.estado"
-                                :publicacion="pub"
-                                @edit="handleEdit"
-                                @contact="handleContact"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Lista de Publicaciones Normales -->
-                <div class="flex items-center gap-3 mb-6">
-                    <h3 class="text-xl font-bold tracking-tight text-gray-900">
-                        {{ searchTerm ? 'Resultados de Búsqueda' : (selectedCategory ? 'Resultados de Categoría' : 'Recientes') }}
-                    </h3>
-                    <div class="h-px bg-gray-200 flex-1"></div>
-                </div>
-
-                <div v-if="filteredPublicaciones && filteredPublicaciones.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    <div v-for="pub in filteredPublicaciones" :key="pub.id" class="flex justify-center transition-transform hover:-translate-y-1">
-                        <CardPubli
-                            :title="pub.Titulo_Publicacion"
-                            :subtitle="`Bs ${pub.Precio_Publicacion}`"
-                            :description="pub.Descripcion_Publicacion"
-                            :category="pub.categoria ? pub.categoria.Nombre_Categoria : pub.Cod_Categoria"
-                            :id="pub.id"
-                            :user="pub.vendedor?.user || null"
-                            :currentUserId="page.props.auth.user.id"
-                            :isOwner="pub.vendedor?.user_id === page.props.auth.user.id"
-                            :estado="pub.estado"
-                            :publicacion="pub"
-                            @edit="handleEdit"
-                            @contact="handleContact"
-                        />
-                    </div>
-                </div>
-
-                <!-- Empty States (Estado Vacío) -->
-                <div v-else class="flex flex-col items-center justify-center p-12 text-center bg-white border border-gray-100 rounded-2xl shadow-sm">
-                    <div class="flex items-center justify-center w-16 h-16 mb-4 bg-gray-50 rounded-full">
-                        <ArchiveX class="w-8 h-8 text-gray-400" />
-                    </div>
-                    <h3 class="mb-1 text-lg font-bold text-gray-900">No se encontraron resultados</h3>
-                    <p class="mb-6 text-sm text-gray-500 max-w-sm">
-                        {{ selectedCategory || searchTerm ? 'Intenta ajustando tus filtros de búsqueda o eliminando palabras.' : 'Aún no hay publicaciones en el sistema. ¡Sé el primero en vender algo!' }}
-                    </p>
-                    <button 
-                        v-if="selectedCategory || searchTerm"
-                        @click="selectedCategory = null; searchTerm = ''" 
-                        class="px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+        <div class="space-y-16">
+            <!-- Barra de Filtros Glassmorphism -->
+            <div class="sticky top-24 z-30 flex flex-col gap-4 p-5 lg:flex-row lg:items-center bg-white/80 dark:bg-dark-surface/80 backdrop-blur-2xl border border-light-border dark:border-dark-border rounded-[2.5rem] shadow-xl shadow-black/5">
+                <!-- Buscador Interno -->
+                <div class="relative flex-1 group">
+                    <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
+                    <input
+                        type="text"
+                        v-model="searchTerm"
+                        class="w-full py-3.5 pl-12 pr-4 text-sm bg-gray-100/50 dark:bg-black/40 border-0 focus:ring-2 focus:ring-brand-500/50 rounded-2xl transition-all dark:text-white dark:placeholder-gray-500"
+                        placeholder="Filtrar por título de publicación..."
                     >
-                        Limpiar Filtros
+                </div>
+
+                <!-- Chips de Categoría -->
+                <div class="flex flex-wrap items-center gap-2 lg:border-l lg:border-light-border dark:lg:border-dark-border lg:pl-4">
+                    <button
+                        @click="selectedCategory = null"
+                        :class="[
+                            'px-5 py-2.5 text-[10px] font-black tracking-widest uppercase rounded-xl border transition-all duration-300',
+                            selectedCategory === null 
+                                ? 'bg-brand-500 border-brand-400 text-white shadow-lg shadow-brand-500/30 scale-105' 
+                                : 'bg-white dark:bg-dark-surface border-light-border dark:border-dark-border text-gray-500 dark:text-gray-400 hover:border-brand-500/50'
+                        ]"
+                    >
+                        Todo
                     </button>
-                    <Link 
-                        v-else
-                        :href="route('dashboard.create')" 
-                        class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors shadow-sm"
+                    <button
+                        v-for="cat in categories"
+                        :key="cat.Cod_Categoria"
+                        @click="selectedCategory = cat.Cod_Categoria"
+                        :class="[
+                            'px-5 py-2.5 text-[10px] font-black tracking-widest uppercase rounded-xl border transition-all duration-300',
+                            selectedCategory === cat.Cod_Categoria 
+                                ? 'bg-brand-500 border-brand-400 text-white shadow-lg shadow-brand-500/30 scale-105' 
+                                : 'bg-white dark:bg-dark-surface border-light-border dark:border-dark-border text-gray-500 dark:text-gray-400 hover:border-brand-500/50'
+                        ]"
                     >
-                        Crear Publicación
-                    </Link>
+                        {{ cat.Nombre_Categoria }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección Destacados (Aurora Style) -->
+            <section v-if="!selectedCategory && !searchTerm && mejores.length" class="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 shadow-inner">
+                        <Sparkles class="w-6 h-6 text-amber-500" />
+                    </div>
+                    <div class="flex flex-col">
+                        <h2 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Selección Destacada</h2>
+                        <p class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Recomendaciones del sistema</p>
+                    </div>
+                    <div class="flex-1 h-px bg-gradient-to-r from-light-border dark:from-dark-border via-light-border/50 dark:via-dark-border/50 to-transparent ml-4"></div>
                 </div>
 
-            </div>
+                <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <CardPubli
+                        v-for="pub in mejores"
+                        :key="pub.id"
+                        :title="pub.Titulo_Publicacion"
+                        :subtitle="`Bs ${pub.Precio_Publicacion}`"
+                        :description="pub.Descripcion_Publicacion"
+                        :category="pub.categoria?.Nombre_Categoria"
+                        :id="pub.id"
+                        :user="pub.vendedor?.user"
+                        :currentUserId="page.props.auth.user.id"
+                        :isOwner="pub.vendedor?.user_id === page.props.auth.user.id"
+                        :estado="pub.estado"
+                        :publicacion="pub"
+                        @contact="handleContact"
+                    />
+                </div>
+            </section>
+
+            <!-- Grid Principal -->
+            <section class="animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="p-2.5 rounded-2xl bg-brand-500/10 border border-brand-500/20 shadow-inner">
+                        <Layers class="w-6 h-6 text-brand-600 dark:text-brand-400" />
+                    </div>
+                    <div class="flex flex-col">
+                        <h2 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
+                            {{ searchTerm || selectedCategory ? 'Resultados Encontrados' : 'Novedades del Market' }}
+                        </h2>
+                        <p class="text-[10px] font-bold text-brand-600 dark:text-brand-400 uppercase tracking-widest">
+                            {{ filteredPublicaciones.length }} Ofertas disponibles
+                        </p>
+                    </div>
+                    <div class="flex-1 h-px bg-gradient-to-r from-light-border dark:from-dark-border via-light-border/50 dark:via-dark-border/50 to-transparent ml-4"></div>
+                </div>
+
+                <div v-if="filteredPublicaciones.length" class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <CardPubli
+                        v-for="pub in filteredPublicaciones"
+                        :key="pub.id"
+                        :title="pub.Titulo_Publicacion"
+                        :subtitle="`Bs ${pub.Precio_Publicacion}`"
+                        :description="pub.Descripcion_Publicacion"
+                        :category="pub.categoria?.Nombre_Categoria"
+                        :id="pub.id"
+                        :user="pub.vendedor?.user"
+                        :currentUserId="page.props.auth.user.id"
+                        :isOwner="pub.vendedor?.user_id === page.props.auth.user.id"
+                        :estado="pub.estado"
+                        :publicacion="pub"
+                        @contact="handleContact"
+                    />
+                </div>
+
+                <!-- Empty State (Diseño Pulido) -->
+                <div v-else class="relative flex flex-col items-center justify-center py-32 px-10 text-center bg-white/30 dark:bg-dark-surface/30 backdrop-blur-md border-2 border-dashed border-light-border dark:border-dark-border rounded-[4rem] group overflow-hidden">
+                    <!-- Decoración de fondo -->
+                    <div class="absolute -top-20 -right-20 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl group-hover:bg-brand-500/10 transition-colors"></div>
+                    <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl group-hover:bg-brand-500/10 transition-colors"></div>
+                    
+                    <div class="relative p-8 rounded-full bg-gray-50 dark:bg-black/40 mb-8 shadow-inner border border-white dark:border-white/5">
+                        <ArchiveX class="w-16 h-16 text-gray-300 dark:text-gray-600 animate-pulse" />
+                    </div>
+                    
+                    <h3 class="text-3xl font-black text-gray-900 dark:text-white mb-3">Vaya, qué vacío está esto...</h3>
+                    <p class="text-gray-500 dark:text-gray-400 max-w-lg mx-auto mb-10 text-lg font-medium leading-relaxed">
+                        No hemos podido encontrar ninguna coincidencia para "<span class="text-brand-600 dark:text-brand-400 italic">{{ searchTerm || 'la categoría seleccionada' }}</span>". Intenta con términos más genéricos o limpia los filtros.
+                    </p>
+                    
+                    <button 
+                        @click="selectedCategory = null; searchTerm = ''"
+                        class="group/btn relative px-10 py-4 bg-brand-600 text-white font-black rounded-2xl shadow-2xl shadow-brand-500/40 hover:bg-brand-500 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 overflow-hidden"
+                    >
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
+                        Reiniciar Búsqueda
+                        <ArrowRight class="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
+                </div>
+            </section>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+/* Optimizaciones de rendimiento para animaciones */
+.animate-in {
+    will-change: transform, opacity;
+}
+</style>

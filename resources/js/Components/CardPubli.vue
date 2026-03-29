@@ -1,440 +1,239 @@
 <script setup>
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue'; // Importa funciones de Vue
-import { router } from '@inertiajs/vue3';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { router, Link } from '@inertiajs/vue3';
+import { 
+    Edit3, 
+    CheckCircle, 
+    Heart, 
+    MessageCircle, 
+    MoreHorizontal, 
+    Eye,
+    TrendingUp,
+    Clock
+} from 'lucide-vue-next';
 import ReportModal from '@/Components/ReportModal.vue';
 
-// Definición de las props que recibe el componente
 const props = defineProps({
-  title: {
-    type: String,
-    default: 'CARD' // Título por defecto
-  },
-  subtitle: {
-    type: String,
-    default: '' // Subtítulo por defecto
-  },
-  image: {
-    type: String,
-    default: null, // Imagen por defecto
-  },
-  description: {
-    type: String,
-    default: '' // Descripción por defecto
-  },
-  category: {
-    type: [String, Number],
-    default: null // Categoría por defecto
-  },
-  id: {
-    type: [String, Number],
-    default: null // ID del item
-  },
-  user: {
-    type: Object,
-    default: null // Usuario que publicó
-  },
-  currentUserId: {
-    type: [String, Number],
-    default: null // ID del usuario actual
-  },
-  isOwner: {
-    type: Boolean,
-    default: false // Si el usuario actual es propietario
-  },
-  initialIsFavorite: {
-    type: Boolean,
-    default: false
-  },
-  estado: {
-    type: String,
-    default: 'activa' // Estado de la publicación
-  },
-  publicacion: {
-    type: Object,
-    default: null // Objeto de publicación completo
-  }
+  title: { type: String, default: 'Publicación' },
+  subtitle: { type: String, default: '' },
+  image: { type: String, default: null },
+  description: { type: String, default: '' },
+  category: { type: [String, Number], default: null },
+  id: { type: [String, Number], default: null },
+  user: { type: Object, default: null },
+  currentUserId: { type: [String, Number], default: null },
+  isOwner: { type: Boolean, default: false },
+  initialIsFavorite: { type: Boolean, default: false },
+  estado: { type: String, default: 'activa' },
+  publicacion: { type: Object, default: null }
 });
 
-// El modal ha sido removido: navegamos a la página de la publicación
-const isFavorite = ref(false); // Controla si está en favoritos
-const isLoadingFavorite = ref(false); // Indica si se está procesando la petición
+const isFavorite = ref(false);
+const isLoadingFavorite = ref(false);
 const showReport = ref(false);
-const showModal = ref(false);
-
-const emit = defineEmits(["edit", "contact"]); // Eventos que el componente pueden emitir
-
-// Quitar borrador (activar publicación)
-function quitarBorrador() {
-  if (!props.publicacion || !props.publicacion.id) return;
-
-  // Confirmación simple
-  if (!confirm('¿Deseas publicar esta publicación y quitarla de borradores?')) return;
-
-  const pubId = props.publicacion.id;
-  try {
-    // Usar named route si está disponible
-    let routeUrl = `/publicaciones/${pubId}/active`;
-    try {
-      if (typeof route === 'function') {
-        routeUrl = route('publicaciones.active', pubId);
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // PATCH request via Inertia router
-    router.patch(routeUrl, {}, {
-      onStart: () => console.log('quitarBorrador: start', { routeUrl }),
-      onSuccess: (page) => {
-        console.log('quitarBorrador: success', page);
-        // Navegar a dashboard (lista de publicaciones)
-        try {
-          if (typeof route === 'function') {
-            router.visit(route('dashboard'));
-          } else {
-            router.visit('/dashboard');
-          }
-        } catch (e) {
-          window.location.href = '/dashboard';
-        }
-      },
-      onError: (err) => {
-        console.error('quitarBorrador error', err);
-        alert('No se pudo activar la publicación. Intenta de nuevo.');
-      }
-    });
-
-  } catch (e) {
-    console.error('quitarBorrador unexpected', e);
-    alert('Ocurrió un error inesperado');
-  }
-}
-
-// Computed para obtener imágenes (max 3) y aplicar estilo de fondo según el índice del carrusel
-const images = computed(() => {
-  // preferir imagenes desde publicacion.Imagen_Publicacion
-  if (props.publicacion && props.publicacion.Imagen_Publicacion) {
-    try {
-      const ip = props.publicacion.Imagen_Publicacion;
-      if (Array.isArray(ip)) {
-        return ip.slice(0,3).map(i => `/files/publicaciones/${i.split('/').pop()}`);
-      }
-      const parsed = JSON.parse(ip);
-      if (Array.isArray(parsed)) {
-        return parsed.slice(0,3).map(i => `/files/publicaciones/${i.split('/').pop()}`);
-      }
-      return ip ? [`/files/publicaciones/${String(ip).split('/').pop()}`] : (props.image ? [props.image] : []);
-    } catch (e) {
-      const ip = props.publicacion.Imagen_Publicacion;
-      return ip ? [`/files/publicaciones/${String(ip).split('/').pop()}`] : (props.image ? [props.image] : []);
-    }
-  }
-  if (props.image) return [props.image];
-  return [];
-});
-
 const carouselIndex = ref(0);
 let carouselTimer = null;
 
-const imageStyle = computed(() => {
-  if (!images.value.length) return null;
-  return { backgroundImage: 'url(' + images.value[carouselIndex.value] + ')' };
+const emit = defineEmits(["edit", "contact"]);
+
+const images = computed(() => {
+  if (props.publicacion?.Imagen_Publicacion) {
+    try {
+      const ip = props.publicacion.Imagen_Publicacion;
+      const parsed = Array.isArray(ip) ? ip : JSON.parse(ip);
+      return parsed.slice(0, 3).map(i => `/files/publicaciones/${i.split('/').pop()}`);
+    } catch (e) {
+      const ip = props.publicacion.Imagen_Publicacion;
+      return ip ? [`/files/publicaciones/${String(ip).split('/').pop()}`] : (props.image ? [props.image] : []);
+    }
+  }
+  return props.image ? [props.image] : [];
 });
 
-// Abrir la vista completa de la publicación (reemplaza el modal)
-function open() {
-  if (!props.id) return;
-  let url = `/publicaciones/${props.id}`;
-  try {
-    if (typeof route === 'function') {
-      url = route('publicaciones.show', props.id);
-    }
-  } catch (e) {
-    // ignore, usar url por defecto
-  }
+const currentImage = computed(() => images.value[carouselIndex.value] || '/images/placeholder.jpg');
 
-  router.visit(url, {
-    onStart: () => console.log('CardPubli: navegando a', url),
-    onError: (err) => console.error('CardPubli: error navegando', err),
-  });
-}
-
-// Función que emite el evento "edit" y cierra el modal
-function doEdit() {
-  // Instrumentación: logs para depurar por qué la navegación a edición provoca pantalla blanca
-  console.log('CardPubli: doEdit start', { id: props.id });
-  try {
-    if (!props.id) {
-      console.warn('CardPubli: doEdit sin id');
-      return;
-    }
-
-    // Usar named route si está disponible para respetar bindings y middleware
-    let url = `/publicaciones/${props.id}/edit`;
-    try {
-      if (typeof route === 'function') {
-        url = route('publicaciones.edit', props.id);
-      }
-    } catch (e) {
-      // ignore, ya tenemos url por defecto
-    }
-
-    router.visit(url, {
-      onStart: () => console.log('CardPubli: router.visit onStart', { url }),
-      onSuccess: (page) => {
-        console.log('CardPubli: router.visit onSuccess', page);
-        // No hay modal en esta versión; simplemente loguear
-      },
-      onError: (err) => {
-        console.error('CardPubli: router.visit onError', err);
-        // fallback: emitir evento para que el padre intente manejar la navegación
-        emit('edit', props.id);
-      },
-      onFinish: () => console.log('CardPubli: router.visit onFinish')
-    });
-
-  } catch (e) {
-    console.error('CardPubli: doEdit unexpected error', e);
-    emit('edit', props.id);
-  }
-}
-
-// Función que emite el evento "contact" y cierra el modal
-function doContact() {
-  console.log('doContact called with id:', props.id);
-  try {
-    // Previene contactar a uno mismo
-    const ownerId = props.publicacion?.vendedor?.user?.id ?? props.publicacion?.vendedor?.user_id ?? null;
-    if (ownerId && props.currentUserId && Number(ownerId) === Number(props.currentUserId)) {
-      alert('No puedes contactarte a ti mismo.');
-      return;
-    }
-  } catch (e) {
-    // ignore
-  }
-
-  if (props.id) {
-    console.log('Emitting contact event with id:', props.id);
-    emit('contact', props.id);
-  }
-  // No modal to close here; keep for compatibility
-  showModal.value = false;
-}
-
-function openReport() {
-  showReport.value = true;
-}
-
-function closeReport() {
-  showReport.value = false;
-}
-
-// Función para toggle favorito
 function toggleFavorito() {
-  if (!props.publicacion) return;
-
-  // Evitar marcar favorito en publicaciones propias
-  try {
-    const ownerId = props.publicacion.vendedor?.user?.id ?? null;
-    if (ownerId && props.currentUserId && ownerId === props.currentUserId) {
-      alert('No puedes marcar tu propia publicación como favorita');
-      return;
-    }
-  } catch (e) {
-    // ignore and continue
-  }
-
+  if (!props.publicacion || props.isOwner) return;
   isLoadingFavorite.value = true;
   router.post(route('favoritos.toggle', props.publicacion.id), {}, {
     onSuccess: () => {
       isFavorite.value = !isFavorite.value;
       isLoadingFavorite.value = false;
     },
-    onError: () => {
-      isLoadingFavorite.value = false;
-    }
+    onError: () => isLoadingFavorite.value = false
   });
 }
 
-// Función que cierra el modal al presionar Escape
-// ya no se usa onKeydown porque no hay modal
+function open() {
+  if (props.id) router.visit(route('publicaciones.show', props.id));
+}
 
-// Se añade el listener al montar el componente y se inicializa estado de favorito
+function activateBorrador() {
+  if (!confirm('¿Deseas publicar esta oferta ahora?')) return;
+  router.patch(route('publicaciones.active', props.id), {}, {
+    onSuccess: () => router.visit(route('dashboard'))
+  });
+}
+
 onMounted(() => {
-  if (props.initialIsFavorite) {
-    isFavorite.value = true;
-  }
-  // iniciar carrusel si hay varias imágenes
+  if (props.initialIsFavorite) isFavorite.value = true;
   if (images.value.length > 1) {
     carouselTimer = setInterval(() => {
-      carouselIndex.value = (carouselIndex.value + 1) % Math.min(images.value.length, 3);
-    }, 5000);
+      carouselIndex.value = (carouselIndex.value + 1) % images.value.length;
+    }, 4000);
   }
 });
-// Se elimina el listener al desmontar el componente y limpiar timer
+
 onBeforeUnmount(() => {
   if (carouselTimer) clearInterval(carouselTimer);
 });
 </script>
 
 <template>
-  <!-- Card como botón que abre modal -->
-  <button type="button" class="card" @click="open" aria-haspopup="dialog" :aria-expanded="showModal">
-    <!-- Imagen de fondo de la card -->
-    <div v-if="images.length" class="image" :style="imageStyle"></div>
-    <!-- Contenido textual de la card -->
-    <div class="content">
-      <h2>{{ props.title }}</h2> <!-- Título -->
-      <p v-if="props.subtitle" class="subtitle">{{ props.subtitle }}</p> <!-- Subtítulo -->
-    </div>
-    <!-- Botón Editar solo si es propietario -->
-      <button v-if="isOwner" @click.stop="doEdit" class="edit-button" title="Editar publicación">✏️</button>
-      <!-- Botón para quitar borrador (activar) visible sólo si es borrador -->
-      <button v-if="isOwner && props.estado === 'borrador'" @click.stop="quitarBorrador" class="edit-button" title="Quitar borrador" style="right:60px; background:#10b981">✔️</button>
-  </button>
+  <div 
+    class="group relative flex flex-col w-full bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2rem] overflow-hidden transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 active:scale-[0.98]"
+  >
+    <!-- Imagen / Header de la Card -->
+    <div @click="open" class="relative aspect-[4/3] overflow-hidden cursor-pointer">
+      <img 
+        :src="currentImage" 
+        class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        :alt="props.title"
+      />
+      
+      <!-- Overlay de Degradado -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
 
-  <!-- El modal fue removido: la tarjeta navega a la página de la publicación completa -->
-  <!-- Modal de reporte -->
-  <div v-if="showReport">
-    <ReportModal :publicacionId="props.publicacion ? props.publicacion.id : props.id" :ownerId="props.publicacion && props.publicacion.vendedor ? props.publicacion.vendedor.user_id : null" @close="closeReport" />
+      <!-- Badge de Categoría -->
+      <div class="absolute top-4 left-4">
+        <span class="px-3 py-1 text-[10px] font-black tracking-widest text-white uppercase bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
+          {{ props.category || 'Varios' }}
+        </span>
+      </div>
+
+      <!-- Favorito -->
+      <button 
+        v-if="!isOwner"
+        @click.stop="toggleFavorito"
+        class="absolute top-4 right-4 p-2.5 rounded-xl transition-all duration-300 backdrop-blur-md border"
+        :class="isFavorite 
+          ? 'bg-rose-500 border-rose-400 text-white shadow-lg' 
+          : 'bg-white/10 border-white/20 text-white hover:bg-white/20'"
+      >
+        <Heart class="w-4 h-4" :class="{ 'fill-current': isFavorite }" />
+      </button>
+
+      <!-- Badge de Estado (Borrador/Vendido) -->
+      <div v-if="props.estado !== 'activa'" class="absolute bottom-4 left-4">
+        <span 
+          :class="[
+            'px-3 py-1 text-[10px] font-black tracking-widest uppercase rounded-full border shadow-sm',
+            props.estado === 'borrador' ? 'bg-amber-500 border-amber-400 text-white' : 'bg-emerald-500 border-emerald-400 text-white'
+          ]"
+        >
+          {{ props.estado }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Contenido -->
+    <div class="flex flex-col flex-1 p-6">
+      <div class="flex items-start justify-between gap-3 mb-2">
+        <h3 
+          @click="open"
+          class="text-base font-bold text-gray-800 dark:text-white line-clamp-1 cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
+        >
+          {{ props.title }}
+        </h3>
+        <span class="text-sm font-black text-brand-600 dark:text-brand-400 shrink-0">
+          {{ props.subtitle }}
+        </span>
+      </div>
+
+      <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-6 leading-relaxed">
+        {{ props.description }}
+      </p>
+
+      <!-- Footer / Acciones -->
+      <div class="mt-auto flex items-center justify-between pt-4 border-t border-light-border dark:border-dark-border">
+        <!-- Usuario Vendedor -->
+        <div class="flex items-center gap-2 max-w-[60%]">
+          <div class="relative w-6 h-6 shrink-0">
+            <img 
+              v-if="props.user?.profile_photo_url"
+              :src="props.user.profile_photo_url"
+              class="w-full h-full rounded-full object-cover ring-1 ring-light-border dark:ring-dark-border"
+            />
+            <div v-else class="w-full h-full rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-[8px] font-bold text-brand-600 dark:text-brand-400">
+              {{ props.user?.name?.charAt(0) || 'U' }}
+            </div>
+          </div>
+          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400 truncate">{{ props.user?.name || 'Vendedor' }}</span>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex items-center gap-1.5">
+          <template v-if="isOwner">
+            <button 
+              @click.stop="activateBorrador" 
+              v-if="props.estado === 'borrador'"
+              class="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-xl transition-colors"
+              title="Publicar ahora"
+            >
+              <CheckCircle class="w-4 h-4" />
+            </button>
+            <button 
+              @click.stop="router.visit(route('publicaciones.edit', props.id))"
+              class="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-xl transition-colors"
+              title="Editar"
+            >
+              <Edit3 class="w-4 h-4" />
+            </button>
+          </template>
+          <template v-else>
+            <button 
+              @click.stop="emit('contact', props.id)"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-[10px] font-black rounded-xl shadow-lg shadow-brand-500/20 transition-all active:scale-90"
+            >
+              <MessageCircle class="w-3.5 h-3.5" />
+              CONTACTAR
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicador de Imágenes (Dot indicator) -->
+    <div v-if="images.length > 1" class="absolute bottom-[40%] left-1/2 -translate-x-1/2 flex gap-1 z-10">
+      <div 
+        v-for="(_, idx) in images" 
+        :key="idx"
+        :class="['h-1 rounded-full transition-all duration-300', carouselIndex === idx ? 'w-4 bg-white shadow-sm' : 'w-1 bg-white/40']"
+      ></div>
+    </div>
   </div>
+
+  <!-- Modal de reporte -->
+  <ReportModal 
+    v-if="showReport" 
+    :publicacionId="props.id" 
+    :ownerId="props.publicion?.vendedor?.user_id" 
+    @close="showReport = false" 
+  />
 </template>
 
 <style scoped>
-/* From Uiverse.io by bhaveshxrawat */
-.card {
-  width: 600px;                 /* Ancho de la card */
-  height: 400px;                /* Alto de la card */
-  background: #07182ea2;          /* Color de fondo */
-  position: relative;           /* Posicionamiento relativo para hijos */
-  display: flex;                /* Flex para centrar contenido */
-  place-content: center;        /* Centra contenido */
-  place-items: center;          /* Centra items */
-  overflow: hidden;             /* Oculta overflow */
-  border-radius: 20px;          /* Bordes redondeados */
-  border: none;                 /* Sin borde */
-  padding: 0;                   /* Sin padding */
-  cursor: pointer;              /* Cursor de puntero */
+/* Transiciones sutiles para el hover de la card */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-
-.card .content {
-  z-index: 1;                   /* Nivel de superposición */
-  text-align: center;           /* Texto centrado */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-
-.card h2 {
-  z-index: 1;                   /* Nivel de superposición */
-  color: rgb(255, 252, 252);                 /* Color blanco */
-  font-size: 1.25rem;           /* Tamaño del título */
-  margin: 0;                    /* Sin margen */
-}
-
-.card .subtitle {
-  color: #fdeded;               /* Gris claro */
-  font-size: 0.9rem;            /* Tamaño más pequeño que título */
-  margin-top: 6px;              /* Espacio superior respecto al título */
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  width: 100px;
-  background-image: linear-gradient(180deg, rgb(3, 16, 129), rgb(255, 48, 255));
-  height: 130%;
-  animation: rotBGimg 3s linear infinite;  /* Animación de rotación */
-  transition: all 0.2s linear;
-}
-
-@keyframes rotBGimg {
-  from { transform: rotate(0deg); }  /* Inicio de la animación */
-  to { transform: rotate(360deg); }  /* Final de la animación */
-}
-
-.card::after {
-  content: '';
-  position: absolute;
-  background: rgba(7, 24, 46, 0.322); /* Overlay translúcido */
-  inset: 5px;                        /* Espaciado desde los bordes */
-  border-radius: 15px;                /* Bordes redondeados */
-}
-
-.card .image {
-  position: absolute;      /* Posicionamiento absoluto */
-  inset: 5px;              /* Margen interno */
-  border-radius: 15px;
-  background-position: center; /* Centrado de imagen */
-  background-size: cover;      /* Cubrir todo el bloque */
-  z-index: 0;                  /* Detrás de contenido */
-}
-
-.card .content { z-index: 2; }  /* Por encima de la imagen */
-
-/* Modal removed: styles cleaned */
-
-.btn-primary {
-  background: #09a775;
-  color: white;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-favorite {
-  background: transparent;
-  color: #6b7280;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  cursor: pointer;
-}
-
-.btn-favorite-active {
-  background: #fecaca;
-  color: #dc2626;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #dc2626;
-  cursor: pointer;
-}
-
-.btn-secondary {
-  background: transparent;
-  color: #111827;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  cursor: pointer;
-}
-
-.edit-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 10;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.edit-button:hover {
-  background: #2563eb;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.edit-button:active {
-  transform: scale(0.95);
-}
-
 </style>

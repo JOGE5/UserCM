@@ -1,1 +1,0 @@
-- [x] Update app/Models/foros.php with table, primaryKey, fillable, and relationships.

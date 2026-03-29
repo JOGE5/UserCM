@@ -1,7 +1,25 @@
 <script setup>
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
+import TextInput from '@/Components/TextInput.vue';
+import InputLabel from '@/Components/InputLabel.vue';
+import InputError from '@/Components/InputError.vue';
+import FormSection from '@/Components/FormSection.vue';
+import { 
+    UploadCloud, 
+    X, 
+    ChevronRight, 
+    Sparkles, 
+    Package, 
+    Info, 
+    DollarSign,
+    ImageIcon,
+    CheckCircle2,
+    Plus as PlusIcon
+} from 'lucide-vue-next';
 
 defineProps({
     categorias: Array,
@@ -18,274 +36,273 @@ const form = useForm({
 
 const imagePreview = ref([]);
 const fileInput = ref(null);
+const isDragging = ref(false);
 
 const submit = () => {
-    // Forzar uso de FormData para asegurar envío correcto de archivos
-    // Añadir callbacks para capturar errores y finalizar el proceso visualmente
     form.post(route('publicaciones.store'), {
         forceFormData: true,
-        onStart: () => {
-            console.log('Enviando publicación...');
-        },
-        onError: (errors) => {
-            console.error('Errores de validación/servidor:', errors);
-            // Mostrar errores básicos al usuario para depuración rápida
-            try {
-                const msg = Object.values(errors).flat().join('\n');
-                if (msg) alert('Errores: \n' + msg);
-            } catch (e) {}
-        },
-        onFinish: () => {
-            console.log('Petición finalizada');
-        },
-        onSuccess: (page) => {
-            console.log('Publicación creada, redirigiendo...');
+        onSuccess: () => {
+            // Éxito
         },
     });
 };
 
-// Procesa un array de File (desde input o drop)
 function processFiles(files) {
     const arr = Array.from(files || []);
     if (arr.length === 0) return;
-    // Combinar con los ya seleccionados (asegurando que solo mantengamos File objects)
-    const existing = Array.isArray(form.Imagen_Publicacion) ? form.Imagen_Publicacion.filter(f => f instanceof File) : [];
-    // Deduplicar por nombre+size para evitar añadir el mismo archivo varias veces
-    const combined = existing.concat(arr).filter((f, idx, self) => {
-        return f instanceof File && self.findIndex(g => g.name === f.name && g.size === f.size) === idx;
-    });
-    const allowed = combined.slice(0, 3);
-    // Validar tamaño máximo 2MB por archivo
-    const tooLarge = allowed.find(f => f.size > 2 * 1024 * 1024);
-    if (tooLarge) {
-        alert('Una de las imágenes supera 2MB. Elige imágenes más pequeñas.');
-        imagePreview.value = [];
-        form.Imagen_Publicacion = [];
-        return;
-    }
+    
+    // Validar archivos
+    const validFiles = arr.filter(f => f.type.startsWith('image/'));
+    const combined = [...form.Imagen_Publicacion, ...validFiles].slice(0, 3);
+    
+    form.Imagen_Publicacion = combined;
+    rebuildPreviews();
+}
 
-    form.Imagen_Publicacion = allowed;
-    // Recrear previews según las imagenes permitidas
+function rebuildPreviews() {
     imagePreview.value = [];
-    allowed.forEach(file => {
-        if (!file.type.startsWith('image/')) return;
+    form.Imagen_Publicacion.forEach(file => {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreview.value.push(e.target.result);
-        };
+        reader.onload = (e) => imagePreview.value.push(e.target.result);
         reader.readAsDataURL(file);
     });
 }
 
 const handleImageChange = (event) => {
     processFiles(event.target.files);
-    // limpiar valor para permitir seleccionar los mismos archivos de nuevo o añadir más
-    try {
-        if (fileInput.value && fileInput.value instanceof HTMLInputElement) {
-            fileInput.value.value = null;
-        } else {
-            event.target.value = '';
-        }
-    } catch (e) {}
+    if (fileInput.value) fileInput.value.value = null; // Reset input
 };
 
 const handleDrop = (e) => {
-    e.preventDefault();
-    const dt = e.dataTransfer;
-    let files = [];
-    if (dt && dt.items && dt.items.length > 0) {
-        for (let i = 0; i < dt.items.length; i++) {
-            const item = dt.items[i];
-            if (item.kind === 'file') {
-                const f = item.getAsFile();
-                if (f) files.push(f);
-            }
-        }
-    } else if (dt && dt.files && dt.files.length > 0) {
-        files = Array.from(dt.files);
-    }
-
-    if (files.length > 0) processFiles(files);
+    isDragging.value = false;
+    processFiles(e.dataTransfer.files);
 };
 
-// Eliminar imagen seleccionada antes de enviar
 function removeSelected(index) {
-    // remover preview
-    if (imagePreview.value && imagePreview.value.length > index) {
-        imagePreview.value.splice(index, 1);
-    }
-    // remover archivo correspondiente
-    if (form.Imagen_Publicacion && form.Imagen_Publicacion.length > index) {
-        form.Imagen_Publicacion.splice(index, 1);
-    }
+    form.Imagen_Publicacion.splice(index, 1);
+    imagePreview.value.splice(index, 1);
 }
 </script>
 
 <template>
-    <AppLayout title="Crear Publicación">
+    <AppLayout title="Publicar Artículo">
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Crear Publicación
-            </h2>
+            <div class="flex flex-col gap-1">
+                <h1 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
+                    Nueva <span class="text-brand-600 dark:text-brand-400">Publicación</span>
+                </h1>
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">Marketplace Ecosistema Uni</p>
+            </div>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
+                <!-- Formulario Principal -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] p-8 shadow-sm">
                         <form @submit.prevent="submit" class="space-y-6">
                             <!-- Título -->
                             <div>
-                                <label for="titulo" class="block text-sm font-medium text-gray-700">
-                                    Título de la Publicación
-                                </label>
-                                <input
+                                <InputLabel for="titulo" value="Título del Producto" />
+                                <TextInput
                                     id="titulo"
                                     v-model="form.Titulo_Publicacion"
                                     type="text"
-                                    maxlength="200"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2"
-                                    placeholder="Ingresa el título"
+                                    class="mt-1 block w-full"
+                                    placeholder="¿Qué estás vendiendo?"
                                     required
+                                    autofocus
                                 />
-                                <p v-if="form.errors.Titulo_Publicacion" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.Titulo_Publicacion }}
-                                </p>
+                                <InputError :message="form.errors.Titulo_Publicacion" class="mt-2" />
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Precio -->
+                                <div>
+                                    <InputLabel for="precio" value="Precio (Bs)" />
+                                    <div class="relative mt-1">
+                                        <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                            <DollarSign class="w-4 h-4 text-brand-500" />
+                                        </div>
+                                        <TextInput
+                                            id="precio"
+                                            v-model="form.Precio_Publicacion"
+                                            type="number"
+                                            step="0.01"
+                                            class="block w-full pl-12"
+                                            placeholder="0.00"
+                                            required
+                                        />
+                                    </div>
+                                    <InputError :message="form.errors.Precio_Publicacion" class="mt-2" />
+                                </div>
+
+                                <!-- Categoría -->
+                                <div>
+                                    <InputLabel for="categoria" value="Categoría" />
+                                    <select
+                                        id="categoria"
+                                        v-model="form.Cod_Categoria"
+                                        class="mt-1 block w-full px-5 py-3.5 bg-gray-50/50 dark:bg-white/5 border border-light-border dark:border-dark-border text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all duration-300 font-bold text-sm outline-none"
+                                        required
+                                    >
+                                        <option value="" disabled>Selecciona una categoría</option>
+                                        <option v-for="cat in categorias" :key="cat.Cod_Categoria" :value="cat.Cod_Categoria">
+                                            {{ cat.Nombre_Categoria }}
+                                        </option>
+                                    </select>
+                                    <InputError :message="form.errors.Cod_Categoria" class="mt-2" />
+                                </div>
                             </div>
 
                             <!-- Descripción -->
                             <div>
-                                <label for="descripcion" class="block text-sm font-medium text-gray-700">
-                                    Descripción
-                                </label>
+                                <InputLabel for="descripcion" value="Descripción Detallada" />
                                 <textarea
                                     id="descripcion"
                                     v-model="form.Descripcion_Publicacion"
-                                    rows="4"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2"
-                                    placeholder="Describe tu publicación"
+                                    rows="5"
+                                    class="mt-1 block w-full px-5 py-4 bg-gray-50/50 dark:bg-white/5 border border-light-border dark:border-dark-border text-gray-900 dark:text-white rounded-[2rem] focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all duration-300 font-medium text-sm outline-none resize-none"
+                                    placeholder="Describe el estado, marca y detalles de entrega del producto..."
                                     required
                                 ></textarea>
-                                <p v-if="form.errors.Descripcion_Publicacion" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.Descripcion_Publicacion }}
-                                </p>
+                                <InputError :message="form.errors.Descripcion_Publicacion" class="mt-2" />
                             </div>
 
-                            <!-- Precio -->
+                            <!-- Imágenes Dropzone -->
                             <div>
-                                <label for="precio" class="block text-sm font-medium text-gray-700">
-                                    Precio
-                                </label>
-                                <input
-                                    id="precio"
-                                    v-model="form.Precio_Publicacion"
-                                    type="number"
-                                    step="0.01"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2"
-                                    placeholder="0.00"
-                                    required
-                                />
-                                <p v-if="form.errors.Precio_Publicacion" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.Precio_Publicacion }}
-                                </p>
-                            </div>
-
-                            <!-- Categoría -->
-                            <div>
-                                <label for="categoria" class="block text-sm font-medium text-gray-700">
-                                    Categoría
-                                </label>
-                                <select
-                                    id="categoria"
-                                    v-model="form.Cod_Categoria"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 border px-3 py-2"
-                                    required
-                                >
-                                    <option value="">Selecciona una categoría</option>
-                                    <option
-                                        v-for="categoria in categorias"
-                                        :key="categoria.Cod_Categoria"
-                                        :value="categoria.Cod_Categoria"
-                                    >
-                                        {{ categoria.Nombre_Categoria }}
-                                    </option>
-                                </select>
-                                <p v-if="form.errors.Cod_Categoria" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.Cod_Categoria }}
-                                </p>
-                            </div>
-
-                            <!-- Imagen -->
-                            <div>
-                                <label for="imagen" class="block text-sm font-medium text-gray-700">
-                                    Imagen
-                                </label>
+                                <InputLabel value="Fotografías (Máx. 3)" />
                                 <div
-                                    @dragover.prevent
+                                    @dragover.prevent="isDragging = true"
+                                    @dragleave.prevent="isDragging = false"
                                     @drop.prevent="handleDrop"
-                                    class="relative mt-1 block w-full rounded-md border-dashed border-2 border-gray-300 p-4 text-center bg-gray-50"
+                                    :class="[
+                                        'group relative mt-2 flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-[2.5rem] transition-all duration-500',
+                                        isDragging ? 'border-brand-500 bg-brand-500/10 scale-[1.02]' : 'border-light-border dark:border-dark-border bg-gray-50/30 dark:bg-black/10 hover:border-brand-500/50 hover:bg-brand-500/5'
+                                    ]"
                                 >
                                     <input
-                                        id="imagen"
                                         ref="fileInput"
                                         type="file"
                                         accept="image/*"
                                         multiple
                                         @change="handleImageChange"
-                                        class="w-full opacity-0 absolute inset-0 h-full cursor-pointer"
+                                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
-                                    <div class="relative">
-                                        <div class="pointer-events-none">
-                                            <p class="text-sm text-gray-600">Arrastra y suelta hasta 3 imágenes aquí, o haz clic para seleccionar</p>
-                                            <p class="text-xs text-gray-400">(Máx. 3 imágenes, 2MB cada una)</p>
+                                    
+                                    <div class="flex flex-col items-center text-center">
+                                        <div class="mb-4 p-4 rounded-3xl bg-white dark:bg-dark-surface shadow-xl shadow-brand-500/10 transition-transform duration-500 group-hover:scale-110">
+                                            <UploadCloud class="w-10 h-10 text-brand-600" />
+                                        </div>
+                                        <p class="text-sm font-black text-gray-900 dark:text-white">Haz clic o arrastra tus fotos</p>
+                                        <p class="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-widest">PNG, JPG o JPEG • Max 2MB</p>
+                                    </div>
+                                </div>
+
+                                <!-- Previews Grid -->
+                                <TransitionGroup 
+                                    name="list" 
+                                    tag="div" 
+                                    v-if="imagePreview.length > 0" 
+                                    class="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4"
+                                >
+                                    <div 
+                                        v-for="(src, idx) in imagePreview" 
+                                        :key="idx" 
+                                        class="relative group aspect-square rounded-[2rem] overflow-hidden border-2 border-light-border dark:border-dark-border shadow-md"
+                                    >
+                                        <img :src="src" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button 
+                                                type="button"
+                                                @click="removeSelected(idx)"
+                                                class="p-2 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-110 active:scale-95 transition-all"
+                                            >
+                                                <X class="w-5 h-5" />
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                                <p v-if="form.errors.Imagen_Publicacion" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.Imagen_Publicacion }}
-                                </p>
-                                <!-- Vistas previas de imagenes -->
-                                <div v-if="imagePreview && imagePreview.length > 0" class="mt-4 flex gap-4">
-                                    <div v-for="(src, idx) in imagePreview" :key="idx" class="relative drop-shadow-xl w-36 h-48 overflow-hidden rounded-xl bg-[#3d3c3d]">
-                                        <button @click.stop="removeSelected(idx)" class="absolute top-1 right-1 z-10 bg-white text-red-600 rounded-full w-6 h-6 flex items-center justify-center text-xs">×</button>
-                                        <img :src="src" class="absolute inset-0 w-full h-full object-cover" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Estado -->
-                            <div class="flex items-center">
-                                <input
-                                    id="estado"
-                                    v-model="form.Estado_Publicacion"
-                                    type="checkbox"
-                                    class="rounded border-gray-300"
-                                />
-                                <label for="estado" class="ml-2 text-sm font-medium text-gray-700">
-                                    Publicación activa
-                                </label>
+                                </TransitionGroup>
+                                <InputError :message="form.errors.Imagen_Publicacion" class="mt-2" />
                             </div>
 
                             <!-- Botones -->
-                            <div class="flex gap-4">
-                                <button
-                                    type="submit"
-                                    :disabled="form.processing"
-                                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                    {{ form.processing ? 'Guardando...' : 'Crear Publicación' }}
-                                </button>
-                                <a
-                                    :href="route('dashboard')"
-                                    class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                            <div class="flex items-center justify-end gap-4 pt-6">
+                                <Link 
+                                    :href="route('dashboard')" 
+                                    class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
                                 >
                                     Cancelar
-                                </a>
+                                </Link>
+                                <PrimaryButton 
+                                    type="submit"
+                                    class="px-8 py-3.5 shadow-xl shadow-brand-500/30"
+                                    :class="{ 'opacity-25': form.processing }" 
+                                    :disabled="form.processing"
+                                >
+                                    <span v-if="form.processing">Publicando...</span>
+                                    <div v-else class="flex items-center gap-2">
+                                        <PlusIcon class="w-5 h-5" />
+                                        <span>Crear Publicación</span>
+                                    </div>
+                                </PrimaryButton>
                             </div>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Barra Lateral de Consejos -->
+                <div class="space-y-6">
+                    <div class="bg-brand-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-brand-500/20 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
+                             <Sparkles class="w-32 h-32" />
+                        </div>
+                        
+                        <div class="relative z-10">
+                            <h3 class="text-xl font-black mb-4">Consejos Pro</h3>
+                            <ul class="space-y-4">
+                                <li class="flex gap-3">
+                                    <div class="shrink-0"><CheckCircle2 class="w-5 h-5 text-brand-300" /></div>
+                                    <p class="text-sm font-medium leading-relaxed">Usa fotos reales con buena iluminación natural.</p>
+                                </li>
+                                <li class="flex gap-3">
+                                    <div class="shrink-0"><CheckCircle2 class="w-5 h-5 text-brand-300" /></div>
+                                    <p class="text-sm font-medium leading-relaxed">Sé honesto con los detalles y el estado del producto.</p>
+                                </li>
+                                <li class="flex gap-3">
+                                    <div class="shrink-0"><CheckCircle2 class="w-5 h-5 text-brand-300" /></div>
+                                    <p class="text-sm font-medium leading-relaxed">Publicar en la categoría correcta ayuda a vender más rápido.</p>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] p-8 shadow-sm">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="p-2 bg-brand-500/10 rounded-xl">
+                                <Info class="w-5 h-5 text-brand-600" />
+                            </div>
+                            <h3 class="font-black text-gray-900 dark:text-white">Normativa</h3>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed mb-4">
+                            Al publicar, aceptas los términos de convivencia de Campus Market. Se prohíbe la venta de artículos no autorizados.
+                        </p>
+                        <p class="text-[10px] font-black text-brand-600 uppercase tracking-widest">Campus Market Safe</p>
                     </div>
                 </div>
             </div>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(10px);
+}
+</style>
