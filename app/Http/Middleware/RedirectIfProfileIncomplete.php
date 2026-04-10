@@ -20,7 +20,8 @@ class RedirectIfProfileIncomplete
             $perfil = Auth::user()->usuarioCampusMarket;
             // Si no tiene perfil, o si lo tiene pero le falta el id de universidad/carrera obligatorio
             if (!$perfil || empty($perfil->Cod_Carrera) || empty($perfil->Cod_Universidad)) {
-                if (! $request->routeIs('profile.complete.*') && 
+                if (! $request->routeIs('profile.complete') && 
+                    ! $request->routeIs('profile.complete.*') && 
                     ! $request->routeIs('device.verification.*') && 
                     ! $request->routeIs('logout')) {
                     return redirect()->route('profile.complete.form');

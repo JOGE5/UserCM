@@ -321,8 +321,11 @@ const submit = () => {
             <!-- Barra de progreso Premium -->
             <div class="mb-10">
                 <Transition name="fade">
-                    <div v-if="form.errors.form_error" class="mb-6 p-4 bg-rose-500/20 border border-rose-500/50 rounded-xl">
-                        <p class="text-sm font-bold text-rose-400">{{ form.errors.form_error }}</p>
+                    <div v-if="Object.keys(form.errors).length > 0" class="mb-6 p-4 bg-rose-500/20 border border-rose-500/50 rounded-xl">
+                        <p class="text-sm font-bold text-rose-400 mb-1">Por favor verifica los siguientes campos ocultos:</p>
+                        <ul class="list-disc list-inside text-xs text-rose-300">
+                            <li v-for="(error, key) in form.errors" :key="key">{{ key }}: {{ error }}</li>
+                        </ul>
                     </div>
                 </Transition>
                 <div class="flex flex-col items-center justify-between gap-2 mb-4 sm:flex-row">

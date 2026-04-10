@@ -24,7 +24,17 @@ class ProfileController extends Controller
 
     public function complete(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $data = $request->all();
+
+        // Inertia FormData puede enviar los 'null' como string "null"
+        if (isset($data['Foto_de_perfil']) && $data['Foto_de_perfil'] === 'null') {
+            $data['Foto_de_perfil'] = null;
+        }
+        if (isset($data['Foto_de_portada']) && $data['Foto_de_portada'] === 'null') {
+            $data['Foto_de_portada'] = null;
+        }
+
+        $validator = Validator::make($data, [
             'user_id' => 'required|exists:users,id',
             'Apellidos' => 'nullable|string|max:255',
             'Genero' => 'nullable|in:Masculino,Femenino,Otro',
@@ -104,7 +114,8 @@ class ProfileController extends Controller
             return redirect()->route('dashboard')->with('success', 'Perfil completado exitosamente.');
             
         } catch (\Exception $e) {
-            // Si la base de datos falla masivamente, atrapar el error sin que Inertia trague y esconda la excepción
+            // Loguear el error verdadero para poder debuggear
+            \Log::error('Error completando perfil: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return back()->withErrors(['form_error' => 'Error en base de datos: ' . $e->getMessage()]);
         }
     }
