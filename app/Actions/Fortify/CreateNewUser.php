@@ -31,12 +31,14 @@ class CreateNewUser implements CreatesNewUsers
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
         ])->validate();
 
-        // Crear el usuario
         $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => Hash::make($input['password']),
         ]);
+
+        // Enviar el correo de bienvenida al nuevo usuario
+        \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserWelcomeMail($user));
 
         return $user;
     }

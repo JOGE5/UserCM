@@ -26,7 +26,7 @@ class UsuarioCampusMarket extends Model
     use HasFactory;
 
     protected $table = 'usuarios_campus_markets';
-    protected $primaryKey = 'ID_Usuario';
+    protected $primaryKey = 'id';
     public $incrementing = true;
 
     /**

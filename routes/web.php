@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Auth\PasswordResetCodeController;
+use App\Http\Controllers\Auth\DeviceVerificationController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicacionesController;
@@ -54,6 +56,25 @@ Route::get('/files/perfil/{filename}', function ($filename) {
 
     return response()->file($path);
 })->name('files.perfil');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password-code', [PasswordResetCodeController::class, 'showRequestForm'])->name('password.request.custom');
+    Route::post('/forgot-password-code/send', [PasswordResetCodeController::class, 'sendCode'])->name('password.email.custom');
+    Route::get('/forgot-password-code/verify', [PasswordResetCodeController::class, 'showVerifyForm'])->name('password.verify.code.form');
+    Route::post('/forgot-password-code/verify', [PasswordResetCodeController::class, 'verifyCode'])->name('password.verify.code.submit');
+    Route::get('/forgot-password-code/reset', [PasswordResetCodeController::class, 'showResetForm'])->name('password.reset.custom.form');
+    Route::post('/forgot-password-code/reset', [PasswordResetCodeController::class, 'resetPassword'])->name('password.store.custom');
+
+    // Rutas para login con Google
+    Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleController::class, 'redirect'])->name('google.login');
+    Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleController::class, 'callback']);
+});
+
+Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
+    Route::get('/device-verification', [DeviceVerificationController::class, 'showVerificationForm'])->name('device.verification.form');
+    Route::post('/device-verification/verify', [DeviceVerificationController::class, 'verify'])->name('device.verification.verify');
+    Route::post('/device-verification/resend', [DeviceVerificationController::class, 'resend'])->name('device.verification.resend');
+});
 
 Route::middleware([
     'auth:sanctum',

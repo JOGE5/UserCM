@@ -40,6 +40,12 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
+        // Evitar el auto-login después del registro
+        $this->app->singleton(
+            \Laravel\Fortify\Contracts\RegisterResponse::class,
+            \App\Http\Responses\RegisterResponse::class
+        );
+
         Fortify::authenticateUsing(function (Request $request) {
             \Log::info('AuthenticateUsing: Begin login attempt for email: '.$request->email);
 
@@ -52,17 +58,7 @@ class FortifyServiceProvider extends ServiceProvider
 
             $usuarioCampusMarket = UsuarioCampusMarket::where('user_id', $user->id)->first();
 
-            if (!$usuarioCampusMarket) {
-                \Log::info('AuthenticateUsing: UsuarioCampusMarket record not found.');
-                // If related record does not exist, deny login with message
-                throw ValidationException::withMessages([
-                    Fortify::username() => __('No se encontró el perfil del usuario. Por favor contacte al soporte.'),
-                ]);
-            }
-
-            \Log::info('AuthenticateUsing: UsuarioCampusMarket Estado: ' . $usuarioCampusMarket->Estado);
-
-            if ($usuarioCampusMarket->Estado !== 'Activo') {
+            if ($usuarioCampusMarket && $usuarioCampusMarket->Estado !== 'Activo') {
                 \Log::info('AuthenticateUsing: User inactive, login denied.');
                 throw ValidationException::withMessages([
                     Fortify::username() => __('Usted está inactivo. Espere a que su situación cambie o contacte con el soporte del campus.'),

@@ -26,9 +26,9 @@ class ProfileController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
-            'Apellidos' => 'required|string|max:255',
-            'Genero' => 'required|in:Masculino,Femenino,Otro',
-            'Telefono' => 'required|string|max:20',
+            'Apellidos' => 'nullable|string|max:255',
+            'Genero' => 'nullable|in:Masculino,Femenino,Otro',
+            'Telefono' => 'nullable|string|max:20',
             'Foto_de_perfil' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Foto_de_portada' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Cod_Universidad' => 'required|exists:universidades,Cod_Universidad',
@@ -58,40 +58,54 @@ class ProfileController extends Controller
         $codRol = $rolPorDefecto ? $rolPorDefecto->Cod_Rol : null;
 
         // Verificar que no exista ya un perfil para este usuario
-        if ($user->usuarioCampusMarket) {
-            // Si ya existe, actualizar el perfil existente
-            $updateData = [
-                'Apellidos' => trim($request->Apellidos),
-                'Genero' => trim($request->Genero),
-                'Estado' => 'Habilitado',
-                'Telefono' => trim($request->Telefono),
-                'Cod_Rol' => $codRol,
+        try {
+            if ($user->usuarioCampusMarket) {
+                // Si ya existe, actualizar el perfil existente
+                $updateData = [
+                    'Apellidos' => $request->Apellidos ? trim($request->Apellidos) : null,
+                    'Genero' => $request->Genero ? trim($request->Genero) : null,
+                    'Estado' => 'Activo',
+                    'Telefono' => $request->Telefono ? trim($request->Telefono) : null,
+                    'Cod_Carrera' => $request->Cod_Carrera,
+                    'Cod_Universidad' => $request->Cod_Universidad,
+                ];
+
+                if ($codRol) {
+                    $updateData['Cod_Rol'] = $codRol;
+                }
+
+                if ($fotoPerfilPath) $updateData['Foto_de_perfil'] = $fotoPerfilPath;
+                if ($fotoPortadaPath) $updateData['Foto_de_portada'] = $fotoPortadaPath;
+
+                $user->usuarioCampusMarket->update($updateData);
+                
+                return redirect()->route('dashboard')->with('success', 'Perfil actualizado exitosamente.');
+            }
+
+            // Crear el perfil extendido
+            $createData = [
+                'user_id' => $user->id,
+                'Apellidos' => $request->Apellidos ? trim($request->Apellidos) : null,
+                'Genero' => $request->Genero ? trim($request->Genero) : null,
+                'Estado' => 'Activo',
+                'Telefono' => $request->Telefono ? trim($request->Telefono) : null,
+                'Foto_de_perfil' => $fotoPerfilPath,
+                'Foto_de_portada' => $fotoPortadaPath,
                 'Cod_Carrera' => $request->Cod_Carrera,
                 'Cod_Universidad' => $request->Cod_Universidad,
             ];
 
-            if ($fotoPerfilPath) $updateData['Foto_de_perfil'] = $fotoPerfilPath;
-            if ($fotoPortadaPath) $updateData['Foto_de_portada'] = $fotoPortadaPath;
+            if ($codRol) {
+                $createData['Cod_Rol'] = $codRol;
+            }
 
-            $user->usuarioCampusMarket->update($updateData);
+            UsuarioCampusMarket::create($createData);
+
+            return redirect()->route('dashboard')->with('success', 'Perfil completado exitosamente.');
             
-            return redirect()->route('dashboard')->with('success', 'Perfil actualizado exitosamente.');
+        } catch (\Exception $e) {
+            // Si la base de datos falla masivamente, atrapar el error sin que Inertia trague y esconda la excepción
+            return back()->withErrors(['form_error' => 'Error en base de datos: ' . $e->getMessage()]);
         }
-
-        // Crear el perfil extendido
-        UsuarioCampusMarket::create([
-            'user_id' => $user->id,
-            'Apellidos' => trim($request->Apellidos),
-            'Genero' => trim($request->Genero),
-            'Estado' => 'Habilitado',
-            'Telefono' => trim($request->Telefono),
-            'Foto_de_perfil' => $fotoPerfilPath,
-            'Foto_de_portada' => $fotoPortadaPath,
-            'Cod_Rol' => $codRol,
-            'Cod_Carrera' => $request->Cod_Carrera,
-            'Cod_Universidad' => $request->Cod_Universidad,
-        ]);
-
-        return redirect()->route('dashboard')->with('success', 'Perfil completado exitosamente.');
     }
 }

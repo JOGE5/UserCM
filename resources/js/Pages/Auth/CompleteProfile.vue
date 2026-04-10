@@ -10,7 +10,8 @@ const props = defineProps({
     universidades: Array,
 });
 
-const currentStep = ref(1);
+// Si el usuario viene de Google (tiene google_id), saltamos directo al paso 3 (Carrera/Universidad)
+const currentStep = ref(props.user.google_id ? 3 : 1);
 const selectedUniversidad = ref(null);
 const carreras = ref([]);
 
@@ -119,6 +120,7 @@ const selectCarrera = (id) => {
 };
 
 const isStep1Valid = computed(() => {
+    if (props.user.google_id) return true; // Usuarios de Google omiten este paso
     return form.Apellidos && form.Genero && form.Telefono;
 });
 
@@ -258,7 +260,7 @@ const submit = () => {
                     submitProgress.value = Math.min(progress.percentage * 0.8, 80);
                 }
             },
-            onSuccess: () => {
+            onSuccess: (page) => {
                 submitStatus.value = 'Cargando datos...';
                 submitProgress.value = 90;
                 
@@ -266,14 +268,20 @@ const submit = () => {
                     submitStatus.value = 'Proceso completado';
                     submitProgress.value = 100;
                     showSuccess.value = true;
+
+                    // Esperar a que la animacion termine, luego redirigir manualmente al dashboard
+                    setTimeout(() => {
+                        import('@inertiajs/vue3').then(({ router }) => {
+                            router.visit(route('dashboard'));
+                        });
+                    }, 1500);
                 }, 800);
             },
+            onError: (errors) => {
+                isSubmitting.value = false;
+            },
             onFinish: () => {
-                // El redireccionamiento ocurrirá automáticamente por Inertia, 
-                // pero si queremos asegurar el "check" verde, podemos manejarlo así:
-                if (showSuccess.value) {
-                    // Mantener la pantalla de éxito 1.5s antes de que Inertia cambie la página
-                }
+                // Removemos logica vieja de onFinish
             }
         });
     }
@@ -312,6 +320,11 @@ const submit = () => {
 
             <!-- Barra de progreso Premium -->
             <div class="mb-10">
+                <Transition name="fade">
+                    <div v-if="form.errors.form_error" class="mb-6 p-4 bg-rose-500/20 border border-rose-500/50 rounded-xl">
+                        <p class="text-sm font-bold text-rose-400">{{ form.errors.form_error }}</p>
+                    </div>
+                </Transition>
                 <div class="flex flex-col items-center justify-between gap-2 mb-4 sm:flex-row">
                     <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Paso {{ currentStep }} de 3</span>
                     <span class="px-3 py-1 text-xs font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-sm">{{ Math.round((currentStep / 3) * 100) }}% completado</span>

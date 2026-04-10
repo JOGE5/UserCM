@@ -15,9 +15,15 @@ class Universidad extends Model
 
     protected $fillable = [
         'Nombre_Universidad',
-        'Foto_Universidad',
-        'Descripcion_Universidad',
-        'Ubicacion_Universidad',
+        'Correo_Universidad',
+        'Telefono_Universidad',
+        'Direccion_Universidad',
+        'Universisdad_foto_de_portada',
+        'Universisdad_foto_de_perfil',
+        'Sitio_Web',
+        'Descripcion',
+        'Hora_apertura',
+        'Hora_cierre',
     ];
 
     /**
