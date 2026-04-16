@@ -3,6 +3,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 @layer base {
     :root {
         --bg-color: #f7f7f8;
@@ -25,7 +26,12 @@
         font-family: 'Inter', sans-serif;
     }
 
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
         @apply font-bold tracking-tight text-[var(--text-primary)];
     }
 }
@@ -34,7 +40,7 @@
     display: none;
 }
 
-/* Custom Auth Form Styles */
+
 .custom-auth-form .form {
     display: flex;
     flex-direction: column;
@@ -74,7 +80,7 @@
     align-self: flex-end;
 }
 
-.custom-auth-form .flex-column > label {
+.custom-auth-form .flex-column>label {
     color: #151717;
     font-weight: 600;
 }
@@ -120,7 +126,7 @@
     flex-wrap: nowrap;
 }
 
-.custom-auth-form .flex-row > div > label {
+.custom-auth-form .flex-row>div>label {
     font-size: 14px;
     color: black;
     font-weight: 400;
@@ -177,7 +183,3 @@
 .custom-auth-form .btn:hover {
     border: 1px solid #2d79f3;
 }
-
-
-
-
