@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\PasswordResetCodeController;
 use App\Http\Controllers\Auth\DeviceVerificationController;
+use App\Http\Controllers\Auth\FaceAuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicacionesController;
@@ -68,18 +69,28 @@ Route::middleware('guest')->group(function () {
     // Rutas para login con Google
     Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleController::class, 'redirect'])->name('google.login');
     Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleController::class, 'callback']);
+
 });
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
     Route::get('/device-verification', [DeviceVerificationController::class, 'showVerificationForm'])->name('device.verification.form');
     Route::post('/device-verification/verify', [DeviceVerificationController::class, 'verify'])->name('device.verification.verify');
     Route::post('/device-verification/resend', [DeviceVerificationController::class, 'resend'])->name('device.verification.resend');
+
+    // 2FA Facial
+    Route::get('/face-verify', function () {
+        return Inertia::render('Auth/FaceVerify');
+    })->name('face.verify.form');
+
+    // Rutas para validación de Login Facial
+    Route::post('/api/auth/login-facial/verify', [App\Http\Controllers\Auth\FaceAuthController::class, 'verifyAndLogin'])->name('facial.verifyAndLogin');
 });
 
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+    'face.verified'
 ])->group(function () {
     Route::get('/dashboard', function () {
         $userId = auth()->id();

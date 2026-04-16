@@ -3,7 +3,8 @@ import { Head, useForm, Link } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios';
 import InputError from '@/Components/InputError.vue';
-import { User, Mail, Phone, Users, Image as ImageIcon, Camera, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Check, ChevronDown, Upload, X, RefreshCw } from 'lucide-vue-next';
+import { User, Mail, Phone, Users, Image as ImageIcon, Camera, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Check, ChevronDown, Upload, X, RefreshCw, ScanFace } from 'lucide-vue-next';
+import CamaraRegistro from '@/Components/CamaraRegistro.vue';
 
 const props = defineProps({
     user: Object,
@@ -72,6 +73,8 @@ const form = useForm({
     Cod_Universidad: '',
     Cod_Carrera: '',
     Cod_Rol: '',
+    fotoBase64: null,
+    descriptorFacial: null,
 });
 
 const isLoadingCarreras = ref(false);
@@ -132,12 +135,23 @@ const isStep3Valid = computed(() => {
     return form.Cod_Universidad && form.Cod_Carrera;
 });
 
+const isStep4Valid = computed(() => {
+    return form.fotoBase64 && form.descriptorFacial;
+});
+
+const handleFaceCaptured = ({ base64, descriptor }) => {
+    form.fotoBase64 = base64;
+    form.descriptorFacial = descriptor;
+};
+
 const nextStep = () => {
     closeAllSelects();
     if (currentStep.value === 1 && isStep1Valid.value) {
         currentStep.value = 2;
     } else if (currentStep.value === 2 && isStep2Valid.value) {
         currentStep.value = 3;
+    } else if (currentStep.value === 3 && isStep3Valid.value) {
+        currentStep.value = 4;
     }
 };
 
@@ -246,7 +260,7 @@ const removeImage = (type) => {
 };
 
 const submit = () => {
-    if (isStep3Valid.value) {
+    if (isStep4Valid.value) {
         form.post(route('profile.complete'), {
             forceFormData: true,
             onStart: () => {
@@ -329,13 +343,13 @@ const submit = () => {
                     </div>
                 </Transition>
                 <div class="flex flex-col items-center justify-between gap-2 mb-4 sm:flex-row">
-                    <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Paso {{ currentStep }} de 3</span>
-                    <span class="px-3 py-1 text-xs font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-sm">{{ Math.round((currentStep / 3) * 100) }}% completado</span>
+                    <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Paso {{ currentStep }} de 4</span>
+                    <span class="px-3 py-1 text-xs font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-sm">{{ Math.round((currentStep / 4) * 100) }}% completado</span>
                 </div>
                 <div class="w-full h-2.5 rounded-full bg-white/10 overflow-hidden relative shadow-inner">
                     <div
                         class="absolute top-0 left-0 h-full transition-all duration-700 ease-out rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.6)]"
-                        :style="{ width: `${(currentStep / 3) * 100}%` }"
+                        :style="{ width: `${(currentStep / 4) * 100}%` }"
                     ></div>
                 </div>
             </div>
@@ -671,17 +685,51 @@ const submit = () => {
                             <InputError class="mt-1 text-xs text-red-500" :message="form.errors.Cod_Carrera" />
                         </div>
 
-                        <div class="p-6 border bg-indigo-900/20 border-indigo-500/30 rounded-3xl backdrop-blur-md">
+                        <div v-if="form.Cod_Universidad && form.Cod_Carrera" class="p-6 border bg-indigo-900/20 border-indigo-500/30 rounded-3xl backdrop-blur-md">
                             <div class="flex items-start gap-4">
                                 <div class="p-3 rounded-full bg-indigo-500/20 shrink-0">
                                     <GraduationCap class="w-6 h-6 text-indigo-400" />
                                 </div>
                                 <div>
-                                    <h4 class="mb-1 text-sm font-bold text-white">Casi listo para comenzar</h4>
+                                    <h4 class="mb-1 text-sm font-bold text-white">Solo un paso más</h4>
                                     <p class="text-sm leading-relaxed text-indigo-200/70">
-                                        Esta información permite personalizar la experiencia en Campus Market X Unifranz, ofreciéndote contenido y artículos sumamente útiles.
+                                        Has seleccionado tu universidad y carrera correctamente. Presiona siguiente para el registro de seguridad.
                                     </p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </Transition>
+
+                <!--================ PASO 4: Reconocimiento Facial ================-->
+                <Transition name="fade-slide" mode="out-in">
+                    <div v-if="currentStep === 4" key="step4" class="relative z-10 space-y-6">
+                        <div class="p-6 border bg-pink-900/20 border-pink-500/30 rounded-3xl backdrop-blur-md">
+                            <div class="flex items-start gap-4 mb-4">
+                                <div class="p-3 rounded-full bg-pink-500/20 shrink-0">
+                                    <ScanFace class="w-6 h-6 text-pink-400" />
+                                </div>
+                                <div>
+                                    <h4 class="mb-1 text-sm font-bold text-white">Último paso: Seguridad</h4>
+                                    <p class="text-sm leading-relaxed text-pink-200/70">
+                                        Campus Market requiere verificar tu identidad mediante reconocimiento facial para mantener la comunidad segura. Asegúrate de estar en un lugar con buena iluminación y sin accesorios (como gafas oscuras).
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Camara Component -->
+                            <div v-if="!form.descriptorFacial" class="flex justify-center w-full">
+                                <CamaraRegistro @capturado="handleFaceCaptured" @error="e => profileError = e" />
+                            </div>
+
+                            <!-- Success Banner -->
+                            <div v-else class="flex flex-col items-center justify-center p-6 space-y-4 border bg-emerald-900/40 border-emerald-500/50 rounded-2xl">
+                                <div class="p-3 rounded-full bg-emerald-500/20 text-emerald-400">
+                                    <Check class="w-8 h-8" />
+                                </div>
+                                <h3 class="text-lg font-bold text-emerald-400">¡Rostro Registrado!</h3>
+                                <p class="text-sm text-center text-emerald-200/70">Ya estás listo para continuar con tu experiencia en Campus Market.</p>
+                                <button type="button" @click="form.descriptorFacial = null" class="text-xs font-bold tracking-widest uppercase transition-colors text-emerald-400/50 hover:text-emerald-400">Volver a Escanear</button>
                             </div>
                         </div>
                     </div>
@@ -702,9 +750,9 @@ const submit = () => {
 
                     <button
                         type="button"
-                        v-if="currentStep < 3"
+                        v-if="currentStep < 4"
                         @click="nextStep"
-                        :disabled="(currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)"
+                        :disabled="(currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid) || (currentStep === 3 && !isStep3Valid)"
                         class="flex items-center gap-2 px-8 py-3.5 text-sm font-bold text-white transition-all bg-indigo-600 rounded-2xl group hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-indigo-600"
                     >
                         Siguiente
@@ -714,7 +762,7 @@ const submit = () => {
                     <button
                         type="submit"
                         v-else
-                        :disabled="!isStep3Valid || form.processing"
+                        :disabled="!isStep4Valid || form.processing"
                         class="relative flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-bold text-white transition-all bg-emerald-600 rounded-2xl group hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_40px_rgba(16,185,129,0.5)] overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-emerald-600"
                     >
                         <span class="relative z-10 flex items-center gap-2">

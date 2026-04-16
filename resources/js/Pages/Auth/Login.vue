@@ -2,7 +2,8 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import InputError from '@/Components/InputError.vue';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next';
+import { Mail, Lock, Eye, EyeOff, ScanFace } from 'lucide-vue-next';
+import CamaraLogin from '@/Components/CamaraLogin.vue';
 
 defineProps({
     canResetPassword: Boolean,
@@ -16,6 +17,17 @@ const form = useForm({
 });
 
 const showPassword = ref(false);
+const showFaceLogin = ref(false);
+const faceLoginError = ref('');
+
+const toggleFaceLogin = () => {
+    if(!form.email) {
+        faceLoginError.value = "Por favor ingresa tu correo electrónico primero.";
+        return;
+    }
+    faceLoginError.value = '';
+    showFaceLogin.value = true;
+};
 
 const submit = () => {
     form.transform(data => ({
@@ -122,10 +134,27 @@ const submit = () => {
                     </Link>
                 </div>
 
-                <button type="submit" :disabled="form.processing" class="relative flex items-center justify-center w-full h-14 overflow-hidden font-bold text-white transition-all bg-indigo-600 rounded-2xl group hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-8 shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)]">
-                    <span class="relative z-10">Ingresar al Sistema</span>
-                    <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white/20 to-transparent"></div>
-                </button>
+                <div class="flex flex-col gap-4">
+                    <button v-if="!showFaceLogin" type="submit" :disabled="form.processing" class="relative flex items-center justify-center w-full h-14 overflow-hidden font-bold text-white transition-all bg-indigo-600 rounded-2xl group hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)]">
+                        <span class="relative z-10">Ingresar al Sistema</span>
+                        <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white/20 to-transparent"></div>
+                    </button>
+
+                    <button v-if="!showFaceLogin" type="button" @click="toggleFaceLogin" class="relative flex items-center justify-center w-full h-14 overflow-hidden font-bold text-white transition-all bg-pink-600/20 border border-pink-500/50 rounded-2xl group hover:bg-pink-600/30 hover:scale-[1.02] active:scale-[0.98]">
+                        <ScanFace class="w-5 h-5 mr-2 text-pink-400 group-hover:text-pink-300" />
+                        <span class="relative z-10 text-pink-400 group-hover:text-pink-300">Face ID</span>
+                    </button>
+                    
+                    <InputError class="text-xs text-center text-red-500" :message="faceLoginError" />
+
+                    <!-- Componente Face ID -->
+                    <CamaraLogin 
+                        v-if="showFaceLogin" 
+                        :email="form.email"
+                        @cancel="showFaceLogin = false"
+                        @error="(m) => { faceLoginError = m; showFaceLogin = false; }"
+                    />
+                </div>
 
                 <!-- Separador -->
                 <div class="relative flex items-center justify-center mt-6">

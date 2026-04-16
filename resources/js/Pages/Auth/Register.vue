@@ -2,7 +2,8 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import InputError from '@/Components/InputError.vue';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-vue-next';
+import { User, Mail, Lock, Eye, EyeOff, Camera } from 'lucide-vue-next';
+import CamaraRegistro from '@/Components/CamaraRegistro.vue';
 
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
@@ -13,7 +14,17 @@ const form = useForm({
     password: '',
     password_confirmation: '',
     terms: false,
+    fotoBase64: null,
+    descriptorFacial: null,
 });
+
+const showCamera = ref(false);
+
+const handleFaceCaptured = ({ base64, descriptor }) => {
+    form.fotoBase64 = base64;
+    form.descriptorFacial = descriptor;
+    showCamera.value = false;
+};
 
 const submit = () => {
     form.post(route('register'), {
@@ -156,6 +167,25 @@ const submit = () => {
                     </label>
                     <InputError class="mt-2 text-xs text-red-500" :message="form.errors.terms" />
                 </div>
+
+                <!-- Botón Facial Opcional -->
+                <div v-if="!form.descriptorFacial && !showCamera" class="flex justify-center mt-2">
+                    <button type="button" @click="showCamera = true" class="flex items-center text-sm font-medium text-pink-400 transition-colors hover:text-pink-300">
+                        <Camera class="w-4 h-4 mr-2" />
+                        Añadir Face ID (Opcional)
+                    </button>
+                </div>
+
+                <div v-if="form.descriptorFacial" class="flex items-center justify-center p-3 mt-2 border text-emerald-400 bg-emerald-500/10 border-emerald-500/20 rounded-xl">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Face ID registrado con éxito</span>
+                </div>
+
+                <CamaraRegistro 
+                    v-if="showCamera" 
+                    @capturado="handleFaceCaptured" 
+                    @error="err => { console.error(err) }" 
+                />
 
                 <button type="submit" :disabled="form.processing" class="relative flex items-center justify-center w-full h-14 overflow-hidden font-bold text-white transition-all bg-indigo-600 rounded-2xl group hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-8 shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)]">
                     <span class="relative z-10">Crear Cuenta</span>

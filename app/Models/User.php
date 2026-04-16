@@ -31,6 +31,8 @@ class User extends Authenticatable
         'email',
         'password',
         'google_id',
+        'foto_base64',
+        'descriptor_facial',
     ];
 
     /**
@@ -64,6 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'descriptor_facial' => 'array',
         ];
     }
 
