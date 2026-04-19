@@ -104,11 +104,15 @@ onBeforeUnmount(() => {
       <!-- Overlay de Degradado -->
       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
 
-      <!-- Badge de Categoría -->
-      <div class="absolute top-4 left-4">
-        <span class="px-3 py-1 text-[10px] font-black tracking-widest text-white uppercase bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
+      <!-- Badges Superiores -->
+      <div class="absolute top-4 left-4 flex flex-col gap-2 items-start">
+        <span class="px-3 py-1 text-[10px] font-black tracking-widest text-white uppercase bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-lg">
           {{ props.category || 'Varios' }}
         </span>
+        <div v-if="props.publicacion?.Vistas_Publicacion > 0" class="flex items-center gap-1.5 px-2.5 py-1 text-[9px] font-black text-white bg-black/40 backdrop-blur-md border border-white/10 rounded-full shadow-lg">
+          <Eye class="w-3 h-3 text-brand-400" />
+          <span>{{ props.publicacion.Vistas_Publicacion }} VISTAS</span>
+        </div>
       </div>
 
       <!-- Favorito -->

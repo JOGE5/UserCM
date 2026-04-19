@@ -128,6 +128,13 @@
                   Activo
                 </span>
               </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-gray-500">Vistas</span>
+                <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-lg border border-light-border dark:border-dark-border">
+                  <Eye class="w-3 h-3 text-brand-500" />
+                  <span class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-tight">{{ publicacion.Vistas_Publicacion || 0 }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -160,7 +167,8 @@ import {
     FileText, 
     CameraOff,
     MessageSquare,
-    Clock
+    Clock,
+    Eye
 } from 'lucide-vue-next'
 
 const props = defineProps({

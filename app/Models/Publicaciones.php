@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $Cod_Categoria
  * @property int|null $ID_Vendedor
  * @property string $estado (activa, borrador, eliminada)
+ * @property int $Vistas_Publicacion
  * @mixin \Eloquent
  */
 class Publicaciones extends Model
@@ -31,6 +32,7 @@ class Publicaciones extends Model
     protected $casts = [
         'Estado_Publicacion' => 'boolean',
         'Precio_Publicacion' => 'float',
+        'Vistas_Publicacion' => 'integer',
     ];
     protected $fillable = [
         'Titulo_Publicacion',
@@ -41,6 +43,7 @@ class Publicaciones extends Model
         'Cod_Categoria',
         'ID_Vendedor',
         'estado',
+        'Vistas_Publicacion',
     ];
 
     public function categoria()
@@ -50,6 +53,6 @@ class Publicaciones extends Model
 
     public function vendedor()
     {
-        return $this->belongsTo(\App\Models\UsuarioCampusMarket::class, 'ID_Vendedor', 'ID_Usuario');
+        return $this->belongsTo(\App\Models\UsuarioCampusMarket::class, 'ID_Vendedor', 'user_id');
     }
 }

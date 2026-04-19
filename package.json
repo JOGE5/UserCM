@@ -23,6 +23,7 @@
         "vue": "^3.3.13"
     },
     "dependencies": {
+        "@vladmandic/face-api": "^1.7.15",
         "face-api.js": "^0.22.2",
         "lucide-vue": "^0.517.0",
         "lucide-vue-next": "^0.553.0",

@@ -75,7 +75,7 @@ class User extends Authenticatable
      */
     public function usuarioCampusMarket()
     {
-        return $this->hasOne(UsuarioCampusMarket::class);
+        return $this->hasOne(UsuarioCampusMarket::class,'user_id', 'id');
     }
 
     /**

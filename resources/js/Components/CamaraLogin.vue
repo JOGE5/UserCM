@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import * as faceapi from 'face-api.js';
+import * as faceapi from '@vladmandic/face-api';
 import axios from 'axios';
 
 const props = defineProps({

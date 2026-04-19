@@ -96,6 +96,9 @@ class PublicacionesController extends Controller
      */
     public function show(Publicaciones $publicaciones)
     {
+        // Incrementar contador de vistas
+        $publicaciones->increment('Vistas_Publicacion');
+
         // Render the single-publication page (replaces modal view)
         // Eager load relations used by the page
         $publicaciones->load(['categoria', 'vendedor.user']);
