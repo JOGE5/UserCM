@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Class Publicaciones
  *
  * @property int $id
- * @property int $ID_Publicacion
  * @property string $Titulo_Publicacion
  * @property string $Descripcion_Publicacion
  * @property bool|null $Estado_Publicacion
@@ -53,6 +52,6 @@ class Publicaciones extends Model
 
     public function vendedor()
     {
-        return $this->belongsTo(\App\Models\UsuarioCampusMarket::class, 'ID_Vendedor', 'user_id');
+        return $this->belongsTo(\App\Models\UsuarioCampusMarket::class, 'ID_Vendedor');
     }
 }

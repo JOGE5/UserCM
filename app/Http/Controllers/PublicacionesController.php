@@ -76,8 +76,8 @@ class PublicacionesController extends Controller
             $vendor = UsuarioCampusMarket::create($vendorData);
         }
 
-        // Asignar el ID del vendedor (referencia a usuarios_campus_markets.ID_Usuario)
-        $validated['ID_Vendedor'] = $vendor->ID_Usuario;
+        // Asignar el ID del vendedor (referencia a usuarios_campus_markets.id)
+        $validated['ID_Vendedor'] = $vendor->id;
 
         // Por defecto, las nuevas publicaciones son 'activas'
         $validated['estado'] = 'activa';

@@ -1,151 +1,182 @@
 <template>
   <AppLayout :title="publicacion.Titulo_Publicacion">
     <template #header>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2 text-brand-500 dark:text-brand-400 font-black tracking-widest text-[10px] uppercase">
-          <Link :href="route('dashboard')" class="hover:underline">Marketplace</Link>
-          <ChevronRight class="w-3 h-3" />
-          <span>Detalles del Producto</span>
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2 text-brand-500 dark:text-brand-400 font-black tracking-widest text-[10px] uppercase">
+            <Link :href="route('dashboard')" class="hover:underline">Marketplace</Link>
+            <ChevronRight class="w-3 h-3" />
+            <span>Detalles del Producto</span>
+          </div>
+          <h1 class="text-4xl font-black tracking-tight text-gray-900 dark:text-white">
+            {{ publicacion.Titulo_Publicacion }}
+          </h1>
         </div>
-        <h1 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-          {{ publicacion.Titulo_Publicacion }}
-        </h1>
+        <div class="flex flex-col items-end">
+           <div class="px-6 py-3 bg-brand-600 dark:bg-brand-500 text-white rounded-2xl shadow-xl shadow-brand-500/20 border border-white/20">
+              <span class="text-3xl font-black">{{ formatPrice(publicacion.Precio_Publicacion) }}</span>
+           </div>
+        </div>
       </div>
     </template>
 
-    <div class="max-w-7xl mx-auto">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+    <div class="max-w-7xl mx-auto pb-20 px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
         
-        <!-- Galería de Imágenes (Izquierda/Centro) -->
-        <div class="lg:col-span-2 space-y-6">
-          <div class="relative aspect-[16/10] overflow-hidden rounded-[3rem] bg-gray-100 dark:bg-black/40 border border-light-border dark:border-dark-border shadow-2xl group">
-            <img 
-              v-if="publicacion.Imagen_Publicacion" 
-              :src="getImageUrl(publicacion.Imagen_Publicacion)" 
-              :alt="publicacion.Titulo_Publicacion" 
-              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-            />
-            <div v-else class="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-4">
-              <CameraOff class="w-16 h-16 opacity-20" />
-              <span class="font-bold tracking-widest uppercase text-xs">Sin imagen disponible</span>
+        <!-- Galería de Imágenes (Izquierda) -->
+        <div class="lg:col-span-7 space-y-8">
+          <div class="space-y-4">
+            <div class="relative aspect-square max-w-2xl mx-auto overflow-hidden rounded-[3.5rem] bg-gray-100 dark:bg-black/40 border-2 border-light-border dark:border-dark-border shadow-2xl group">
+              <img 
+                v-if="currentSelectedImage" 
+                :src="currentSelectedImage" 
+                :alt="publicacion.Titulo_Publicacion" 
+                class="w-full h-full object-cover transition-all duration-1000 group-hover:scale-105" 
+              />
+              <div v-else class="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-4">
+                <CameraOff class="w-16 h-16 opacity-20" />
+                <span class="font-bold tracking-widest uppercase text-xs">Sin imagen disponible</span>
+              </div>
+
+              <!-- Badge de Vistas flotante -->
+              <div class="absolute top-8 right-8">
+                <div class="flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/20 rounded-2xl text-white">
+                  <Eye class="w-4 h-4 text-brand-400" />
+                  <span class="text-xs font-black">{{ publicacion.Vistas_Publicacion || 0 }} Vistas</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Badge de Precio flotante -->
-            <div class="absolute bottom-8 right-8">
-              <div class="px-8 py-4 bg-brand-600 dark:bg-brand-500 text-white rounded-3xl shadow-2xl backdrop-blur-md border border-white/20">
-                <span class="text-3xl font-black">{{ formatPrice(publicacion.Precio_Publicacion) }}</span>
-              </div>
+            <!-- Miniaturas -->
+            <div v-if="allImages.length > 1" class="flex gap-4 px-2 overflow-x-auto pb-2">
+               <button 
+                v-for="(img, idx) in allImages" 
+                :key="idx"
+                @click="selectedIndex = idx"
+                class="relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all shrink-0"
+                :class="selectedIndex === idx ? 'border-brand-500 scale-105 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'"
+               >
+                 <img :src="img" class="w-full h-full object-cover" />
+               </button>
             </div>
           </div>
 
           <!-- Detalles / Descripción -->
-          <div class="p-10 bg-white/50 dark:bg-dark-surface/50 backdrop-blur-xl border border-light-border dark:border-dark-border rounded-[3rem]">
-            <div class="flex items-center gap-3 mb-6">
-              <div class="p-2 rounded-xl bg-brand-500/10 border border-brand-500/20">
-                <FileText class="w-5 h-5 text-brand-600" />
+          <div class="p-10 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[3.5rem] shadow-sm">
+            <div class="flex items-center gap-3 mb-8">
+              <div class="p-3 rounded-2xl bg-brand-500/10 border border-brand-500/20">
+                <FileText class="w-6 h-6 text-brand-600" />
               </div>
-              <h3 class="text-xl font-black text-gray-900 dark:text-white tracking-tight">Descripción del Producto</h3>
+              <h3 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Descripción detallada</h3>
             </div>
-            <p class="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line text-lg font-medium">
-              {{ publicacion.Descripcion_Publicacion }}
-            </p>
+            
+            <div class="prose prose-indigo dark:prose-invert max-w-none">
+              <p class="text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line text-xl font-medium">
+                {{ publicacion.Descripcion_Publicacion }}
+              </p>
+            </div>
 
-            <div v-if="publicacion.forum_link" class="mt-10 pt-8 border-t border-light-border dark:border-dark-border">
-                <a :href="publicacion.forum_link" target="_blank" class="inline-flex items-center gap-3 px-6 py-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold rounded-2xl hover:scale-105 transition-transform">
-                    <MessageSquare class="w-5 h-5" />
-                    Ver foro de discusión
+            <div v-if="publicacion.forum_link" class="mt-12 pt-10 border-t border-light-border dark:border-dark-border">
+                <a :href="publicacion.forum_link" target="_blank" class="group inline-flex items-center gap-4 px-8 py-4 bg-indigo-600 text-white font-black rounded-2xl hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20">
+                    <MessageSquare class="w-6 h-6" />
+                    <span>Participar en el foro de discusión</span>
+                    <ChevronRight class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </a>
             </div>
           </div>
         </div>
 
         <!-- Panel Lateral (Derecha) -->
-        <div class="space-y-8">
+        <div class="lg:col-span-5 space-y-8">
           <!-- Card de Vendedor -->
-          <div class="p-8 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[3rem] shadow-xl shadow-black/5">
-            <div class="flex flex-col items-center text-center mb-8">
-              <div class="relative w-24 h-24 mb-4">
-                <img 
-                  v-if="publicacion.vendedor?.user?.profile_photo_url"
-                  :src="publicacion.vendedor.user.profile_photo_url"
-                  class="w-full h-full rounded-3xl object-cover ring-4 ring-brand-500/10 shadow-lg"
-                />
-                <div v-else class="w-full h-full rounded-3xl bg-brand-500 flex items-center justify-center text-3xl font-black text-white shadow-lg">
-                  {{ publicacion.vendedor?.user?.name?.charAt(0) }}
+          <div class="sticky top-32 space-y-8">
+            <div class="p-8 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[3rem] shadow-xl shadow-black/5">
+              <div class="flex flex-col items-center text-center mb-8">
+                <div class="relative w-28 h-28 mb-6">
+                  <img 
+                    v-if="publicacion.vendedor?.user?.profile_photo_url"
+                    :src="publicacion.vendedor.user.profile_photo_url"
+                    class="w-full h-full rounded-[2rem] object-cover ring-4 ring-brand-500/10 shadow-2xl"
+                  />
+                  <div v-else class="w-full h-full rounded-[2rem] bg-brand-500 flex items-center justify-center text-4xl font-black text-white shadow-2xl">
+                    {{ publicacion.vendedor?.user?.name?.charAt(0) }}
+                  </div>
+                  <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-emerald-500 border-4 border-white dark:border-dark-surface rounded-full shadow-lg"></div>
                 </div>
-                <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-4 border-white dark:border-dark-surface rounded-full"></div>
+                
+                <h4 class="text-xl font-black text-gray-900 dark:text-white mb-1">{{ publicacion.vendedor?.user?.name }}</h4>
+                <div class="flex items-center gap-1.5 justify-center">
+                  <CheckCircle class="w-3.5 h-3.5 text-brand-500" />
+                  <p class="text-[10px] font-black tracking-widest text-gray-400 uppercase">Vendedor Verificado</p>
+                </div>
+                
+                <div class="mt-6 flex items-center gap-1 bg-gray-50 dark:bg-white/5 px-4 py-2 rounded-2xl border border-light-border dark:border-dark-border">
+                   <div v-for="i in 5" :key="i" class="w-4 h-4">
+                      <Star class="w-full h-full" :class="i <= 4 ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'" />
+                   </div>
+                   <span class="ml-2 text-xs font-black text-gray-500">(24 ventas)</span>
+                </div>
               </div>
-              
-              <h4 class="text-lg font-black text-gray-900 dark:text-white">{{ publicacion.vendedor?.user?.name }}</h4>
-              <p class="text-[10px] font-black tracking-widest text-gray-400 uppercase">Vendedor Verificado</p>
-              
-              <div class="mt-4 flex items-center gap-1">
-                 <div v-for="i in 5" :key="i" class="w-4 h-4">
-                    <Star class="w-full h-full" :class="i <= 4 ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'" />
-                 </div>
-                 <span class="ml-2 text-xs font-bold text-gray-500">(24 ventas)</span>
+
+              <div class="space-y-4">
+                <PrimaryButton @click="handleContact" class="w-full !py-5 shadow-2xl shadow-brand-600/30">
+                  <div class="flex items-center justify-center gap-3">
+                      <MessageCircle class="w-6 h-6" />
+                      <span class="text-sm font-black tracking-widest">CONTACTAR AHORA</span>
+                  </div>
+                </PrimaryButton>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <SecondaryButton @click="toggleFavorite" class="!px-0 !py-4">
+                    <Heart class="w-6 h-6 mx-auto" :class="isFavorite ? 'fill-rose-500 text-rose-500' : ''" />
+                  </SecondaryButton>
+                  <SecondaryButton @click="sharePublication" class="!px-0 !py-4">
+                    <Share2 class="w-6 h-6 mx-auto" />
+                  </SecondaryButton>
+                </div>
+
+                <button @click="handleReport" class="w-full py-4 text-[10px] font-black tracking-widest text-gray-400 uppercase hover:text-rose-500 transition-colors border border-transparent hover:border-rose-500/20 rounded-2xl mt-4">
+                  ⚠️ Reportar esta publicación
+                </button>
               </div>
             </div>
 
-            <div class="space-y-3">
-              <PrimaryButton @click="handleContact" class="w-full">
-                <div class="flex items-center justify-center gap-3">
-                    <MessageCircle class="w-5 h-5" />
-                    Contactar por Chat
+            <!-- Información Adicional -->
+            <div class="p-8 bg-brand-500/5 border border-brand-500/10 rounded-[3rem] space-y-6">
+              <h5 class="text-xs font-black tracking-widest text-brand-600 dark:text-brand-400 uppercase">Detalles Técnicos</h5>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <Layers class="w-4 h-4 text-gray-400" />
+                    <span class="text-xs font-bold text-gray-500">Categoría</span>
+                  </div>
+                  <span class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-tight">{{ publicacion.categoria?.Nombre_Categoria || 'General' }}</span>
                 </div>
-              </PrimaryButton>
-
-              <div class="grid grid-cols-2 gap-3">
-                <SecondaryButton @click="toggleFavorite" class="!px-0">
-                  <Heart class="w-5 h-5 mx-auto" :class="isFavorite ? 'fill-rose-500 text-rose-500' : ''" />
-                </SecondaryButton>
-                <SecondaryButton @click="sharePublication" class="!px-0">
-                  <Share2 class="w-5 h-5 mx-auto" />
-                </SecondaryButton>
-              </div>
-
-              <button @click="handleReport" class="w-full py-4 text-[10px] font-black tracking-widest text-gray-400 uppercase hover:text-rose-500 transition-colors">
-                ⚠️ Reportar esta publicación
-              </button>
-            </div>
-          </div>
-
-          <!-- Información Adicional -->
-          <div class="p-8 bg-brand-500/5 border border-brand-500/10 rounded-[2.5rem]">
-            <h5 class="text-xs font-black tracking-widest text-brand-600 dark:text-brand-400 uppercase mb-4">Detalles Técnicos</h5>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-gray-500">Categoría</span>
-                <span class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-tight">{{ publicacion.categoria?.Nombre_Categoria || 'General' }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-gray-500">Publicado</span>
-                <span class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-tight">{{ formatDate(publicacion.created_at) }}</span>
-              </div>
-               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-gray-500">Estado</span>
-                <span class="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-tighter border border-emerald-500/20">
-                  Activo
-                </span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-gray-500">Vistas</span>
-                <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-lg border border-light-border dark:border-dark-border">
-                  <Eye class="w-3 h-3 text-brand-500" />
-                  <span class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-tight">{{ publicacion.Vistas_Publicacion || 0 }}</span>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <Clock class="w-4 h-4 text-gray-400" />
+                    <span class="text-xs font-bold text-gray-500">Publicado</span>
+                  </div>
+                  <span class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-tight">{{ formatDate(publicacion.created_at) }}</span>
+                </div>
+                <div class="flex items-center justify-between pt-2 border-t border-brand-500/10">
+                  <span class="text-xs font-bold text-gray-500">Estado</span>
+                  <span class="px-3 py-1 rounded-full bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+                    Disponible
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Sección de Mi Publicación (Borrador) -->
-          <div v-if="isOwner && publicacion.estado === 'borrador'" class="p-8 bg-emerald-500/5 border border-emerald-500/10 rounded-[2.5rem] animate-pulse">
-             <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-4">Esta publicación está en borradores y no es pública aún.</p>
-             <button @click="quitarBorrador" class="w-full py-3 bg-emerald-600 text-white rounded-2xl font-black text-[10px] tracking-widest uppercase shadow-lg shadow-emerald-500/20">
-                Publicar Ahora
-             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Sección de Mi Publicación (Borrador) -->
+      <div v-if="isOwner && publicacion.estado === 'borrador'" class="p-8 mt-12 bg-emerald-500/5 border border-emerald-500/10 rounded-[3rem] animate-pulse">
+        <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-4 text-center">Esta publicación está en borradores y no es pública aún.</p>
+        <button @click="quitarBorrador" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs tracking-widest uppercase shadow-xl shadow-emerald-500/20">
+          Publicar Ahora
+        </button>
       </div>
     </div>
   </AppLayout>
@@ -168,12 +199,29 @@ import {
     CameraOff,
     MessageSquare,
     Clock,
-    Eye
+    Eye,
+    Layers,
+    CheckCircle
 } from 'lucide-vue-next'
 
 const props = defineProps({
   publicacion: { type: Object, required: true },
 })
+
+const selectedIndex = ref(0)
+const allImages = computed(() => {
+  if (!props.publicacion.Imagen_Publicacion) return []
+  try {
+    const ip = props.publicacion.Imagen_Publicacion
+    const parsed = typeof ip === 'string' ? (ip.startsWith('[') ? JSON.parse(ip) : [ip]) : ip
+    return (Array.isArray(parsed) ? parsed : [parsed]).map(img => {
+       const filename = String(img).split('/').pop()
+       return `/files/publicaciones/${filename}`
+    })
+  } catch (e) { return [] }
+})
+
+const currentSelectedImage = computed(() => allImages.value[selectedIndex.value] || null)
 
 const page = usePage()
 const currentUserId = page.props.auth?.user?.id || null

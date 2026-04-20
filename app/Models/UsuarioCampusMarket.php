@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Class UsuarioCampusMarket
  *
- * @property int $ID_Usuario
+ * @property int $id
  * @property int $user_id
  * @property string|null $Apellidos
  * @property string|null $Genero

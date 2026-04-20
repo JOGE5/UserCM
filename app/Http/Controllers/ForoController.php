@@ -48,7 +48,7 @@ class ForoController extends Controller
             ]);
         }
 
-        $data['ID_Creador'] = $perfil->ID_Usuario;
+        $data['ID_Creador'] = $perfil->id;
         $data['Estado_Foro'] = 1;
 
         if ($request->hasFile('Imagen_Foro')) {
@@ -75,7 +75,7 @@ class ForoController extends Controller
         if ($user) {
             // If the forum stores the usuarios_campus_markets.ID_Usuario, compare with user's profile id
             $perfil = $user->usuarioCampusMarket;
-            if ($perfil && $foro->ID_Creador == $perfil->ID_Usuario) {
+            if ($perfil && $foro->ID_Creador == $perfil->id) {
                 $isCreator = true;
             }
             // Fallback: if foro.ID_Creador equals the users.id
