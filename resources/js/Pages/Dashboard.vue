@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import CardPubli from '@/Components/CardPubli.vue';
 import { 
     Filter, 
@@ -22,6 +23,7 @@ const props = defineProps({
     userEstado: String,
 });
 
+const route = window.route;
 const page = usePage();
 const selectedCategory = ref(null);
 const searchTerm = ref("");
@@ -49,20 +51,45 @@ const filteredPublicaciones = computed(() => {
     return pubs;
 });
 
-function handleContact(publicationId) {
-    const publication = props.publicaciones.find(pub => pub.id === publicationId);
-    if (!publication?.vendedor) return;
+const contactingId = ref(null);
 
-    const sellerPhone = publication.vendedor.Telefono || publication.vendedor.user?.Telefono;
-    if (!sellerPhone) {
-        alert('El vendedor no tiene número de teléfono disponible.');
-        return;
+async function handleContact(publicationId) {
+    const publication = props.publicaciones.find(pub => pub.id === publicationId)
+                     || props.mejores?.find(pub => pub.id === publicationId);
+
+    // vendedor.user.id es el user_id del vendedor (UsuarioCampusMarket -> User)
+    const sellerId = publication?.vendedor?.user?.id ?? publication?.vendedor?.user_id;
+    if (!sellerId) return;
+    if (sellerId === page.props.auth.user.id) return;
+    if (contactingId.value === publicationId) return;
+
+    contactingId.value = publicationId;
+    try {
+        const { data } = await axios.post(route('chats.private.create'), { seller_id: sellerId });
+        const { chat_id } = data;
+
+        // Siempre enviar tarjeta del producto al iniciar conversación
+        const imagen = publication.Imagen_Publicacion
+            ? (() => { try { const p = JSON.parse(publication.Imagen_Publicacion); return `/files/publicaciones/${(Array.isArray(p) ? p[0] : p).split('/').pop()}`; } catch { return `/files/publicaciones/${String(publication.Imagen_Publicacion).split('/').pop()}`; } })()
+            : null;
+
+        await axios.post(route('chats.messages.store', chat_id), {
+            type: 'product_card',
+            metadata: {
+                publicacion_id: publication.id,
+                titulo:  publication.Titulo_Publicacion,
+                precio:  publication.Precio_Publicacion,
+                imagen,
+                url: route('publicaciones.show', publication.id),
+            },
+        });
+
+        router.visit(route('chats.show', chat_id));
+    } catch {
+        alert('No se pudo abrir el chat. Intenta de nuevo.');
+    } finally {
+        contactingId.value = null;
     }
-
-    const buyerName = page.props.auth.user.name;
-    const title = publication.Titulo_Publicacion;
-    const message = `Hola, soy ${buyerName}. Estoy interesado en tu publicación "${title}" en Campus Market.`;
-    window.open(`https://wa.me/${String(sellerPhone).replace(/\D+/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
 }
 </script>
 

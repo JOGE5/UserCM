@@ -2,9 +2,7 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -31,21 +29,27 @@ class MessageSent implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return new PrivateChannel('chat.' . $this->message->chat_id);
+        return new PresenceChannel('chat.' . $this->message->chat_id);
     }
 
     public function broadcastWith()
     {
         return [
             'message' => [
-                'id' => $this->message->id,
-                'chat_id' => $this->message->chat_id,
-                'sender' => [
-                    'id' => $this->message->sender->id,
+                'id'              => $this->message->id,
+                'chat_id'         => $this->message->chat_id,
+                'sender_id'       => $this->message->sender_id,
+                'sender'          => [
+                    'id'   => $this->message->sender->id,
                     'name' => $this->message->sender->name,
                 ],
-                'contenido' => $this->message->contenido,
-                'created_at' => $this->message->created_at,
+                'contenido'       => $this->message->contenido,
+                'type'            => $this->message->type ?? 'text',
+                'metadata'        => $this->message->metadata,
+                'attachment_path' => $this->message->attachment_path,
+                'attachment_name' => $this->message->attachment_name,
+                'attachment_type' => $this->message->attachment_type,
+                'created_at'      => $this->message->created_at,
             ],
         ];
     }

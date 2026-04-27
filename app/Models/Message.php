@@ -10,6 +10,15 @@ class Message extends Model
         'chat_id',
         'sender_id',
         'contenido',
+        'attachment_path',
+        'attachment_name',
+        'attachment_type',
+        'type',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'metadata' => 'array',
     ];
 
     public function chat()

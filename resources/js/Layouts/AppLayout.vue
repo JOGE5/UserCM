@@ -42,9 +42,11 @@ const logout = () => {
     router.post(route('logout'));
 };
 
+const unreadCount = computed(() => page.props.unreadCount ?? 0);
+
 const navigation = [
     { name: 'Publicaciones', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
-    { name: 'Mensajes', href: route('mensajes.index'), icon: MessageSquare, active: route().current('mensajes.index') },
+    { name: 'Mensajes', href: route('mensajes.index'), icon: MessageSquare, active: route().current('mensajes.index'), badge: unreadCount },
     { name: 'Foros', href: route('productos'), icon: Layers, active: route().current('productos') },
     { name: 'Borradores', href: route('borradores'), icon: Archive, active: route().current('borradores') },
     { name: 'Favoritos', href: route('favoritos.index'), icon: Heart, active: route().current('favoritos.index') },
@@ -120,12 +122,24 @@ const profilePhotoUrl = computed(() => {
                                 : 'text-gray-500 dark:text-gray-400 hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400'
                         ]"
                     >
-                        <component :is="item.icon" :class="['w-6 h-6 shrink-0 transition-transform duration-300', item.active ? '' : 'group-hover:scale-110']" />
-                        <span 
-                            class="text-sm transition-all duration-300"
+                        <div class="relative shrink-0">
+                            <component :is="item.icon" :class="['w-6 h-6 transition-transform duration-300', item.active ? '' : 'group-hover:scale-110']" />
+                            <span v-if="item.badge?.value > 0"
+                                class="absolute -top-1.5 -right-1.5 min-w-[1.1rem] h-[1.1rem] flex items-center justify-center bg-rose-500 text-white text-[9px] font-black rounded-full px-0.5 shadow-lg shadow-rose-500/40 animate-pulse"
+                            >
+                                {{ item.badge.value > 99 ? '99+' : item.badge.value }}
+                            </span>
+                        </div>
+                        <span
+                            class="text-sm transition-all duration-300 flex-1"
                             :class="[sidebarCollapsed ? 'lg:opacity-0 lg:w-0' : 'opacity-100 w-auto']"
                         >
                             {{ item.name }}
+                        </span>
+                        <span v-if="!sidebarCollapsed && item.badge?.value > 0"
+                            class="shrink-0 min-w-[1.4rem] h-[1.4rem] flex items-center justify-center bg-rose-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg shadow-rose-500/40"
+                        >
+                            {{ item.badge.value > 99 ? '99+' : item.badge.value }}
                         </span>
                     </Link>
                 </div>

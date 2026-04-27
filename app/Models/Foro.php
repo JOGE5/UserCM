@@ -45,7 +45,7 @@ class Foro extends Model
 
     public function categoria()
     {
-        return $this->belongsTo(Categorias::class, 'Cod_Categoria');
+        return $this->belongsTo(Categoria_foros::class, 'Cod_Categoria', 'Cod_Categoria');
     }
 
     public function comentarios()

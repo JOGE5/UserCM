@@ -13,7 +13,9 @@ class Chat extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'chat_users');
+        return $this->belongsToMany(User::class, 'chat_users')
+            ->withPivot('is_muted', 'is_hidden', 'last_read_at')
+            ->withTimestamps();
     }
 
     public function messages()
