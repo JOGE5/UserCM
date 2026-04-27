@@ -19,7 +19,7 @@ class MessageSent implements ShouldBroadcast
      */
     public function __construct($message)
     {
-        $this->message = $message->load('sender');
+        $this->message = $message->load('sender', 'reactions', 'replyTo.sender');
     }
 
     /**
@@ -40,9 +40,16 @@ class MessageSent implements ShouldBroadcast
                 'chat_id'         => $this->message->chat_id,
                 'sender_id'       => $this->message->sender_id,
                 'sender'          => [
-                    'id'   => $this->message->sender->id,
-                    'name' => $this->message->sender->name,
+                    'id'                => $this->message->sender->id,
+                    'name'              => $this->message->sender->name,
+                    'profile_photo_url' => $this->message->sender->profile_photo_url,
                 ],
+                'reply_to'        => $this->message->replyTo ? [
+                    'id'       => $this->message->replyTo->id,
+                    'contenido'=> $this->message->replyTo->contenido,
+                    'sender'   => ['name' => $this->message->replyTo->sender?->name],
+                ] : null,
+                'reactions'       => $this->message->reactions,
                 'contenido'       => $this->message->contenido,
                 'type'            => $this->message->type ?? 'text',
                 'metadata'        => $this->message->metadata,

@@ -6,6 +6,7 @@ use App\Events\MessageSent;
 use App\Events\UserTyping;
 use App\Models\Chat;
 use App\Models\Message;
+use App\Models\MessageReaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -92,7 +93,7 @@ class ChatController extends Controller
 
         $pivot = $chat->users()->where('user_id', Auth::id())->first()->pivot;
 
-        $chat->load('users', 'messages.sender');
+        $chat->load('users', 'messages.sender', 'messages.reactions', 'messages.replyTo.sender');
 
         return Inertia::render('Mensajes/Show', [
             'chat'      => $chat,
@@ -108,18 +109,20 @@ class ChatController extends Controller
         }
 
         $request->validate([
-            'contenido'  => 'nullable|string|max:2000',
-            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,zip,txt',
-            'type'       => 'nullable|in:text,product_card',
-            'metadata'   => 'nullable|array',
+            'contenido'   => 'nullable|string|max:2000',
+            'attachment'  => 'nullable|file|max:10240|mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,zip,txt',
+            'type'        => 'nullable|in:text,product_card',
+            'metadata'    => 'nullable|array',
+            'reply_to_id' => 'nullable|exists:messages,id',
         ]);
 
         $data = [
-            'chat_id'   => $chat->id,
-            'sender_id' => Auth::id(),
-            'contenido' => $request->contenido,
-            'type'      => $request->type ?? 'text',
-            'metadata'  => $request->metadata,
+            'chat_id'     => $chat->id,
+            'sender_id'   => Auth::id(),
+            'reply_to_id' => $request->reply_to_id,
+            'contenido'   => $request->contenido,
+            'type'        => $request->type ?? 'text',
+            'metadata'    => $request->metadata,
         ];
 
         if ($request->hasFile('attachment')) {
@@ -144,7 +147,40 @@ class ChatController extends Controller
             Log::error('Error broadcasting MessageSent', ['error' => $e->getMessage()]);
         }
 
-        return response()->json($message->load('sender'));
+        return response()->json($message->load('sender', 'reactions', 'replyTo.sender'));
+    }
+
+    public function toggleReaction(Request $request, Chat $chat, Message $message)
+    {
+        if (! $chat->users()->where('user_id', Auth::id())->exists()) {
+            abort(403);
+        }
+
+        if ($message->chat_id !== $chat->id) {
+            abort(404);
+        }
+
+        $request->validate(['emoji' => 'required|string|max:20']);
+
+        $existing = MessageReaction::where([
+            'message_id' => $message->id,
+            'user_id'    => Auth::id(),
+            'emoji'      => $request->emoji,
+        ])->first();
+
+        if ($existing) {
+            $existing->delete();
+        } else {
+            MessageReaction::create([
+                'message_id' => $message->id,
+                'user_id'    => Auth::id(),
+                'emoji'      => $request->emoji,
+            ]);
+        }
+
+        return response()->json([
+            'reactions' => $message->reactions()->get(),
+        ]);
     }
 
     public function typing(Request $request, Chat $chat)

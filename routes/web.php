@@ -148,6 +148,7 @@ Route::middleware([
     Route::get('/chats/{chat}', [ChatController::class, 'show'])->name('chats.show');
     Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->name('chats.messages.store');
     Route::post('/chats/{chat}/typing', [ChatController::class, 'typing'])->name('chats.typing');
+    Route::post('/chats/{chat}/messages/{message}/react', [ChatController::class, 'toggleReaction'])->name('chats.messages.react');
     Route::post('/chats/{chat}/mute', [ChatController::class, 'toggleMute'])->name('chats.mute');
     Route::post('/chats/{chat}/hide', [ChatController::class, 'toggleHide'])->name('chats.hide');
     Route::post('/chats/{chat}/read', [ChatController::class, 'markRead'])->name('chats.read');
