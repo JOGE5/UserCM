@@ -21,42 +21,31 @@ Route::get('/', function () {
     ]);
 });
 
-// Test route para debugging de reputación
-Route::post('/test-rating', function (\Illuminate\Http\Request $request) {
-    return response()->json([
-        'authenticated' => auth()->check(),
-        'user_id' => auth()->id(),
-        'input' => $request->all(),
-    ]);
-});
+// La ruta de prueba /test-rating ha sido eliminada por seguridad.
 
-// Ruta pública para servir imágenes de publicaciones (evita problemas con symlinks en Windows)
+// Ruta protegida para servir imágenes de publicaciones
 Route::get('/files/publicaciones/{filename}', function ($filename) {
     $safe = basename($filename);
     $path = storage_path('app/public/publicaciones/'.$safe);
     if (! file_exists($path)) {
-        // Si no existe la imagen en storage, devolver un placeholder público
         $placeholder = public_path('images/posters/university-logo.png');
         if (file_exists($placeholder)) {
             return response()->file($placeholder);
         }
-
         abort(404);
     }
-
     return response()->file($path);
-})->name('files.publicaciones');
+})->name('files.publicaciones')->middleware('auth');
 
-// Ruta pública para servir imágenes de perfil de usuarios
+// Ruta protegida para servir imágenes de perfil de usuarios
 Route::get('/files/perfil/{filename}', function ($filename) {
     $safe = basename($filename);
-    $path = storage_path('app/public/perfil/'.$safe);
+    $path = storage_path('app/public/perfil/'.$safe); 
     if (! file_exists($path)) {
         abort(404);
     }
-
     return response()->file($path);
-})->name('files.perfil');
+})->name('files.perfil')->middleware('auth');
 
 Route::middleware('guest')->group(function () {
     Route::get('/forgot-password-code', [PasswordResetCodeController::class, 'showRequestForm'])->name('password.request.custom');

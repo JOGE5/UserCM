@@ -5,8 +5,11 @@ import InputError from '@/Components/InputError.vue';
 import { User, Mail, Lock, Eye, EyeOff, Camera } from 'lucide-vue-next';
 import CamaraRegistro from '@/Components/CamaraRegistro.vue';
 
+import TermsModal from '@/Components/TermsModal.vue';
+
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
+const showTermsModal = ref(false);
 
 const form = useForm({
     name: '',
@@ -153,7 +156,7 @@ const submit = () => {
                     <InputError class="mt-1 text-xs text-red-500" :message="form.errors.password_confirmation" />
                 </div>
 
-                <div v-if="$page.props.jetstream?.hasTermsAndPrivacyPolicyFeature" class="pt-2">
+                <div class="pt-2">
                     <label class="flex items-start cursor-pointer group">
                         <div class="relative flex items-center justify-center w-5 h-5 mt-0.5 bg-black/40 border border-white/20 rounded transition-colors group-hover:border-indigo-400 shrink-0">
                             <input type="checkbox" v-model="form.terms" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer peer" />
@@ -162,7 +165,7 @@ const submit = () => {
                             </svg>
                         </div>
                         <span class="ml-3 text-sm font-medium text-gray-400 transition-colors group-hover:text-gray-300">
-                            Acepto los <a target="_blank" :href="route('terms.show')" class="text-indigo-400 hover:text-indigo-300 hover:underline">Términos y condiciones</a> y la <a target="_blank" :href="route('policy.show')" class="text-indigo-400 hover:text-indigo-300 hover:underline">Política de Privacidad</a>
+                            Acepto los <button type="button" @click="showTermsModal = true" class="text-indigo-400 hover:text-indigo-300 hover:underline">términos y condiciones</button> de uso y privacidad
                         </span>
                     </label>
                     <InputError class="mt-2 text-xs text-red-500" :message="form.errors.terms" />
@@ -220,6 +223,12 @@ const submit = () => {
             </form>
         </div>
     </div>
+
+    <!-- Ventana de Términos y Condiciones -->
+    <TermsModal 
+        :show="showTermsModal" 
+        @close="showTermsModal = false" 
+    />
 </template>
 
 <style scoped>
