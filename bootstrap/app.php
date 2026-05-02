@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //
         $middleware->alias([
             'face.verified' => \App\Http\Middleware\EnsureFaceVerified::class,
+            'admin.role'    => \App\Http\Middleware\EnsureAdminRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

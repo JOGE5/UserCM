@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Auth\PasswordResetCodeController;
 use App\Http\Controllers\Auth\DeviceVerificationController;
 use App\Http\Controllers\Auth\FaceAuthController;
@@ -220,4 +221,13 @@ Route::middleware([
     // Exponer endpoints de reputación también por web (soportar sesión de navegador)
     Route::post('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'store']);
     Route::get('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'show']);
+});
+
+// ==================== PANEL DE ADMINISTRACIÓN ====================
+Route::middleware([
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'admin.role',
+])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 });
