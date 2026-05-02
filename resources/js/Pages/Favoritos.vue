@@ -1,16 +1,18 @@
 <script setup>
-import { computed } from 'vue';
+import { ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import CardPubli from '@/Components/CardPubli.vue';
-import { 
-    Heart, 
+import {
+    Heart,
     ChevronRight,
     Search,
     Sparkles,
-    TrendingUp,
     ArrowRight
 } from 'lucide-vue-next';
-import { usePage, Link } from '@inertiajs/vue3';
+import { usePage, Link, router } from '@inertiajs/vue3';
+import axios from 'axios';
+
+const route = window.route;
 
 const props = defineProps({
     favoritos: { type: Array, default: () => [] },
@@ -18,21 +20,46 @@ const props = defineProps({
 
 const page = usePage();
 const currentUserId = page.props.auth.user.id;
+const contactingId = ref(null);
 
-function handleContact(publicationId) {
+async function handleContact(publicationId) {
     const fav = props.favoritos.find(f => f.publicacion.id === publicationId);
-    if (!fav?.publicacion?.vendedor) return;
+    if (!fav?.publicacion?.vendedor?.user_id) return;
 
-    const sellerPhone = fav.publicacion.vendedor.Telefono || fav.publicacion.vendedor.user?.Telefono;
-    if (!sellerPhone) {
-        alert('El vendedor no tiene número de teléfono disponible.');
-        return;
+    const sellerId = fav.publicacion.vendedor.user_id;
+    if (sellerId === currentUserId) return;
+    if (contactingId.value === publicationId) return;
+
+    contactingId.value = publicationId;
+    try {
+        const { data } = await axios.post(route('chats.private.create'), { seller_id: sellerId });
+        const { chat_id } = data;
+
+        const pub = fav.publicacion;
+        const imgRaw = pub.Imagen_Publicacion;
+        let imagen = null;
+        if (imgRaw) {
+            try { const p = JSON.parse(imgRaw); imagen = `/files/publicaciones/${(Array.isArray(p) ? p[0] : p).split('/').pop()}`; }
+            catch { imagen = `/files/publicaciones/${String(imgRaw).split('/').pop()}`; }
+        }
+
+        await axios.post(route('chats.messages.store', chat_id), {
+            type: 'product_card',
+            metadata: {
+                publicacion_id: pub.id,
+                titulo:  pub.Titulo_Publicacion,
+                precio:  pub.Precio_Publicacion,
+                imagen,
+                url: route('publicaciones.show', pub.id),
+            },
+        });
+
+        router.visit(route('chats.show', chat_id));
+    } catch {
+        alert('Error al iniciar el chat. Intenta de nuevo.');
+    } finally {
+        contactingId.value = null;
     }
-
-    const buyerName = page.props.auth.user.name;
-    const title = fav.publicacion.Titulo_Publicacion;
-    const message = `Hola, soy ${buyerName}. Estoy interesado en tu publicación "${title}" que guardé en mis favoritos de Campus Market.`;
-    window.open(`https://wa.me/${String(sellerPhone).replace(/\D+/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
 }
 </script>
 

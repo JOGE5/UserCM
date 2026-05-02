@@ -102,7 +102,12 @@ Route::middleware([
                 ->get()
                 ->map(function ($pub) use ($markov) {
                     $promedio = $markov->calcularPromedioCalificaciones($pub->vendedor?->user);
-                    return array_merge($pub->toArray(), ['calificacion_promedio' => $promedio]);
+                    $arr = $pub->toArray();
+                    // Asegurar que user_id del vendedor esté disponible en el frontend
+                    if (isset($arr['vendedor']) && $pub->vendedor?->user_id) {
+                        $arr['vendedor']['user_id'] = $pub->vendedor->user_id;
+                    }
+                    return array_merge($arr, ['calificacion_promedio' => $promedio]);
                 })
                 ->sortByDesc('calificacion_promedio')
                 ->values()
@@ -131,6 +136,11 @@ Route::middleware([
     Route::post('/chats/private', [ChatController::class, 'createPrivateChat'])->name('chats.private.create');
     Route::get('/chats/{chat}', [ChatController::class, 'show'])->name('chats.show');
     Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->name('chats.messages.store');
+    Route::post('/chats/{chat}/typing', [ChatController::class, 'typing'])->name('chats.typing');
+    Route::post('/chats/{chat}/messages/{message}/react', [ChatController::class, 'toggleReaction'])->name('chats.messages.react');
+    Route::post('/chats/{chat}/mute', [ChatController::class, 'toggleMute'])->name('chats.mute');
+    Route::post('/chats/{chat}/hide', [ChatController::class, 'toggleHide'])->name('chats.hide');
+    Route::post('/chats/{chat}/read', [ChatController::class, 'markRead'])->name('chats.read');
 
     // Ruta de prueba para "Prueba" en el sidebar (ahora redirige a mensajes)
     Route::get('/prueba', function () {

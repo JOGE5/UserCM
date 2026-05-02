@@ -119,10 +119,12 @@
               </div>
 
               <div class="space-y-4">
-                <PrimaryButton @click="handleContact" class="w-full !py-5 shadow-2xl shadow-brand-600/30">
+                <PrimaryButton @click="handleContact" :disabled="contacting || isOwner" class="w-full !py-5 shadow-2xl shadow-brand-600/30 disabled:opacity-50 disabled:cursor-not-allowed">
                   <div class="flex items-center justify-center gap-3">
-                      <MessageCircle class="w-6 h-6" />
-                      <span class="text-sm font-black tracking-widest">CONTACTAR AHORA</span>
+                      <MessageCircle class="w-6 h-6" :class="contacting ? 'animate-pulse' : ''" />
+                      <span class="text-sm font-black tracking-widest">
+                        {{ contacting ? 'ABRIENDO CHAT...' : 'CONTACTAR AHORA' }}
+                      </span>
                   </div>
                 </PrimaryButton>
 
@@ -223,10 +225,12 @@ const allImages = computed(() => {
 
 const currentSelectedImage = computed(() => allImages.value[selectedIndex.value] || null)
 
+const route = window.route
 const page = usePage()
 const currentUserId = page.props.auth?.user?.id || null
 const isOwner = computed(() => props.publicacion?.vendedor?.user?.id === currentUserId)
 const isFavorite = ref(false)
+const contacting = ref(false)
 
 const getImageUrl = (imageData) => {
   if (!imageData) return null
@@ -245,12 +249,43 @@ const handleContact = async () => {
   const sellerId = props.publicacion.vendedor?.user?.id
   if (!sellerId) return
   if (isOwner.value) { alert('No puedes contactar tu propia publicación.'); return }
+  if (contacting.value) return
 
+  contacting.value = true
   try {
-    const response = await axios.post('/chats/private', { seller_id: sellerId })
-    const chatId = response.data.chat_id
-    if (chatId) router.visit(route('chats.show', chatId))
-  } catch (err) { alert('Error al iniciar el chat') }
+    const { data } = await axios.post(route('chats.private.create'), { seller_id: sellerId })
+    const { chat_id } = data
+
+    // Obtener imagen principal de la publicación
+    const imgRaw = props.publicacion.Imagen_Publicacion
+    let imagen = null
+    if (imgRaw) {
+      try {
+        const p = JSON.parse(imgRaw)
+        imagen = `/files/publicaciones/${(Array.isArray(p) ? p[0] : p).split('/').pop()}`
+      } catch {
+        imagen = `/files/publicaciones/${String(imgRaw).split('/').pop()}`
+      }
+    }
+
+    // Siempre enviar tarjeta del producto al iniciar conversación
+    await axios.post(route('chats.messages.store', chat_id), {
+      type: 'product_card',
+      metadata: {
+        publicacion_id: props.publicacion.id,
+        titulo:  props.publicacion.Titulo_Publicacion,
+        precio:  props.publicacion.Precio_Publicacion,
+        imagen,
+        url: route('publicaciones.show', props.publicacion.id),
+      },
+    })
+
+    router.visit(route('chats.show', chat_id))
+  } catch {
+    alert('Error al iniciar el chat. Intenta de nuevo.')
+  } finally {
+    contacting.value = false
+  }
 }
 
 const toggleFavorite = () => {

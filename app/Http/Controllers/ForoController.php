@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Foro;
-use App\Models\Categorias;
+use App\Models\Categoria_foros;
 use App\Models\UsuarioCampusMarket;
 use App\Jobs\ModerateContentJob;
 use App\Rules\NoProfanity;
@@ -23,7 +23,7 @@ class ForoController extends Controller
 
     public function create()
     {
-        $categorias = Categorias::all();
+        $categorias = Categoria_foros::all();
         return Inertia::render('Foros/Create', ['categorias' => $categorias]);
     }
 
@@ -32,7 +32,7 @@ class ForoController extends Controller
         $data = $request->validate([
             'Titulo_Foro' => ['required','string','max:200', new NoProfanity()],
             'Descripcion_Foro' => ['required','string', new NoProfanity()],
-            'Cod_Categoria' => 'required|exists:categorias_articulos,Cod_Categoria',
+            'Cod_Categoria' => 'required|exists:categorias_foros,Cod_Categoria',
             'Imagen_Foro' => 'required|image|max:2048',
         ]);
 
@@ -94,7 +94,7 @@ class ForoController extends Controller
     public function edit(Foro $foro)
     {
         $this->authorize('update', $foro);
-        $categorias = Categorias::all();
+        $categorias = Categoria_foros::all();
         return Inertia::render('Foros/Edit', ['foro' => $foro, 'categorias' => $categorias]);
     }
 
@@ -105,7 +105,7 @@ class ForoController extends Controller
         $data = $request->validate([
             'Titulo_Foro' => ['required','string','max:200', new NoProfanity()],
             'Descripcion_Foro' => ['required','string', new NoProfanity()],
-            'Cod_Categoria' => 'required|exists:categorias_articulos,Cod_Categoria',
+            'Cod_Categoria' => 'required|exists:categorias_foros,Cod_Categoria',
             'Imagen_Foro' => 'nullable|image|max:2048',
         ]);
 

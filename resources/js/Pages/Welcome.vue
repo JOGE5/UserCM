@@ -147,7 +147,7 @@ const features = [
 <template>
     <Head title="Bienvenido | Campus Market" />
 
-    <!-- Intro Premium Oscuro -->
+    <!-- Intro Oscuro -->
     <Transition name="intro-fade">
         <div v-if="showIntro" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black overflow-hidden">
             <!-- Capa de iluminación para efecto de transición -->
@@ -172,7 +172,7 @@ const features = [
         </div>
     </Transition>
 
-    <!-- Barra de Navegación Glassmorphism Premium -->
+    <!-- Barra de Navegación Glassmorphism -->
     <nav :class="[
         'fixed top-0 inset-x-0 z-50 transition-all duration-500 ease-out border-b py-4',
         isScrolledNav ? 'bg-black/80 backdrop-blur-xl border-white/10 shadow-2xl' : 'bg-gradient-to-b from-translusent/80 to-transparent border-transparent py-6'
@@ -218,7 +218,7 @@ const features = [
         </div>
     </nav>
 
-    <!-- Sección Hero de Alto Impacto -->
+    <!-- Sección Hero -->
     <Transition name="smooth-reveal">
         <div v-show="!showIntro" class="relative h-screen min-h-[700px] overflow-hidden bg-black">
 
@@ -247,7 +247,7 @@ const features = [
                         >
                             <source :src="video.src" type="video/mp4">
                         </video>
-                        <!-- Sombras ultra HD superpuestas en el video para texto legible -->
+                        <!-- Sombras ultra HD superpuestas en el video para texto legible solo cambiar cuando afecte signifativamente y si no pues dejarlo asi XD-->
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/30"></div>
                         <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.8)_100%)]"></div>
 

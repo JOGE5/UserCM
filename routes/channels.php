@@ -12,10 +12,17 @@ use App\Models\Chat;
  * used to check if an authenticated user can listen to the channel.
  */
 
+// Canal privado para mensajes
 Broadcast::channel('chat.{chatId}', function ($user, $chatId) {
-    // Permitir sólo a participantes del chat
-    return Chat::where('id', $chatId)
+    $isMember = Chat::where('id', $chatId)
         ->whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->exists();
+
+    if (! $isMember) {
+        return false;
+    }
+
+    // Presence channel: retornar datos del usuario
+    return ['id' => $user->id, 'name' => $user->name];
 });

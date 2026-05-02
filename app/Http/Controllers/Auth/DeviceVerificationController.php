@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TrustedDevice;
 use App\Mail\DeviceVerificationMail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
@@ -18,13 +19,6 @@ class DeviceVerificationController extends Controller
     {
         if (!session('device_verification_required')) {
             return redirect()->route('dashboard');
-        }
-
-        // Forzar una regeneración del token CSRF en este punto.
-        // Esto previene el error 419 que ocurre porque la cookie asíncrona de Login
-        // a veces no se sobreescribe correctamente durante las redirecciones rápidas de Inertia.
-        if (request()->hasSession()) {
-            request()->session()->regenerateToken();
         }
 
         return Inertia::render('Auth/DeviceVerification');
@@ -60,7 +54,7 @@ class DeviceVerificationController extends Controller
         $deviceHash = hash('sha256', $userAgent . '|' . $ip);
 
         TrustedDevice::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'device_hash' => $deviceHash,
             'device_name' => substr($userAgent, 0, 255),
             'ip_address' => $ip,
@@ -76,20 +70,22 @@ class DeviceVerificationController extends Controller
     /**
      * Resend verification code.
      */
-    public function resend(Request $request)
+    public function resend()
     {
         if (!session('device_verification_required')) {
             return redirect()->route('dashboard');
         }
 
         $code = rand(100000, 999999);
-        
+
         session([
             'device_verification_code' => $code,
             'device_verification_expires_at' => now()->addMinutes(10),
         ]);
 
-        Mail::to(auth()->user()->email)->send(new DeviceVerificationMail($code, substr(request()->userAgent(), 0, 100)));
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        Mail::to($user->email)->send(new DeviceVerificationMail($code, substr(request()->userAgent(), 0, 100)));
 
         return back()->with('status', 'Un nuevo código ha sido enviado a tu correo electrónico.');
     }

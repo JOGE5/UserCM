@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm, Link } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios';
 import InputError from '@/Components/InputError.vue';
@@ -13,7 +13,6 @@ const props = defineProps({
 
 // Si el usuario viene de Google (tiene google_id), saltamos directo al paso 3 (Carrera/Universidad)
 const currentStep = ref(props.user.google_id ? 3 : 1);
-const selectedUniversidad = ref(null);
 const carreras = ref([]);
 
 // Estados para previsualización y carga
@@ -33,6 +32,10 @@ const isSubmitting = ref(false);
 const submitStatus = ref('Subiendo su información...');
 const submitProgress = ref(0);
 const showSuccess = ref(false);
+
+// Estado de carga post-captura facial
+const faceLoading = ref(false);
+const faceMessage = ref('');
 
 const openGenero = ref(false);
 const openUniversidad = ref(false);
@@ -123,9 +126,18 @@ const selectCarrera = (id) => {
 };
 
 const isStep1Valid = computed(() => {
-    if (props.user.google_id) return true; // Usuarios de Google omiten este paso
-    return form.Apellidos && form.Genero && form.Telefono;
+    if (props.user.google_id) return true;
+    const telefonoValido = /^\d{8}$/.test(form.Telefono);
+    return form.Apellidos && form.Genero && telefonoValido;
 });
+
+const handleTelefonoInput = (e) => {
+    form.Telefono = e.target.value.replace(/\D/g, '').substring(0, 8);
+};
+
+const handleApellidosInput = (e) => {
+    form.Apellidos = e.target.value.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑ\s]/gi, '').substring(0, 60);
+};
 
 const isStep2Valid = computed(() => {
     return true; // Fotos son opcionales
@@ -142,6 +154,15 @@ const isStep4Valid = computed(() => {
 const handleFaceCaptured = ({ base64, descriptor }) => {
     form.fotoBase64 = base64;
     form.descriptorFacial = descriptor;
+    faceLoading.value = true;
+    faceMessage.value = 'Verificando que eres tú...';
+    setTimeout(() => {
+        faceMessage.value = 'Cargando...';
+        setTimeout(() => {
+            faceMessage.value = 'A punto de entrar';
+            setTimeout(() => submit(), 700);
+        }, 700);
+    }, 800);
 };
 
 const nextStep = () => {
@@ -263,6 +284,7 @@ const submit = () => {
     if (isStep4Valid.value) {
         form.post(route('profile.complete'), {
             forceFormData: true,
+            preserveState: true,
             onStart: () => {
                 isSubmitting.value = true;
                 submitStatus.value = 'Subiendo su información...';
@@ -274,7 +296,7 @@ const submit = () => {
                     submitProgress.value = Math.min(progress.percentage * 0.8, 80);
                 }
             },
-            onSuccess: (page) => {
+            onSuccess: () => {
                 submitStatus.value = 'Cargando datos...';
                 submitProgress.value = 90;
                 
@@ -291,7 +313,7 @@ const submit = () => {
                     }, 1500);
                 }, 800);
             },
-            onError: (errors) => {
+            onError: () => {
                 isSubmitting.value = false;
             },
             onFinish: () => {
@@ -381,6 +403,8 @@ const submit = () => {
                                     </div>
                                     <input id="Apellidos" v-model="form.Apellidos" type="text" required autofocus
                                         placeholder="Tus apellidos"
+                                        maxlength="60"
+                                        @input="handleApellidosInput"
                                         class="w-full py-3.5 pl-12 pr-4 text-white transition-all duration-300 bg-black/40 border border-white/10 rounded-2xl placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm" />
                                 </div>
                                 <InputError class="mt-1 text-xs text-red-500" :message="form.errors.Apellidos" />
@@ -408,8 +432,11 @@ const submit = () => {
                                         <Phone class="w-5 h-5 text-gray-500 transition-colors group-focus-within/input:text-indigo-400" />
                                     </div>
                                     <input id="Telefono" v-model="form.Telefono" type="tel" required
-                                        placeholder="Ej. +591 71234567"
+                                        placeholder="Ej. 71234567"
+                                        maxlength="8"
+                                        @input="handleTelefonoInput"
                                         class="w-full py-3.5 pl-12 pr-4 text-white transition-all duration-300 bg-black/40 border border-white/10 rounded-2xl placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm" />
+                                <p class="mt-1 text-xs text-gray-500">8 dígitos · Bolivia</p>
                                 </div>
                                 <InputError class="mt-1 text-xs text-red-500" :message="form.errors.Telefono" />
                             </div>
@@ -712,24 +739,28 @@ const submit = () => {
                                 <div>
                                     <h4 class="mb-1 text-sm font-bold text-white">Último paso: Seguridad</h4>
                                     <p class="text-sm leading-relaxed text-pink-200/70">
-                                        Campus Market requiere verificar tu identidad mediante reconocimiento facial para mantener la comunidad segura. Asegúrate de estar en un lugar con buena iluminación y sin accesorios (como gafas oscuras).
+                                        Campus Market requiere verificar tu identidad. Mira a la cámara y mantén el rostro centrado. Solo se tomará una captura.
                                     </p>
                                 </div>
                             </div>
-                            
-                            <!-- Camara Component -->
-                            <div v-if="!form.descriptorFacial" class="flex justify-center w-full">
+
+                            <!-- Cámara: solo se muestra si no se ha capturado aún -->
+                            <div v-if="!faceLoading && !form.descriptorFacial" class="flex justify-center w-full">
                                 <CamaraRegistro @capturado="handleFaceCaptured" @error="e => profileError = e" />
                             </div>
 
-                            <!-- Success Banner -->
-                            <div v-else class="flex flex-col items-center justify-center p-6 space-y-4 border bg-emerald-900/40 border-emerald-500/50 rounded-2xl">
-                                <div class="p-3 rounded-full bg-emerald-500/20 text-emerald-400">
-                                    <Check class="w-8 h-8" />
+                            <!-- Estado de carga post-captura -->
+                            <div v-if="faceLoading" class="flex flex-col items-center justify-center py-10 space-y-6">
+                                <div class="relative">
+                                    <div class="w-20 h-20 border-4 border-indigo-500/20 rounded-full"></div>
+                                    <div class="absolute top-0 left-0 w-20 h-20 border-4 border-indigo-400 rounded-full border-t-transparent animate-spin"></div>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <ScanFace class="w-7 h-7 text-indigo-300" />
+                                    </div>
                                 </div>
-                                <h3 class="text-lg font-bold text-emerald-400">¡Rostro Registrado!</h3>
-                                <p class="text-sm text-center text-emerald-200/70">Ya estás listo para continuar con tu experiencia en Campus Market.</p>
-                                <button type="button" @click="form.descriptorFacial = null" class="text-xs font-bold tracking-widest uppercase transition-colors text-emerald-400/50 hover:text-emerald-400">Volver a Escanear</button>
+                                <p class="text-sm font-bold tracking-widest text-indigo-300 uppercase animate-pulse">
+                                    {{ faceMessage }}
+                                </p>
                             </div>
                         </div>
                     </div>
