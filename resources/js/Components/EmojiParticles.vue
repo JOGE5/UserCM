@@ -108,7 +108,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+    <div class="absolute inset-0 z-[5] overflow-hidden pointer-events-none">
         <div
             v-for="p in particles"
             :key="p.id"
