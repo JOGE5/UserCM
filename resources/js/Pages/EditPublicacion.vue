@@ -8,18 +8,20 @@ import DangerButton from '@/Components/DangerButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
-import { 
-    UploadCloud, 
-    X, 
-    ChevronRight, 
-    Sparkles, 
-    Package, 
-    Info, 
+import {
+    UploadCloud,
+    X,
+    ChevronRight,
+    Sparkles,
+    Package,
+    Info,
     DollarSign,
     Trash2,
     Archive,
     CheckCircle2,
-    AlertTriangle
+    AlertTriangle,
+    Settings,
+    ShieldAlert,
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -29,12 +31,14 @@ const props = defineProps({
 
 const form = useForm({
     _method: 'PUT',
-    Titulo_Publicacion: props.publicacion.Titulo_Publicacion || '',
+    Titulo_Publicacion:      props.publicacion.Titulo_Publicacion || '',
     Descripcion_Publicacion: props.publicacion.Descripcion_Publicacion || '',
-    Estado_Publicacion: props.publicacion.Estado_Publicacion ? true : false,
-    Precio_Publicacion: props.publicacion.Precio_Publicacion || '',
-    Imagen_Publicacion: [],
-    Cod_Categoria: props.publicacion.Cod_Categoria || '',
+    Estado_Publicacion:      props.publicacion.Estado_Publicacion ? true : false,
+    Precio_Publicacion:      props.publicacion.Precio_Publicacion || '',
+    Imagen_Publicacion:      [],
+    Cod_Categoria:           props.publicacion.Cod_Categoria || '',
+    ubicacion:               props.publicacion.ubicacion || '',
+    condicion_producto:      props.publicacion.condicion_producto || 'usado',
 });
 
 const imagePreview = ref([]);
@@ -56,16 +60,15 @@ const submit = () => {
     });
 };
 
+const showDeleteModal = ref(false);
+const showDraftModal  = ref(false);
+
 const handleDelete = () => {
-    if (confirm('¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.')) {
-        router.delete(route('publicaciones.destroy', props.publicacion.id));
-    }
+    router.delete(route('publicaciones.destroy', props.publicacion.id));
 };
 
 const handleDraft = () => {
-    if (confirm('¿Deseas convertir esta publicación a borrador? Solo tú podrás verla.')) {
-        router.patch(route('publicaciones.draft', props.publicacion.id));
-    }
+    router.patch(route('publicaciones.draft', props.publicacion.id));
 };
 
 function processFiles(files) {
@@ -133,7 +136,7 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                         <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-500">
                                             <DollarSign class="w-4 h-4" />
                                         </div>
-                                        <TextInput id="precio" v-model="form.Precio_Publicacion" type="number" step="0.01" class="block w-full pl-12" required />
+                                        <TextInput id="precio" v-model="form.Precio_Publicacion" type="number" step="0.01" min="1" max="1000000" class="block w-full pl-12" required />
                                     </div>
                                     <InputError :message="form.errors.Precio_Publicacion" class="mt-2" />
                                 </div>
@@ -152,6 +155,33 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                         </option>
                                     </select>
                                     <InputError :message="form.errors.Cod_Categoria" class="mt-2" />
+                                </div>
+                            </div>
+
+                            <!-- Ubicación y Condición -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <InputLabel for="ubicacion" value="Ubicación (opcional)" />
+                                    <TextInput
+                                        id="ubicacion"
+                                        v-model="form.ubicacion"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                        placeholder="Ej: La Paz, Zona Sur..."
+                                    />
+                                    <InputError :message="form.errors.ubicacion" class="mt-2" />
+                                </div>
+                                <div>
+                                    <InputLabel for="condicion" value="Condición del producto" />
+                                    <select
+                                        id="condicion"
+                                        v-model="form.condicion_producto"
+                                        class="mt-1 block w-full px-5 py-3.5 bg-gray-50/50 dark:bg-white/5 border border-light-border dark:border-dark-border text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-bold text-sm outline-none"
+                                    >
+                                        <option value="usado">Usado</option>
+                                        <option value="nuevo">Nuevo</option>
+                                    </select>
+                                    <InputError :message="form.errors.condicion_producto" class="mt-2" />
                                 </div>
                             </div>
 
@@ -241,14 +271,14 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                         </h3>
                         
                         <div class="space-y-4">
-                             <SecondaryButton @click="handleDraft" class="w-full justify-center gap-2 py-4">
+                             <SecondaryButton @click="showDraftModal = true" class="w-full justify-center gap-2 py-4">
                                 <Archive class="w-5 h-5" />
                                 Pasar a Borrador
                              </SecondaryButton>
                              <p class="text-[10px] font-medium text-gray-400 text-center leading-tight">La publicación se ocultará para todos excepto para ti.</p>
-                             
+
                              <div class="pt-6 border-t border-light-border/50 dark:border-dark-border/50">
-                                 <DangerButton @click="handleDelete" class="w-full justify-center gap-2 py-4">
+                                 <DangerButton @click="showDeleteModal = true" class="w-full justify-center gap-2 py-4">
                                     <Trash2 class="w-5 h-5" />
                                     Eliminar Oferta
                                  </DangerButton>
@@ -271,6 +301,43 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
     </AppLayout>
 </template>
 
+    <!-- Modal Eliminar -->
+    <Transition name="modal-fade">
+        <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div class="w-full max-w-sm bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-3xl p-8 shadow-2xl">
+                <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 mx-auto mb-5">
+                    <Trash2 class="w-7 h-7 text-rose-500" />
+                </div>
+                <h3 class="text-lg font-black text-gray-900 dark:text-white text-center mb-2">¿Eliminar publicación?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+                    Se eliminará <span class="font-black text-gray-700 dark:text-white">«{{ props.publicacion.Titulo_Publicacion }}»</span> permanentemente.
+                </p>
+                <div class="flex gap-3">
+                    <button @click="showDeleteModal = false" class="flex-1 px-4 py-3 text-xs font-black tracking-widest uppercase text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-xl hover:bg-gray-200 dark:hover:bg-white/10 transition-all">Cancelar</button>
+                    <button @click="handleDelete" class="flex-1 px-4 py-3 text-xs font-black tracking-widest uppercase text-white bg-rose-600 hover:bg-rose-500 rounded-xl shadow-lg shadow-rose-500/20 transition-all">Sí, eliminar</button>
+                </div>
+            </div>
+        </div>
+    </Transition>
+
+    <!-- Modal Borrador -->
+    <Transition name="modal-fade">
+        <div v-if="showDraftModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div class="w-full max-w-sm bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-3xl p-8 shadow-2xl">
+                <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 mx-auto mb-5">
+                    <Archive class="w-7 h-7 text-amber-500" />
+                </div>
+                <h3 class="text-lg font-black text-gray-900 dark:text-white text-center mb-2">¿Pasar a borrador?</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">La publicación se ocultará del marketplace. Solo tú podrás verla y podrás reactivarla después.</p>
+                <div class="flex gap-3">
+                    <button @click="showDraftModal = false" class="flex-1 px-4 py-3 text-xs font-black tracking-widest uppercase text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 border border-light-border dark:border-dark-border rounded-xl hover:bg-gray-200 dark:hover:bg-white/10 transition-all">Cancelar</button>
+                    <button @click="handleDraft" class="flex-1 px-4 py-3 text-xs font-black tracking-widest uppercase text-white bg-amber-600 hover:bg-amber-500 rounded-xl shadow-lg shadow-amber-500/20 transition-all">Sí, convertir</button>
+                </div>
+            </div>
+        </div>
+    </Transition>
+</template>
+
 <style scoped>
 .animate-fade-in {
     animation: fadeIn 0.4s ease-out;
@@ -279,4 +346,6 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
+.modal-fade-enter-active, .modal-fade-leave-active { transition: all 0.2s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
 </style>

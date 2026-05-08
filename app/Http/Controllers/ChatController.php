@@ -139,6 +139,14 @@ class ChatController extends Controller
             return response()->json(['error' => 'El mensaje no puede estar vacío.'], 422);
         }
 
+        // Anti-spam: rechazar mensajes con exceso de URLs
+        if (! empty($data['contenido'])) {
+            $urlCount = preg_match_all('/https?:\/\/\S+/i', $data['contenido']);
+            if ($urlCount > 5) {
+                return response()->json(['error' => 'El mensaje contiene demasiados enlaces. Máximo 5 URLs por mensaje.'], 422);
+            }
+        }
+
         $message = Message::create($data);
 
         try {

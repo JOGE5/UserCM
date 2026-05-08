@@ -17,7 +17,11 @@ class ForoController extends Controller
     use AuthorizesRequests;
     public function index()
     {
-        $foros = Foro::with('categoria', 'creador')->where('Estado_Foro', 1)->get();
+        $foros = Foro::with('categoria', 'creador.user')
+            ->withCount('comentarios')
+            ->where('Estado_Foro', 1)
+            ->latest()
+            ->get();
         return Inertia::render('Foros/Index', ['foros' => $foros]);
     }
 
@@ -33,7 +37,7 @@ class ForoController extends Controller
             'Titulo_Foro' => ['required','string','max:200', new NoProfanity()],
             'Descripcion_Foro' => ['required','string', new NoProfanity()],
             'Cod_Categoria' => 'required|exists:categorias_foros,Cod_Categoria',
-            'Imagen_Foro' => 'required|image|max:2048',
+            'Imagen_Foro' => 'nullable|image|max:2048',
         ]);
 
         // Asegurar que usamos el ID_Usuario de la tabla usuarios_campus_markets
@@ -68,7 +72,7 @@ class ForoController extends Controller
 
     public function show(Foro $foro)
     {
-        $foro->load('categoria', 'creador', 'comentarios.usuario');
+        $foro->load('categoria', 'creador.user', 'comentarios.usuario');
 
         $isCreator = false;
         $user = auth()->user();

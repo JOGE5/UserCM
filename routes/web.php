@@ -11,7 +11,6 @@ use App\Http\Controllers\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Services\MarkovReputationService;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -82,51 +81,10 @@ Route::middleware([
     'verified',
     'face.verified'
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        $userId = auth()->id();
+    Route::get('/dashboard', [PublicacionesController::class, 'index'])->name('dashboard');
 
-        $usuarioCampusMarket = \App\Models\UsuarioCampusMarket::where('user_id', $userId)->first();
-        $userEstado = $usuarioCampusMarket ? $usuarioCampusMarket->Estado : null;
-
-        // Obtener publicaciones:
-        // - Todas las 'activas' (de cualquier usuario)
-        // - SOLO las activas del usuario actual (NO borradores)
-        $publicaciones = \App\Models\Publicaciones::with('categoria', 'vendedor.user')
-            ->where('estado', 'activa')
-            ->get();
-
-        // Calcular 'Mejores valorados' usando el servicio de reputación
-        try {
-            $markov = new MarkovReputationService();
-            $mejores = \App\Models\Publicaciones::with(['categoria', 'vendedor.user.reputacionEstado'])
-                ->where('estado', 'activa')
-                ->get()
-                ->map(function ($pub) use ($markov) {
-                    $promedio = $markov->calcularPromedioCalificaciones($pub->vendedor?->user);
-                    $arr = $pub->toArray();
-                    // Asegurar que user_id del vendedor esté disponible en el frontend
-                    if (isset($arr['vendedor']) && $pub->vendedor?->user_id) {
-                        $arr['vendedor']['user_id'] = $pub->vendedor->user_id;
-                    }
-                    return array_merge($arr, ['calificacion_promedio' => $promedio]);
-                })
-                ->sortByDesc('calificacion_promedio')
-                ->values()
-                ->take(6)
-                ->all();
-        } catch (\Throwable $e) {
-            // Si algo falla, devolver lista vacía para no romper la vista
-            \Log::error('Error calculando mejores valorados: ' . $e->getMessage());
-            $mejores = [];
-        }
-
-        return Inertia::render('Dashboard', [
-            'publicaciones' => $publicaciones,
-            'mejores' => $mejores,
-            'currentUserId' => $userId,
-            'userEstado' => $userEstado,
-        ]);
-    })->name('dashboard');
+    // Perfil público del vendedor (usa User.id — coherente con la API de reputación)
+    Route::get('/usuarios/{id}', [App\Http\Controllers\UserProfileController::class, 'show'])->name('usuarios.show');
 
     // Rutas para completar perfil
     Route::get('/complete-profile', [ProfileController::class, 'showCompleteProfileForm'])->name('profile.complete.form');
@@ -136,7 +94,7 @@ Route::middleware([
     Route::get('/mensajes', [ChatController::class, 'index'])->name('mensajes.index');
     Route::post('/chats/private', [ChatController::class, 'createPrivateChat'])->name('chats.private.create');
     Route::get('/chats/{chat}', [ChatController::class, 'show'])->name('chats.show');
-    Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->name('chats.messages.store');
+    Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->middleware(['throttle:30,1', 'prevent.duplicate'])->name('chats.messages.store');
     Route::post('/chats/{chat}/typing', [ChatController::class, 'typing'])->name('chats.typing');
     Route::post('/chats/{chat}/messages/{message}/react', [ChatController::class, 'toggleReaction'])->name('chats.messages.react');
     Route::post('/chats/{chat}/mute', [ChatController::class, 'toggleMute'])->name('chats.mute');
@@ -153,7 +111,7 @@ Route::middleware([
 
     // Foros create/store/show/edit/update/destroy
     Route::get('/productos/create', [App\Http\Controllers\ForoController::class, 'create'])->name('productos.create');
-    Route::post('/productos', [App\Http\Controllers\ForoController::class, 'store'])->name('productos.store');
+    Route::post('/productos', [App\Http\Controllers\ForoController::class, 'store'])->middleware(['throttle:5,60', 'prevent.duplicate'])->name('productos.store');
     Route::get('/productos/{foro}', [App\Http\Controllers\ForoController::class, 'show'])->name('productos.show');
     Route::get('/productos/{foro}/edit', [App\Http\Controllers\ForoController::class, 'edit'])->name('productos.edit');
     Route::put('/productos/{foro}', [App\Http\Controllers\ForoController::class, 'update'])->name('productos.update');
@@ -204,7 +162,7 @@ Route::middleware([
     })->name('files.foros');
 
     // Rutas de publicaciones
-    Route::post('/publicaciones', [PublicacionesController::class, 'store'])->name('publicaciones.store');
+    Route::post('/publicaciones', [PublicacionesController::class, 'store'])->middleware(['throttle:10,60', 'prevent.duplicate'])->name('publicaciones.store');
     // Rutas adicionales para operaciones sobre publicaciones (editar, mostrar, actualizar, eliminar)
     Route::get('/publicaciones/{publicaciones}/edit', [PublicacionesController::class, 'edit'])->name('publicaciones.edit');
     Route::get('/publicaciones/{publicaciones}', [PublicacionesController::class, 'show'])->name('publicaciones.show');
@@ -213,13 +171,14 @@ Route::middleware([
     // Rutas para cambiar estado
     Route::patch('/publicaciones/{publicaciones}/draft', [PublicacionesController::class, 'toDraft'])->name('publicaciones.draft');
     Route::patch('/publicaciones/{publicaciones}/active', [PublicacionesController::class, 'toActive'])->name('publicaciones.active');
+    Route::patch('/publicaciones/{publicaciones}/vendida', [PublicacionesController::class, 'marcarVendido'])->name('publicaciones.vendida');
 
     // Rutas para reportes (publicaciones y foros)
-    Route::post('/report/publicaciones/{publicacion}', [ReportController::class, 'storePublication'])->name('report.publicacion');
-    Route::post('/report/foros/{foro}', [ReportController::class, 'storeForo'])->name('report.foro');
+    Route::post('/report/publicaciones/{publicacion}', [ReportController::class, 'storePublication'])->middleware('throttle:3,1')->name('report.publicacion');
+    Route::post('/report/foros/{foro}', [ReportController::class, 'storeForo'])->middleware('throttle:3,1')->name('report.foro');
 
     // Exponer endpoints de reputación también por web (soportar sesión de navegador)
-    Route::post('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'store']);
+    Route::post('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'store'])->middleware('throttle:5,1');
     Route::get('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'show']);
 });
 
@@ -230,4 +189,17 @@ Route::middleware([
     'admin.role',
 ])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+
+    // Usuarios
+    Route::get('/usuarios', [AdminController::class, 'users'])->name('usuarios');
+    Route::patch('/usuarios/{user}/rol', [AdminController::class, 'updateRol'])->name('usuarios.rol');
+    Route::patch('/usuarios/{user}/verificado', [AdminController::class, 'updateVerificado'])->name('usuarios.verificado');
+
+    // Publicaciones
+    Route::get('/publicaciones', [AdminController::class, 'publications'])->name('publicaciones');
+    Route::patch('/publicaciones/{publicacion}/estado', [AdminController::class, 'updatePublicacion'])->name('publicaciones.estado');
+
+    // Reportes
+    Route::get('/reportes', [AdminController::class, 'reports'])->name('reportes');
+    Route::patch('/reportes/{publicacionId}/ocultar', [AdminController::class, 'hideReportedPublication'])->name('reportes.ocultar');
 });

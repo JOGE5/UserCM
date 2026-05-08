@@ -12,11 +12,13 @@ class ForoPolicy
 
     public function update(User $user, Foro $foro)
     {
-        return $user->getKey() === $foro->ID_Creador;
+        $ucmId = $user->usuarioCampusMarket?->id;
+        return $ucmId !== null && $ucmId == $foro->ID_Creador;
     }
 
     public function delete(User $user, Foro $foro)
     {
-        return $user->getKey() === $foro->ID_Creador;
+        $ucmId = $user->usuarioCampusMarket?->id;
+        return $ucmId !== null && $ucmId == $foro->ID_Creador;
     }
 }

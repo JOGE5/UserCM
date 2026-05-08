@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import InputError from '@/Components/InputError.vue';
 import { User, Mail, Lock, Eye, EyeOff, Camera } from 'lucide-vue-next';
 import CamaraRegistro from '@/Components/CamaraRegistro.vue';
@@ -22,6 +22,16 @@ const form = useForm({
 });
 
 const showCamera = ref(false);
+const nameError = ref('');
+
+const handleNameInput = (e) => {
+    const value = e.target.value;
+    if (/^\d+$/.test(value.trim())) {
+        nameError.value = 'El nombre no puede ser solo números.';
+    } else {
+        nameError.value = '';
+    }
+};
 
 const handleFaceCaptured = ({ base64, descriptor }) => {
     form.fotoBase64 = base64;
@@ -83,8 +93,10 @@ const submit = () => {
                             required
                             autofocus
                             autocomplete="name"
+                            @input="handleNameInput"
                         />
                     </div>
+                    <p v-if="nameError" class="mt-1 text-xs text-rose-400">{{ nameError }}</p>
                     <InputError class="mt-1 text-xs text-red-500" :message="form.errors.name" />
                 </div>
 

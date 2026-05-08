@@ -39,6 +39,15 @@ const loadModels = async () => {
 };
 
 const startCamera = async () => {
+    // navigator.mediaDevices solo existe en HTTPS o localhost.
+    // En HTTP el objeto es undefined y getUserMedia() lanza un error críptico.
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        status.value = 'Se requiere HTTPS para usar la cámara.';
+        emit('error', 'La cámara no está disponible porque el sitio corre en HTTP. Accede usando https://usercm.test o desde localhost.');
+        isLoading.value = false;
+        return;
+    }
+
     try {
         stream.value = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
         if (videoElement.value) {
@@ -46,7 +55,7 @@ const startCamera = async () => {
         }
         status.value = 'Esperando a detectar rostro...';
         isLoading.value = false;
-        
+
         // Empieza la rutina espaciada después de que el video empiece
         videoElement.value.onplaying = () => {
             scheduleNextFrame();

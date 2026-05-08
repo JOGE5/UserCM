@@ -44,12 +44,16 @@ class ReputacionController extends Controller
                 return response()->json(['error' => 'No puedes calificarte a ti mismo'], 403);
             }
 
-            ReputacionEntreUsuarios::create([
-                'ID_Usuario_Calificador' => $authId,
-                'ID_Usuario_Calificado' => $userId,
-                'Puntuacion' => $validated['Puntuacion'],
-                'Comentario' => $validated['Comentario'] ?? null,
-            ]);
+            ReputacionEntreUsuarios::updateOrCreate(
+                [
+                    'ID_Usuario_Calificador' => $authId,
+                    'ID_Usuario_Calificado'  => $userId,
+                ],
+                [
+                    'Puntuacion' => $validated['Puntuacion'],
+                    'Comentario' => $validated['Comentario'] ?? null,
+                ]
+            );
 
             // Actualizar estado del usuario calificado
             $usuario = User::find($userId);

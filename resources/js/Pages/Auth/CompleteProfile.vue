@@ -125,14 +125,22 @@ const selectCarrera = (id) => {
     closeAllSelects();
 };
 
+const telefonoError = ref('');
+
 const isStep1Valid = computed(() => {
     if (props.user.google_id) return true;
-    const telefonoValido = /^\d{8}$/.test(form.Telefono);
+    const telefonoValido = /^[2346]\d{7}$/.test(form.Telefono);
     return form.Apellidos && form.Genero && telefonoValido;
 });
 
 const handleTelefonoInput = (e) => {
-    form.Telefono = e.target.value.replace(/\D/g, '').substring(0, 8);
+    const digits = e.target.value.replace(/\D/g, '').substring(0, 8);
+    form.Telefono = digits;
+    if (digits.length > 0 && !/^[2346]/.test(digits)) {
+        telefonoError.value = 'El número debe comenzar con 2, 3, 4, 6 o 7 (Bolivia).';
+    } else {
+        telefonoError.value = '';
+    }
 };
 
 const handleApellidosInput = (e) => {
@@ -216,8 +224,8 @@ const validateImage = (file, type) => {
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            resolve('La imagen supera los 5MB');
+        if (file.size > 2 * 1024 * 1024) {
+            resolve('La imagen supera los 2MB');
             return;
         }
 
@@ -436,8 +444,9 @@ const submit = () => {
                                         maxlength="8"
                                         @input="handleTelefonoInput"
                                         class="w-full py-3.5 pl-12 pr-4 text-white transition-all duration-300 bg-black/40 border border-white/10 rounded-2xl placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm" />
-                                <p class="mt-1 text-xs text-gray-500">8 dígitos · Bolivia</p>
+                                <p class="mt-1 text-xs text-gray-500">8 dígitos · Bolivia (ej. 71234567)</p>
                                 </div>
+                                <p v-if="telefonoError" class="mt-1 text-xs text-rose-400">{{ telefonoError }}</p>
                                 <InputError class="mt-1 text-xs text-red-500" :message="form.errors.Telefono" />
                             </div>
                         </div>
@@ -596,7 +605,7 @@ const submit = () => {
                                         </div>
                                         <div>
                                             <p class="text-sm font-bold text-gray-300">Arrastra o selecciona el banner</p>
-                                            <p class="text-[10px] text-gray-500 font-bold">1500 × 500 px • Máx 5MB</p>
+                                            <p class="text-[10px] text-gray-500 font-bold">1500 × 500 px • Máx 2MB</p>
                                         </div>
                                     </div>
                                 </label>

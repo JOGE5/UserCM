@@ -151,17 +151,20 @@ const formatDate = (dateString) => {
 
                     <div class="p-8 flex-1 flex flex-col">
                         <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 rounded-full bg-brand-500/10 border border-brand-500/20 flex items-center justify-center">
-                                <User class="w-5 h-5 text-brand-600 dark:text-brand-400" />
+                            <div class="w-9 h-9 rounded-full bg-brand-500/10 border border-brand-500/20 flex items-center justify-center overflow-hidden shrink-0">
+                                <img v-if="foro.creador?.user?.profile_photo_url" :src="foro.creador.user.profile_photo_url" class="w-full h-full object-cover" />
+                                <User v-else class="w-4 h-4 text-brand-600 dark:text-brand-400" />
                             </div>
-                            <div class="flex flex-col">
-                                <span class="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest leading-none">Creador</span>
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest leading-none truncate">
+                                    {{ foro.creador?.user?.name ?? 'Comunidad' }}
+                                </span>
                                 <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">{{ formatDate(foro.created_at) }}</span>
                             </div>
                         </div>
 
                         <h3 class="text-xl font-black text-gray-900 dark:text-white mb-3 line-clamp-2 min-h-[3.5rem] group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                            {{ foro.Titulo_Foro || foro.Titulo || 'Sin Título' }}
+                            {{ foro.Titulo_Foro || 'Sin Título' }}
                         </h3>
 
                         <p class="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed line-clamp-3 mb-6 flex-1">
@@ -172,14 +175,14 @@ const formatDate = (dateString) => {
                             <div class="flex items-center gap-4 text-gray-400">
                                 <div class="flex items-center gap-1.5">
                                     <MessageCircle class="w-4 h-4" />
-                                    <span class="text-[10px] font-black">24</span>
+                                    <span class="text-[10px] font-black">{{ foro.comentarios_count ?? 0 }}</span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <TrendingUp class="w-4 h-4" />
                                     <span class="text-[10px] font-black">Activo</span>
                                 </div>
                             </div>
-                            
+
                             <Link :href="route('productos.show', foro.ID_Foro || foro.id)" class="flex items-center gap-2 text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest hover:translate-x-1 transition-transform">
                                 Unirse al hilo
                                 <ChevronRight class="w-4 h-4" />

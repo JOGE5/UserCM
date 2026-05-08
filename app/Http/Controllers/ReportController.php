@@ -21,6 +21,16 @@ class ReportController extends Controller
             'metadata' => 'nullable|array',
         ]);
 
+        // Evitar que el mismo usuario reporte la misma publicación más de una vez
+        $yaReporto = Report::where('reportable_type', Publicaciones::class)
+            ->where('reportable_id', $publicacion->id)
+            ->where('reporter_id', auth()->id())
+            ->exists();
+
+        if ($yaReporto) {
+            return back()->with('error', 'Ya has reportado esta publicación anteriormente.');
+        }
+
         $report = Report::create([
             'reportable_type' => Publicaciones::class,
             'reportable_id' => $publicacion->id,
@@ -55,6 +65,22 @@ class ReportController extends Controller
             if ($ownerUserId) event(new PublicationReported($publicacion->id, $ownerUserId, $message));
         } catch (\Throwable $e) {
             // ignore broadcast errors
+        }
+
+        // Auto-ocultamiento: si la publicación acumula 5+ reportes de usuarios distintos
+        if ($publicacion->estado === 'activa') {
+            $reportesUnicos = Report::where('reportable_type', Publicaciones::class)
+                ->where('reportable_id', $publicacion->id)
+                ->whereNotNull('reporter_id')
+                ->distinct('reporter_id')
+                ->count('reporter_id');
+
+            if ($reportesUnicos >= 5) {
+                $publicacion->update([
+                    'estado'    => 'oculta',
+                    'oculta_at' => now(),
+                ]);
+            }
         }
 
         return back()->with('success', 'Reporte enviado. Gracias por informarnos.');

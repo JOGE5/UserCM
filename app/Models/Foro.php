@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\UsuarioCampusMarket;
 
 /**
  * @property int $ID_Foro
@@ -40,7 +41,7 @@ class Foro extends Model
 
     public function creador()
     {
-        return $this->belongsTo(User::class, 'ID_Creador');
+        return $this->belongsTo(UsuarioCampusMarket::class, 'ID_Creador');
     }
 
     public function categoria()

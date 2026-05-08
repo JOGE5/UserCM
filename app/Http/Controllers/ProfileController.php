@@ -35,16 +35,22 @@ class ProfileController extends Controller
         }
 
         $validator = Validator::make($data, [
-            'user_id' => 'required|exists:users,id',
-            'Apellidos' => 'nullable|string|max:255',
-            'Genero' => 'nullable|in:Masculino,Femenino,Otro',
-            'Telefono' => 'nullable|string|max:20',
-            'Foto_de_perfil' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'Foto_de_portada' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'Cod_Universidad' => 'required|exists:universidades,Cod_Universidad',
-            'Cod_Carrera' => 'required|exists:carreras,Cod_Carrera',
-            'fotoBase64' => 'required|string',
-            'descriptorFacial' => 'required|array',
+            'user_id'           => 'required|exists:users,id',
+            'Apellidos'         => ['required', 'string', 'max:60', 'regex:/^[a-záéíóúüñÁÉÍÓÚÜÑ\s]+$/i'],
+            'Genero'            => 'required|in:Masculino,Femenino,Otro',
+            'Telefono'          => ['nullable', 'regex:/^[2346][0-9]{7}$/'],
+            'Foto_de_perfil'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'Foto_de_portada'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'Cod_Universidad'   => 'required|exists:universidades,Cod_Universidad',
+            'Cod_Carrera'       => 'required|exists:carreras,Cod_Carrera',
+            'fotoBase64'        => 'required|string',
+            'descriptorFacial'  => 'required|array',
+        ], [
+            'Apellidos.required' => 'Los apellidos son requeridos.',
+            'Apellidos.regex'    => 'Los apellidos solo pueden contener letras y espacios.',
+            'Apellidos.max'      => 'Los apellidos no pueden superar los 60 caracteres.',
+            'Genero.required'    => 'El género es requerido.',
+            'Telefono.regex'     => 'El teléfono debe ser un número boliviano válido (8 dígitos, comenzando con 2, 3, 4, 6 o 7).',
         ]);
 
         if ($validator->fails()) {

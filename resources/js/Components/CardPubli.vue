@@ -1,15 +1,17 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
-import { 
-    Edit3, 
-    CheckCircle, 
-    Heart, 
-    MessageCircle, 
-    MoreHorizontal, 
+import { router, Link, usePage } from '@inertiajs/vue3';
+const route = window.route;
+import {
+    Edit3,
+    CheckCircle,
+    Heart,
+    MessageCircle,
+    MoreHorizontal,
     Eye,
     TrendingUp,
-    Clock
+    Clock,
+    MapPin,
 } from 'lucide-vue-next';
 import ReportModal from '@/Components/ReportModal.vue';
 
@@ -104,6 +106,13 @@ onBeforeUnmount(() => {
       <!-- Overlay de Degradado -->
       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
 
+      <!-- Overlay VENDIDO -->
+      <div v-if="props.estado === 'vendida'" class="absolute inset-0 z-20 bg-black/55 flex items-center justify-center pointer-events-none">
+        <span class="-rotate-12 px-10 py-3 bg-emerald-500 border-y-2 border-white/30 text-white text-xl font-black tracking-widest uppercase shadow-2xl">
+          VENDIDO
+        </span>
+      </div>
+
       <!-- Badges Superiores -->
       <div class="absolute top-4 left-4 flex flex-col gap-2 items-start">
         <span class="px-3 py-1 text-[10px] font-black tracking-widest text-white uppercase bg-white/10 backdrop-blur-md border border-white/20 rounded-full shadow-lg">
@@ -154,9 +163,31 @@ onBeforeUnmount(() => {
         </span>
       </div>
 
-      <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-6 leading-relaxed">
+      <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3 leading-relaxed">
         {{ props.description }}
       </p>
+
+      <!-- Badges: condición y ubicación -->
+      <div v-if="props.publicacion?.condicion_producto || props.publicacion?.ubicacion" class="flex flex-wrap gap-1.5 mb-4">
+        <span
+          v-if="props.publicacion?.condicion_producto"
+          :class="[
+            'px-2 py-0.5 text-[9px] font-black tracking-widest uppercase rounded-full border',
+            props.publicacion.condicion_producto === 'nuevo'
+              ? 'bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400'
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+          ]"
+        >
+          {{ props.publicacion.condicion_producto === 'nuevo' ? '✨ Nuevo' : '♻ Usado' }}
+        </span>
+        <span
+          v-if="props.publicacion?.ubicacion"
+          class="flex items-center gap-1 px-2 py-0.5 text-[9px] font-black tracking-widest uppercase rounded-full border bg-gray-100/50 dark:bg-white/5 border-light-border dark:border-dark-border text-gray-500 dark:text-gray-400"
+        >
+          <MapPin class="w-2.5 h-2.5" />
+          {{ props.publicacion.ubicacion }}
+        </span>
+      </div>
 
       <!-- Footer / Acciones -->
       <div class="mt-auto flex items-center justify-between pt-4 border-t border-light-border dark:border-dark-border">
@@ -172,7 +203,15 @@ onBeforeUnmount(() => {
               {{ props.user?.name?.charAt(0) || 'U' }}
             </div>
           </div>
-          <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400 truncate">{{ props.user?.name || 'Vendedor' }}</span>
+          <Link
+            v-if="props.user?.id"
+            :href="route('usuarios.show', props.user.id)"
+            @click.stop
+            class="text-[10px] font-bold text-gray-600 dark:text-gray-400 truncate hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
+          >
+            {{ props.user.name || 'Vendedor' }}
+          </Link>
+          <span v-else class="text-[10px] font-bold text-gray-600 dark:text-gray-400 truncate">Vendedor</span>
         </div>
 
         <!-- Botones de Acción -->

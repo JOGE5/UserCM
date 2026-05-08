@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Universidad;
 
 /**
  * Class UsuarioCampusMarket
@@ -46,6 +47,7 @@ class UsuarioCampusMarket extends Model
         'Cod_Carrera',
         'Cod_Universidad',
         'Cod_Categoria_Default',
+        'verificado',
     ];
 
     /**
@@ -56,8 +58,10 @@ class UsuarioCampusMarket extends Model
     protected function casts(): array
     {
         return [
-            'Estado' => 'string',
-            'Genero' => 'string',
+            'Estado'     => 'string',
+            'Genero'     => 'string',
+            'Telefono'   => 'encrypted',
+            'verificado' => 'boolean',
         ];
     }
 
@@ -83,5 +87,10 @@ class UsuarioCampusMarket extends Model
     public function carrera()
     {
         return $this->belongsTo(Carrera::class, 'Cod_Carrera');
+    }
+
+    public function universidad()
+    {
+        return $this->belongsTo(Universidad::class, 'Cod_Universidad', 'Cod_Universidad');
     }
 }

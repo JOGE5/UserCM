@@ -66,7 +66,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'descriptor_facial' => 'array',
+            'descriptor_facial' => 'encrypted:array',
         ];
     }
 

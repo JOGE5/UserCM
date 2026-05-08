@@ -13,7 +13,8 @@ class EnsureAdminRole
         $perfil = $request->user()?->usuarioCampusMarket;
 
         if (!$perfil || !in_array($perfil->Cod_Rol, [1, 2])) {
-            abort(403, 'No tienes permiso para acceder al panel de administración.');
+            return redirect()->route('dashboard')
+                ->with('error', 'No tienes permiso para acceder al panel de administración.');
         }
 
         return $next($request);

@@ -14,12 +14,12 @@ class FavoritoController extends Controller
         $userId = auth()->id();
         $favoritos = Favorito::where('user_id', $userId)
             ->with('publicacion.categoria', 'publicacion.vendedor.user')
-            ->get();
-
-        $publicacionesFavoritas = $favoritos->pluck('publicacion');
+            ->get()
+            ->filter(fn($f) => $f->publicacion !== null)
+            ->values();
 
         return Inertia::render('Favoritos', [
-            'publicaciones' => $publicacionesFavoritas,
+            'favoritos' => $favoritos,
             'currentUserId' => $userId,
         ]);
     }

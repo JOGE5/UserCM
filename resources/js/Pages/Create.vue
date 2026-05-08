@@ -32,6 +32,8 @@ const form = useForm({
     Precio_Publicacion: '',
     Imagen_Publicacion: [],
     Cod_Categoria: '',
+    ubicacion: '',
+    condicion_producto: 'usado',
 });
 
 const imagePreview = ref([]);
@@ -129,6 +131,8 @@ function removeSelected(index) {
                                             v-model="form.Precio_Publicacion"
                                             type="number"
                                             step="0.01"
+                                            min="1"
+                                            max="1000000"
                                             class="block w-full pl-12"
                                             placeholder="0.00"
                                             required
@@ -152,6 +156,33 @@ function removeSelected(index) {
                                         </option>
                                     </select>
                                     <InputError :message="form.errors.Cod_Categoria" class="mt-2" />
+                                </div>
+                            </div>
+
+                            <!-- Ubicación y Condición -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <InputLabel for="ubicacion" value="Ubicación (opcional)" />
+                                    <TextInput
+                                        id="ubicacion"
+                                        v-model="form.ubicacion"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                        placeholder="Ej: La Paz, Zona Sur..."
+                                    />
+                                    <InputError :message="form.errors.ubicacion" class="mt-2" />
+                                </div>
+                                <div>
+                                    <InputLabel for="condicion" value="Condición del producto" />
+                                    <select
+                                        id="condicion"
+                                        v-model="form.condicion_producto"
+                                        class="mt-1 block w-full px-5 py-3.5 bg-gray-50/50 dark:bg-white/5 border border-light-border dark:border-dark-border text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all duration-300 font-bold text-sm outline-none"
+                                    >
+                                        <option value="usado">Usado</option>
+                                        <option value="nuevo">Nuevo</option>
+                                    </select>
+                                    <InputError :message="form.errors.condicion_producto" class="mt-2" />
                                 </div>
                             </div>
 

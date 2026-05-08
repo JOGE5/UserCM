@@ -32,6 +32,8 @@ class Publicaciones extends Model
         'Estado_Publicacion' => 'boolean',
         'Precio_Publicacion' => 'float',
         'Vistas_Publicacion' => 'integer',
+        'vendido_at'         => 'datetime',
+        'oculta_at'          => 'datetime',
     ];
     protected $fillable = [
         'Titulo_Publicacion',
@@ -43,6 +45,11 @@ class Publicaciones extends Model
         'ID_Vendedor',
         'estado',
         'Vistas_Publicacion',
+        'ubicacion',
+        'condicion_producto',
+        'vendido_at',
+        'comprador_id',
+        'oculta_at',
     ];
 
     public function categoria()
@@ -53,5 +60,10 @@ class Publicaciones extends Model
     public function vendedor()
     {
         return $this->belongsTo(\App\Models\UsuarioCampusMarket::class, 'ID_Vendedor');
+    }
+
+    public function comprador()
+    {
+        return $this->belongsTo(\App\Models\UsuarioCampusMarket::class, 'comprador_id');
     }
 }
