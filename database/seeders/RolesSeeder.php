@@ -13,7 +13,7 @@ class RolesSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('roles')->insert([
+        DB::table('roles')->insertOrIgnore([
             ['Cod_Rol' => 1, 'Nombre_Rol' => 'SuperAdministrador', 'Descripcion' => 'Tiene acceso total al sistema.'],
             ['Cod_Rol' => 2, 'Nombre_Rol' => 'Moderador', 'Descripcion' => 'Puede gestionar publicaciones y usuarios.'],
             ['Cod_Rol' => 3, 'Nombre_Rol' => 'Estudiante', 'Descripcion' => 'Rol por defecto para nuevos usuarios.'],

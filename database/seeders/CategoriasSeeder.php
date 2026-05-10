@@ -13,7 +13,7 @@ class CategoriasSeeder extends Seeder
     public function run(): void
     {
         // Categorías exclusivas para publicaciones/artículos del marketplace
-        DB::table('categorias_articulos')->insert([
+        DB::table('categorias_articulos')->insertOrIgnore([
             ['Nombre_Categoria' => 'Electrónica',       'created_at' => now(), 'updated_at' => now()],
             ['Nombre_Categoria' => 'Ropa',              'created_at' => now(), 'updated_at' => now()],
             ['Nombre_Categoria' => 'Libros',            'created_at' => now(), 'updated_at' => now()],

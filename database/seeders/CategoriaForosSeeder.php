@@ -9,7 +9,7 @@ class CategoriaForosSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('categorias_foros')->insert([
+        DB::table('categorias_foros')->insertOrIgnore([
             ['Nombre_Categoria' => 'Académico',           'created_at' => now(), 'updated_at' => now()],
             ['Nombre_Categoria' => 'Proyectos',           'created_at' => now(), 'updated_at' => now()],
             ['Nombre_Categoria' => 'Dudas y Consultas',   'created_at' => now(), 'updated_at' => now()],

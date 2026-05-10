@@ -34,6 +34,6 @@ class CategoriaForoSeeder extends Seeder
             ];
         }
 
-        DB::table('categorias_articulos')->insert($insertData);
+        DB::table('categorias_articulos')->insertOrIgnore($insertData);
     }
 }
