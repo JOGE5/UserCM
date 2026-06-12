@@ -9,19 +9,17 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
+        if (config('app.env') === 'production') {
+            \URL::forceScheme('https');
+        }
+
         \Illuminate\Support\Facades\Event::listen(
             \Illuminate\Auth\Events\Login::class,
             [\App\Listeners\HandleDeviceVerification::class, 'handle']
@@ -30,9 +28,6 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
     }
 
-    /**
-     * Configure the rate limiters for the application.
-     */
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('global', function (Request $request) {
