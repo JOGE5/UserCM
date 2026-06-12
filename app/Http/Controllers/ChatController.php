@@ -95,7 +95,8 @@ class ChatController extends Controller
 
         $chat->load('users', 'messages.sender', 'messages.reactions', 'messages.replyTo.sender');
 
-        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+        // Si NO es una petición de Inertia pero sí es AJAX/JSON (como desde ChatArea.vue con axios)
+        if (! $request->header('X-Inertia') && ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest')) {
             return response()->json([
                 'chat'      => $chat,
                 'is_muted'  => (bool) $pivot->is_muted,
