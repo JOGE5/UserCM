@@ -3,28 +3,27 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: campus_app
+    image: campus_app:latest
     restart: unless-stopped
-    working_dir: /var/www/html
+    ports:
+      - "8080:8080" # WebSockets Reverb
+    env_file:
+      - .env
     volumes:
-      - ./:/var/www/html
+      - storage_data:/var/www/html/storage
     depends_on:
       - mysql
     networks:
       - campus_market_net
-    entrypoint: ["/var/www/html/docker/entrypoint.sh"]
-    command: ["php-fpm"]
-    env_file:
-      - .env.docker
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    image: campus_nginx:latest
     restart: unless-stopped
     ports:
-      - "8000:80"
-    volumes:
-      - ./:/var/www/html
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - "8000:80" # Aplicacion web
     depends_on:
       - app
     networks:
@@ -34,34 +33,15 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: campus_market
-      MYSQL_USER: campus_user
-      MYSQL_PASSWORD: campus_password
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "3307:3306"
     networks:
       - campus_market_net
     command: --default-authentication-plugin=mysql_native_password
-
-  node:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.node
-    image: campus_node
-    restart: unless-stopped
-    working_dir: /app
-    volumes:
-      - ./:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-    networks:
-      - campus_market_net
 
 networks:
   campus_market_net:
@@ -69,3 +49,4 @@ networks:
 
 volumes:
   mysql_data:
+  storage_data:
