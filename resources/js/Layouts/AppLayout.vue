@@ -85,8 +85,9 @@ const profilePhotoUrl = computed(() => {
         <div class="absolute bottom-[20%] right-[-10%] w-[30%] h-[30%] rounded-full bg-purple-500/20 blur-[100px] pointer-events-none"></div>
 
         <!-- NAVBAR PRINCIPAL (E-COMMERCE) -->
-        <header class="sticky top-0 z-[100] w-full glass-nav px-4 sm:px-6 lg:px-12 py-3 flex items-center justify-between transition-all duration-300">
-            <div class="flex items-center gap-2">
+        <header class="sticky top-0 z-[100] w-full glass-nav transition-all duration-300">
+            <div class="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
                 <Link :href="route('dashboard')" class="flex items-center gap-3 float-3d group">
                     <div class="px-3 py-1.5 bg-white/10 dark:bg-black/10 backdrop-blur-md rounded-xl shadow-sm hover:shadow-lg group-hover:bg-brand-500/10 transition-all flex items-center justify-center">
                         <img src="/images/posters/logo-team.png" alt="Logo" class="h-6 sm:h-8 w-auto object-contain drop-shadow-md" />
@@ -212,10 +213,10 @@ const profilePhotoUrl = computed(() => {
                 <!-- Botón Publicar (Principal) -->
                 <button 
                     @click="showCreateModal = true"
-                    class="hidden sm:flex items-center gap-2 ml-1 px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 rounded-full shadow-[0_8px_20px_-6px_rgba(124,58,237,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(124,58,237,0.8)] transition-all float-3d group border border-white/20"
+                    class="hidden sm:flex items-center gap-2 ml-3 px-6 py-2.5 text-xs font-black text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 rounded-full shadow-[0_8px_20px_-6px_rgba(124,58,237,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(124,58,237,0.8)] hover:-translate-y-0.5 transition-all duration-300 float-3d group border border-white/20"
                 >
-                    <Plus class="w-4 h-4 group-hover:rotate-90 transition-transform" />
-                    <span class="tracking-widest uppercase">Vender</span>
+                    <Plus class="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                    <span class="tracking-widest uppercase mt-0.5">Vender</span>
                 </button>
 
                 <!-- Menú Hamburguesa (Móvil) -->
@@ -223,6 +224,7 @@ const profilePhotoUrl = computed(() => {
                     <X v-if="mobileMenuOpen" class="w-5 h-5" />
                     <Menu v-else class="w-5 h-5" />
                 </button>
+            </div>
             </div>
         </header>
 
