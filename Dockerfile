@@ -1,18 +1,8 @@
 FROM php:8.3-fpm
 
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libicu-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    zip \
-    unzip \
-    supervisor \
+    git curl libpng-dev libonig-dev libxml2-dev libzip-dev \
+    libicu-dev libjpeg-dev libfreetype6-dev zip unzip supervisor \
     default-mysql-client \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
@@ -29,16 +19,7 @@ COPY . .
 
 RUN composer install --optimize-autoloader --no-dev
 
-ARG VITE_REVERB_APP_KEY
-ARG VITE_REVERB_HOST
-ARG VITE_REVERB_PORT
-ARG VITE_REVERB_SCHEME
-ARG VITE_APP_NAME
-ENV VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY
-ENV VITE_REVERB_HOST=$VITE_REVERB_HOST
-ENV VITE_REVERB_PORT=$VITE_REVERB_PORT
-ENV VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME
-ENV VITE_APP_NAME=$VITE_APP_NAME
+RUN echo "VITE_REVERB_APP_KEY=campus-market-key\nVITE_REVERB_HOST=campus-market.lat\nVITE_REVERB_PORT=443\nVITE_REVERB_SCHEME=https\nVITE_APP_NAME=Campus Market" > .env
 
 RUN npm install --legacy-peer-deps && npm run build
 
