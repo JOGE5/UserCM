@@ -102,7 +102,7 @@ const profilePhotoUrl = computed(() => {
                     :key="item.name"
                     :href="item.href"
                     :class="[
-                        'relative px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2 group overflow-hidden',
+                        'relative px-3 xl:px-5 py-2 xl:py-2.5 rounded-full text-[10px] xl:text-xs font-bold transition-all duration-300 flex items-center gap-1.5 xl:gap-2 group overflow-hidden',
                         item.active 
                             ? 'text-white shadow-lg shadow-brand-500/40' 
                             : 'text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white/50 dark:hover:bg-white/10'
@@ -125,7 +125,7 @@ const profilePhotoUrl = computed(() => {
                 <div class="relative z-50 float-3d ml-1 group/cat cursor-pointer">
                     <Dropdown align="left" width="64">
                         <template #trigger>
-                            <button class="relative px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white/50 dark:hover:bg-white/10 overflow-hidden">
+                            <button class="relative px-3 xl:px-5 py-2 xl:py-2.5 rounded-full text-[10px] xl:text-xs font-bold transition-all duration-300 flex items-center gap-1.5 xl:gap-2 text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white/50 dark:hover:bg-white/10 overflow-hidden">
                                 <Layers class="w-4 h-4 z-10 relative transition-transform group-hover/cat:scale-110" />
                                 <span class="z-10 relative tracking-wide uppercase">Categorías</span>
                                 <ChevronDown class="w-3 h-3 z-10 relative ml-1 opacity-60" />
@@ -169,7 +169,7 @@ const profilePhotoUrl = computed(() => {
                     <input 
                         type="text" 
                         placeholder="Buscar productos..." 
-                        class="pl-11 pr-4 py-2.5 text-xs font-medium bg-white/40 dark:bg-dark-surface/40 border border-white/50 dark:border-white/10 focus:bg-white/80 dark:focus:bg-dark-surface/80 focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 rounded-[2rem] w-48 lg:w-64 backdrop-blur-md transition-all duration-300 shadow-inner dark:text-white outline-none"
+                        class="pl-11 pr-4 py-2 xl:py-2.5 text-[10px] xl:text-xs font-medium bg-white/40 dark:bg-dark-surface/40 border border-white/50 dark:border-white/10 focus:bg-white/80 dark:focus:bg-dark-surface/80 focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 rounded-[2rem] w-32 lg:w-40 xl:w-64 backdrop-blur-md transition-all duration-300 shadow-inner dark:text-white outline-none"
                     />
                 </div>
 
@@ -183,10 +183,10 @@ const profilePhotoUrl = computed(() => {
                 <div class="relative z-50 float-3d">
                     <Dropdown align="right" width="56">
                         <template #trigger>
-                            <button class="flex items-center gap-2 p-1.5 pr-4 rounded-full bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/80 transition-all shadow-sm backdrop-blur-md">
+                            <button class="flex items-center gap-2 p-1.5 pr-1.5 xl:pr-4 rounded-full bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/80 transition-all shadow-sm backdrop-blur-md">
                                 <img :src="profilePhotoUrl" class="h-8 w-8 rounded-full object-cover ring-2 ring-white/50 dark:ring-white/10" :alt="user?.name" />
-                                <span class="hidden md:inline text-xs font-bold text-gray-800 dark:text-gray-200">{{ user?.name?.split(' ')[0] }}</span>
-                                <ChevronDown class="w-3 h-3 text-gray-500" />
+                                <span class="hidden xl:inline text-xs font-bold text-gray-800 dark:text-gray-200">{{ user?.name?.split(' ')[0] }}</span>
+                                <ChevronDown class="hidden xl:block w-3 h-3 text-gray-500" />
                             </button>
                         </template>
 
@@ -213,9 +213,9 @@ const profilePhotoUrl = computed(() => {
                 <!-- Botón Publicar (Principal) -->
                 <button 
                     @click="showCreateModal = true"
-                    class="hidden sm:flex items-center gap-2 ml-3 px-6 py-2.5 text-xs font-black text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 rounded-full shadow-[0_8px_20px_-6px_rgba(124,58,237,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(124,58,237,0.8)] hover:-translate-y-0.5 transition-all duration-300 float-3d group border border-white/20"
+                    class="hidden sm:flex items-center gap-1.5 xl:gap-2 ml-1 xl:ml-3 px-4 xl:px-6 py-2 xl:py-2.5 text-[10px] xl:text-xs font-black text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 rounded-full shadow-[0_8px_20px_-6px_rgba(124,58,237,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(124,58,237,0.8)] hover:-translate-y-0.5 transition-all duration-300 float-3d group border border-white/20 whitespace-nowrap flex-shrink-0"
                 >
-                    <Plus class="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                    <Plus class="w-3.5 h-3.5 xl:w-4 xl:h-4 group-hover:rotate-90 transition-transform duration-300" />
                     <span class="tracking-widest uppercase mt-0.5">Vender</span>
                 </button>
 
