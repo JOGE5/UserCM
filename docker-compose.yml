@@ -3,6 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_REVERB_APP_KEY: campus-market-key
+        VITE_REVERB_HOST: campus-market.lat
+        VITE_REVERB_PORT: 443
+        VITE_REVERB_SCHEME: https
+        VITE_APP_NAME: "Campus Market"
     image: campus_app:latest
     restart: unless-stopped
     ports:
