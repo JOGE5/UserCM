@@ -20,7 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\EnsureTwoFactorEnabled::class,
             'throttle:global',
         ]);
-        //
+        
+        $middleware->statefulApi(); // Habilita autenticación basada en cookies para las rutas /api
+
         $middleware->alias([
             'admin.role'       => \App\Http\Middleware\EnsureAdminRole::class,
             'prevent.duplicate'=> \App\Http\Middleware\PreventDuplicateSubmission::class,
