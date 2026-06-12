@@ -3,7 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import InputError from '@/Components/InputError.vue';
 import { Mail, Lock, Eye, EyeOff, ScanFace } from 'lucide-vue-next';
-import CamaraLogin from '@/Components/CamaraLogin.vue';
+// import CamaraLogin from '@/Components/CamaraLogin.vue';
 
 defineProps({
     canResetPassword: Boolean,
@@ -33,9 +33,7 @@ const submit = () => {
     form.transform(data => ({
         ...data,
         remember: form.remember ? 'on' : '',
-    })).post(route('login'), {
-        onFinish: () => form.reset('password'),
-    });
+    })).post(route('login'));
 };
 </script>
 
@@ -147,13 +145,13 @@ const submit = () => {
                     
                     <InputError class="text-xs text-center text-red-500" :message="faceLoginError" />
 
-                    <!-- Componente Face ID -->
-                    <CamaraLogin 
+                    <!-- Componente Face ID (Comentado porque el archivo no existe) -->
+                    <!-- <CamaraLogin 
                         v-if="false" 
                         :email="form.email"
                         @cancel="showFaceLogin = false"
                         @error="(m) => { faceLoginError = m; showFaceLogin = false; }"
-                    />
+                    /> -->
                 </div>
 
                 <!-- Separador -->

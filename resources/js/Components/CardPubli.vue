@@ -210,7 +210,7 @@ onBeforeUnmount(() => {
           </div>
           <Link
             v-if="props.user?.id"
-            :href="route('usuarios.show', props.user.id)"
+            :href="route('usuarios.show', props.user.hashid)"
             @click.stop
             class="text-[10px] font-bold text-gray-600 dark:text-gray-400 truncate hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
           >

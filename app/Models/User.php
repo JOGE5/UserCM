@@ -20,6 +20,7 @@ class User extends Authenticatable
     use HasProfilePhoto;
     use Notifiable;
     use TwoFactorAuthenticatable;
+    use \App\Traits\HasHashid;
 
     /**
      * The attributes that are mass assignable.
@@ -53,6 +54,7 @@ class User extends Authenticatable
      */
     protected $appends = [
         'profile_photo_url',
+        'hashid',
     ];
 
     /**

@@ -23,13 +23,13 @@ const props = defineProps({
 
 const page = usePage();
 
-const currentTab = ref('activo');
+const currentTab = ref('activa');
 
 const tabs = [
-    { id: 'activo', name: 'Activas', icon: Sparkles },
+    { id: 'activa', name: 'Activas', icon: Sparkles },
     { id: 'borrador', name: 'Borradores', icon: Archive },
-    { id: 'vendido', name: 'Vendidas', icon: CheckCircle2 },
-    { id: 'inactivo', name: 'Pausadas', icon: Clock },
+    { id: 'vendida', name: 'Vendidas', icon: CheckCircle2 },
+    { id: 'oculta', name: 'Pausadas', icon: Clock },
 ];
 
 const filteredPublicaciones = computed(() => {

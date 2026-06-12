@@ -127,7 +127,7 @@
                 
                 <div class="flex items-center justify-center gap-2 mb-1">
                   <Link
-                    :href="route('usuarios.show', publicacion.vendedor?.user?.id)"
+                    :href="route('usuarios.show', publicacion.vendedor?.user?.hashid)"
                     class="text-xl font-black text-gray-900 dark:text-white hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
                   >
                     {{ publicacion.vendedor?.user?.name }}

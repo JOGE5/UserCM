@@ -3,16 +3,19 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios';
 import InputError from '@/Components/InputError.vue';
-import { User, Mail, Phone, Users, Image as ImageIcon, Camera, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Check, ChevronDown, Upload, X, RefreshCw, ScanFace } from 'lucide-vue-next';
+import { User, Mail, Phone, Users, Image as ImageIcon, Camera, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Check, ChevronDown, Upload, X, RefreshCw, ScanFace, ShieldCheck } from 'lucide-vue-next';
+import TwoFactorAuthenticationForm from '@/Pages/Profile/Partials/TwoFactorAuthenticationForm.vue';
+import { usePage } from '@inertiajs/vue3';
 
 const props = defineProps({
     user: Object,
     universidades: Array,
 });
 
-// Si el usuario viene de Google (tiene google_id), saltamos directo al paso 3 (Carrera/Universidad)
-const currentStep = ref(props.user.google_id ? 3 : 1);
+const currentStep = ref(1);
 const carreras = ref([]);
+const page = usePage();
+const perfil = page.props.userPerfil || {};
 
 // Estados para previsualización y carga
 const profilePreview = ref(null);
@@ -63,14 +66,14 @@ const form = useForm({
     user_id: props.user.id,
     name: props.user.name,
     email: props.user.email,
-    Apellidos: '',
-    Genero: '',
-    Telefono: '',
+    Apellidos: perfil.Apellidos || '',
+    Genero: perfil.Genero || '',
+    Telefono: perfil.Telefono || '',
     Foto_de_perfil: null,
     Foto_de_portada: null,
-    Cod_Universidad: '',
-    Cod_Carrera: '',
-    Cod_Rol: '',
+    Cod_Universidad: perfil.Cod_Universidad || '',
+    Cod_Carrera: perfil.Cod_Carrera || '',
+    Cod_Rol: perfil.Cod_Rol || '',
 });
 
 const isLoadingCarreras = ref(false);
@@ -121,15 +124,14 @@ const selectCarrera = (id) => {
 const telefonoError = ref('');
 
 const isStep1Valid = computed(() => {
-    if (props.user.google_id) return true;
-    const telefonoValido = /^[2346]\d{7}$/.test(form.Telefono);
+    const telefonoValido = /^[23467]\d{7}$/.test(form.Telefono);
     return form.Apellidos && form.Genero && telefonoValido;
 });
 
 const handleTelefonoInput = (e) => {
     const digits = e.target.value.replace(/\D/g, '').substring(0, 8);
     form.Telefono = digits;
-    if (digits.length > 0 && !/^[2346]/.test(digits)) {
+    if (digits.length > 0 && !/^[23467]/.test(digits)) {
         telefonoError.value = 'El número debe comenzar con 2, 3, 4, 6 o 7 (Bolivia).';
     } else {
         telefonoError.value = '';
@@ -137,7 +139,15 @@ const handleTelefonoInput = (e) => {
 };
 
 const handleApellidosInput = (e) => {
-    form.Apellidos = e.target.value.replace(/[^a-záéíóúüñÁÉÍÓÚÜÑ\s]/gi, '').substring(0, 60);
+    let value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').substring(0, 40);
+    
+    // Capitalizar la primera letra de cada palabra
+    form.Apellidos = value.split(' ').map(word => {
+        if (word.length > 0) {
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        }
+        return word;
+    }).join(' ');
 };
 
 const isStep2Valid = computed(() => {
@@ -145,6 +155,10 @@ const isStep2Valid = computed(() => {
 });
 
 const isStep3Valid = computed(() => {
+    return !!page.props.auth.user?.two_factor_enabled;
+});
+
+const isStep4Valid = computed(() => {
     return form.Cod_Universidad && form.Cod_Carrera;
 });
 
@@ -154,6 +168,8 @@ const nextStep = () => {
         currentStep.value = 2;
     } else if (currentStep.value === 2 && isStep2Valid.value) {
         currentStep.value = 3;
+    } else if (currentStep.value === 3 && isStep3Valid.value) {
+        currentStep.value = 4;
     }
 };
 
@@ -262,7 +278,7 @@ const removeImage = (type) => {
 };
 
 const submit = () => {
-    if (isStep3Valid.value) {
+    if (isStep4Valid.value) {
         form.post(route('profile.complete'), {
             forceFormData: true,
             preserveState: true,
@@ -346,13 +362,13 @@ const submit = () => {
                     </div>
                 </Transition>
                 <div class="flex flex-col items-center justify-between gap-2 mb-4 sm:flex-row">
-                    <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Paso {{ currentStep }} de 3</span>
-                    <span class="px-3 py-1 text-xs font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-sm">{{ Math.round((currentStep / 3) * 100) }}% completado</span>
+                    <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Paso {{ currentStep }} de 4</span>
+                    <span class="px-3 py-1 text-xs font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-sm">{{ Math.round((currentStep / 4) * 100) }}% completado</span>
                 </div>
                 <div class="w-full h-2.5 rounded-full bg-white/10 overflow-hidden relative shadow-inner">
                     <div
                         class="absolute top-0 left-0 h-full transition-all duration-700 ease-out rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.6)]"
-                        :style="{ width: `${(currentStep / 3) * 100}%` }"
+                        :style="{ width: `${(currentStep / 4) * 100}%` }"
                     ></div>
                 </div>
             </div>
@@ -598,9 +614,32 @@ const submit = () => {
                     </div>
                 </Transition>
 
-                <!--================ PASO 3: UNIVERSIDAD Y CARRERA ================-->
+                <!--================ PASO 3: SEGURIDAD (2FA) ================-->
                 <Transition name="fade-slide" mode="out-in">
                     <div v-if="currentStep === 3" key="step3" class="relative z-10 space-y-6">
+                        <div class="p-6 border bg-indigo-900/10 border-indigo-500/30 rounded-3xl backdrop-blur-md">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div class="p-3 rounded-full bg-indigo-500/20 shrink-0">
+                                    <ShieldCheck class="w-8 h-8 text-indigo-400" />
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-white">Protege tu cuenta</h3>
+                                    <p class="text-sm text-gray-300">
+                                        Para continuar, es indispensable configurar la seguridad de tu cuenta mediante Google Authenticator.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="bg-black/40 rounded-2xl p-6 border border-white/5">
+                                <TwoFactorAuthenticationForm :requires-confirmation="true" :is-embedded="true" />
+                            </div>
+                        </div>
+                    </div>
+                </Transition>
+
+                <!--================ PASO 4: UNIVERSIDAD Y CARRERA ================-->
+                <Transition name="fade-slide" mode="out-in">
+                    <div v-if="currentStep === 4" key="step4" class="relative z-10 space-y-6">
                         <!-- Universidad (Dropdown Custom) -->
                         <div class="relative space-y-2 custom-dropdown-container">
                             <label class="block ml-1 text-sm font-medium text-gray-300">Universidad</label>
@@ -719,18 +758,18 @@ const submit = () => {
                             Anterior
                         </button>
                         
-                        <!-- Next Button (Step 1 & 2) -->
-                        <button type="button" @click="nextStep" v-if="currentStep < 3"
+                        <!-- Next Button (Step 1, 2 & 3) -->
+                        <button type="button" @click="nextStep" v-if="currentStep < 4"
                             class="relative flex items-center justify-center px-8 py-4 text-sm font-black tracking-wider text-white transition-all duration-300 shadow-xl overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-500/25 active:scale-95 group"
-                            :class="{'opacity-50 cursor-not-allowed': (currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)}"
-                            :disabled="(currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)">
+                            :class="{'opacity-50 cursor-not-allowed': (currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid) || (currentStep === 3 && !isStep3Valid)}"
+                            :disabled="(currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid) || (currentStep === 3 && !isStep3Valid)">
                             <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
                             Siguiente
                             <ChevronRight class="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
                         </button>
 
-                        <!-- Finalizar Button (Step 3) -->
-                        <button v-if="currentStep === 3" type="button" @click="submit" :disabled="isSubmitting || !isStep3Valid"
+                        <!-- Finalizar Button (Step 4) -->
+                        <button v-if="currentStep === 4" type="button" @click="submit" :disabled="isSubmitting || !isStep4Valid"
                             class="relative flex items-center justify-center flex-1 sm:flex-none sm:px-12 py-4 text-sm font-black tracking-wider text-white transition-all duration-300 shadow-xl overflow-hidden rounded-2xl bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25 active:scale-95 group">
                             <span v-if="isSubmitting" class="flex items-center gap-2">
                                 <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

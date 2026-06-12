@@ -22,7 +22,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Publicaciones extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, \App\Traits\HasHashid;
+
+    protected $appends = ['hashid'];
+
     /**
      * Cast attributes to native types for better static analysis and correctness.
      *

@@ -128,9 +128,9 @@ const featureTextStyle = (i) => {
 };
 
 const videos = [
-    { src: '/videos/Clip1.mp4',  poster: '/images/posters/poster1.jpg', title: 'Innovación',           description: 'Un ecosistema creado para el entorno universitario moderno.' },
-    { src: '/videos/Clip2.mp4',  poster: '/images/posters/poster2.jpg', title: 'Impulsando tu Carrera', description: 'Herramientas, plataformas y bibliografía para potenciar tus estudios.' },
-    { src: '/videos/Clip3.mp4',  poster: '/images/posters/poster3.jpg', title: 'Intercambio Seguro',   description: 'Transacciones protegidas con reputación y validación entre estudiantes.' },
+    { src: '/videos/Clip1.mp4',  title: 'Innovación',           description: 'Un ecosistema creado para el entorno universitario moderno.' },
+    { src: '/videos/Clip2.mp4',  title: 'Impulsando tu Carrera', description: 'Herramientas, plataformas y bibliografía para potenciar tus estudios.' },
+    { src: '/videos/Clip3.mp4',  title: 'Intercambio Seguro',   description: 'Transacciones protegidas con reputación y validación entre estudiantes.' },
     { src: '/videos/Clip4.mp4',  title: 'Conexión Estudiantil',  description: 'Expande tu red y colabora con compañeros de diversas facultades.' },
     { src: '/videos/Clip5.mp4',  title: 'Material Accesible',    description: 'Apuntes, libros y herramientas académicas al alcance de tu bolsillo.' },
     { src: '/videos/Coder.mp4',  title: 'Impulso Tecnológico',   description: 'Desarrolla tus proyectos con el equipo adecuado.' },

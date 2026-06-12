@@ -36,9 +36,9 @@ class ProfileController extends Controller
 
         $validator = Validator::make($data, [
             'user_id'           => 'required|exists:users,id',
-            'Apellidos'         => ['required', 'string', 'max:60', 'regex:/^[a-záéíóúüñÁÉÍÓÚÜÑ\s]+$/i'],
+            'Apellidos'         => ['required', 'string', 'max:40', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/'],
             'Genero'            => 'required|in:Masculino,Femenino,Otro',
-            'Telefono'          => ['nullable', 'regex:/^[2346][0-9]{7}$/'],
+            'Telefono'          => ['nullable', 'regex:/^[23467][0-9]{7}$/'],
             'Foto_de_perfil'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Foto_de_portada'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Cod_Universidad'   => 'required|exists:universidades,Cod_Universidad',
@@ -87,9 +87,7 @@ class ProfileController extends Controller
                     'Cod_Universidad' => $request->Cod_Universidad,
                 ];
 
-                if ($codRol) {
-                    $updateData['Cod_Rol'] = $codRol;
-                }
+                // No sobrescribimos el Cod_Rol en actualizaciones para no quitar permisos de Administrador a los usuarios existentes
 
                 if ($fotoPerfilPath) $updateData['Foto_de_perfil'] = $fotoPerfilPath;
                 if ($fotoPortadaPath) $updateData['Foto_de_portada'] = $fotoPortadaPath;

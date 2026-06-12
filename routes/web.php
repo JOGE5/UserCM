@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Auth\PasswordResetCodeController;
-use App\Http\Controllers\Auth\DeviceVerificationController;
 use App\Http\Controllers\Auth\FaceAuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
@@ -61,21 +60,19 @@ Route::middleware('guest')->group(function () {
 
     // Login dedicado del panel de administración
     Route::get('/admin/login', [\App\Http\Controllers\Auth\AdminLoginController::class, 'create'])->name('admin.login');
-    Route::post('/admin/login', [\App\Http\Controllers\Auth\AdminLoginController::class, 'store'])->name('admin.login.store');
+    Route::post('/admin/login', [\App\Http\Controllers\Auth\AdminLoginController::class, 'store'])->middleware('throttle:admin-login')->name('admin.login.store');
 
 });
 
-Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
-    Route::get('/device-verification', [DeviceVerificationController::class, 'showVerificationForm'])->name('device.verification.form');
-    Route::post('/device-verification/verify', [DeviceVerificationController::class, 'verify'])->name('device.verification.verify');
-    Route::post('/device-verification/resend', [DeviceVerificationController::class, 'resend'])->name('device.verification.resend');
-});
+
 
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified'
 ])->group(function () {
+
+
     Route::get('/dashboard', [PublicacionesController::class, 'index'])->name('dashboard');
 
     // Perfil público del vendedor (usa User.id — coherente con la API de reputación)
@@ -89,7 +86,7 @@ Route::middleware([
     Route::get('/mensajes', [ChatController::class, 'index'])->name('mensajes.index');
     Route::post('/chats/private', [ChatController::class, 'createPrivateChat'])->name('chats.private.create');
     Route::get('/chats/{chat}', [ChatController::class, 'show'])->name('chats.show');
-    Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->middleware(['throttle:30,1'])->name('chats.messages.store');
+    Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->middleware(['throttle:messaging'])->name('chats.messages.store');
     Route::post('/chats/{chat}/typing', [ChatController::class, 'typing'])->name('chats.typing');
     Route::post('/chats/{chat}/messages/{message}/react', [ChatController::class, 'toggleReaction'])->name('chats.messages.react');
     Route::post('/chats/{chat}/mute', [ChatController::class, 'toggleMute'])->name('chats.mute');
@@ -106,7 +103,7 @@ Route::middleware([
 
     // Foros create/store/show/edit/update/destroy
     Route::get('/productos/create', [App\Http\Controllers\ForoController::class, 'create'])->name('productos.create');
-    Route::post('/productos', [App\Http\Controllers\ForoController::class, 'store'])->middleware(['throttle:5,60', 'prevent.duplicate'])->name('productos.store');
+    Route::post('/productos', [App\Http\Controllers\ForoController::class, 'store'])->middleware(['throttle:publishing', 'prevent.duplicate'])->name('productos.store');
     Route::get('/productos/{foro}', [App\Http\Controllers\ForoController::class, 'show'])->name('productos.show');
     Route::get('/productos/{foro}/edit', [App\Http\Controllers\ForoController::class, 'edit'])->name('productos.edit');
     Route::put('/productos/{foro}', [App\Http\Controllers\ForoController::class, 'update'])->name('productos.update');
@@ -132,7 +129,7 @@ Route::middleware([
 
     // Rutas de Favoritos
     Route::get('/favoritos', [App\Http\Controllers\FavoritoController::class, 'index'])->name('favoritos.index');
-    Route::post('/publicaciones/{publicacion}/favorito', [App\Http\Controllers\FavoritoController::class, 'toggle'])->name('favoritos.toggle');
+    Route::post('/publicaciones/{publicacion}/favorito', [App\Http\Controllers\FavoritoController::class, 'toggle'])->middleware('throttle:actions')->name('favoritos.toggle');
 
     Route::get('/ajustes', function () {
         return redirect()->route('profile.show');
@@ -157,7 +154,7 @@ Route::middleware([
     })->name('files.foros');
 
     // Rutas de publicaciones
-    Route::post('/publicaciones', [PublicacionesController::class, 'store'])->middleware(['throttle:10,60', 'prevent.duplicate'])->name('publicaciones.store');
+    Route::post('/publicaciones', [PublicacionesController::class, 'store'])->middleware(['throttle:publishing', 'prevent.duplicate'])->name('publicaciones.store');
     // Rutas adicionales para operaciones sobre publicaciones (editar, mostrar, actualizar, eliminar)
     Route::get('/publicaciones/{publicaciones}/edit', [PublicacionesController::class, 'edit'])->name('publicaciones.edit');
     Route::get('/publicaciones/{publicaciones}', [PublicacionesController::class, 'show'])->name('publicaciones.show');
@@ -169,11 +166,11 @@ Route::middleware([
     Route::patch('/publicaciones/{publicaciones}/vendida', [PublicacionesController::class, 'marcarVendido'])->name('publicaciones.vendida');
 
     // Rutas para reportes (publicaciones y foros)
-    Route::post('/report/publicaciones/{publicacion}', [ReportController::class, 'storePublication'])->middleware('throttle:3,1')->name('report.publicacion');
-    Route::post('/report/foros/{foro}', [ReportController::class, 'storeForo'])->middleware('throttle:3,1')->name('report.foro');
+    Route::post('/report/publicaciones/{publicacion}', [ReportController::class, 'storePublication'])->middleware('throttle:reports')->name('report.publicacion');
+    Route::post('/report/foros/{foro}', [ReportController::class, 'storeForo'])->middleware('throttle:reports')->name('report.foro');
 
     // Exponer endpoints de reputación también por web (soportar sesión de navegador)
-    Route::post('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'store'])->middleware('throttle:5,1');
+    Route::post('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'store'])->middleware('throttle:actions');
     Route::get('/api/reputacion/{id}', [\App\Http\Controllers\Api\ReputacionController::class, 'show']);
 });
 

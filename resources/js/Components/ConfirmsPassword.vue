@@ -8,7 +8,7 @@ import TextInput from './TextInput.vue';
 
 const emit = defineEmits(['confirmed']);
 
-defineProps({
+const props = defineProps({
     title: {
         type: String,
         default: 'Confirm Password',
@@ -20,6 +20,10 @@ defineProps({
     button: {
         type: String,
         default: 'Confirm',
+    },
+    skip: {
+        type: Boolean,
+        default: false,
     },
 });
 
@@ -34,6 +38,11 @@ const form = reactive({
 const passwordInput = ref(null);
 
 const startConfirmingPassword = () => {
+    if (props.skip) {
+        emit('confirmed');
+        return;
+    }
+
     axios.get(route('password.confirmation')).then(response => {
         if (response.data.confirmed) {
             emit('confirmed');

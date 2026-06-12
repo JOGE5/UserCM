@@ -86,13 +86,13 @@ function submit() {
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
                             <label for="titulo" class="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">Título del tema</label>
-                            <span class="text-[10px] font-bold" :class="titleCount > 180 ? 'text-rose-500' : 'text-gray-400'">{{ titleCount }}/200</span>
+                            <span class="text-[10px] font-bold" :class="titleCount > 45 ? 'text-rose-500' : 'text-gray-400'">{{ titleCount }}/50</span>
                         </div>
                         <input
                             id="titulo"
                             v-model="form.Titulo_Foro"
                             type="text"
-                            maxlength="200"
+                            maxlength="50"
                             placeholder="¿Sobre qué quieres hablar?"
                             class="w-full px-5 py-3.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-2xl focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all placeholder-gray-400 outline-none font-medium"
                         />
@@ -103,12 +103,13 @@ function submit() {
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
                             <label for="descripcion" class="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">Descripción</label>
-                            <span class="text-[10px] font-bold" :class="descCount > 900 ? 'text-rose-500' : 'text-gray-400'">{{ descCount }} caracteres</span>
+                            <span class="text-[10px] font-bold" :class="descCount > 90 ? 'text-rose-500' : 'text-gray-400'">{{ descCount }}/100</span>
                         </div>
                         <textarea
                             id="descripcion"
                             v-model="form.Descripcion_Foro"
-                            rows="6"
+                            rows="4"
+                            maxlength="100"
                             placeholder="Explica tu tema con detalle. Cuanta más información compartas, mejor podrán ayudarte..."
                             class="w-full px-5 py-3.5 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-black/30 border border-light-border dark:border-dark-border rounded-2xl focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all placeholder-gray-400 outline-none resize-none leading-relaxed"
                         ></textarea>

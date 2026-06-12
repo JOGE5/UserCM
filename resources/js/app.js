@@ -2,7 +2,7 @@ import './bootstrap';
 import '../css/app.css';
 
 import { createApp, h } from 'vue';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import axios from 'axios';
@@ -24,5 +24,10 @@ createInertiaApp({
     },
 });
 
-
-
+router.on('invalid', (event) => {
+    // Si la respuesta es un error 419 (CSRF expirado), evitar que Inertia muestre el modal negro
+    if (event.detail.response.status === 419) {
+        event.preventDefault();
+        window.location.reload();
+    }
+});

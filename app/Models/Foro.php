@@ -19,10 +19,12 @@ use App\Models\UsuarioCampusMarket;
  */
 class Foro extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\HasHashid;
 
     protected $table = 'foros';
     protected $primaryKey = 'ID_Foro';
+
+    protected $appends = ['hashid'];
 
     protected $fillable = [
         'Titulo_Foro',

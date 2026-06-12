@@ -285,7 +285,7 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                     </div>
                 </div>
             </div>
-        </div>
+
     <!-- Modal Eliminar -->
     <Transition name="modal-fade">
         <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">

@@ -2,10 +2,9 @@ import axios from 'axios';
 window.axios = axios;
 
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-const tokenMeta = document.querySelector('meta[name="csrf-token"]');
-if (tokenMeta) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = tokenMeta.getAttribute('content');
-}
+// Axios leerá automáticamente la cookie XSRF-TOKEN que se actualiza dinámicamente.
+
+
 
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
@@ -19,9 +18,4 @@ window.Echo = new Echo({
     wssPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
     enabledTransports: ['ws', 'wss'],
-    auth: {
-        headers: {
-            'X-CSRF-TOKEN': tokenMeta ? tokenMeta.getAttribute('content') : '',
-        },
-    },
 });

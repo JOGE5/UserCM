@@ -55,10 +55,35 @@ class GoogleController extends Controller
                 Mail::to($user->email)->send(new UserWelcomeMail($user));
             }
 
-            // Iniciar sesión
-            Auth::login($user);
+            // Verificar si requiere 2FA (y si no tiene cookie de dispositivo confiable)
+            $trusted = false;
+            $deviceCookie = request()->cookie('trusted_device_token');
+            if ($deviceCookie) {
+                $trustedDevice = \App\Models\TrustedDevice::where('user_id', $user->id)
+                    ->where('device_hash', $deviceCookie)
+                    ->first();
+                if ($trustedDevice && $trustedDevice->last_used_at && $trustedDevice->last_used_at->diffInDays(now()) < 7) {
+                    $trusted = true;
+                }
+            }
 
-            // Redirigir al dashboard (que pasará por device verification middleware automáticamente)
+            if ($user->two_factor_secret && !$trusted) {
+                // Requiere 2FA, guardar el ID en sesión y redirigir al challenge
+                request()->session()->put([
+                    'login.id' => $user->getKey(),
+                    'login.remember' => true,
+                ]);
+                return redirect()->route('two-factor.login');
+            }
+
+            // Iniciar sesión directamente si no requiere 2FA o el dispositivo es confiable
+            Auth::login($user, true);
+
+            // Al iniciar sesión con Google, confirmamos automáticamente la sesión
+            // para que Fortify no pida contraseña al momento de habilitar el 2FA.
+            request()->session()->put('auth.password_confirmed_at', time());
+
+            // Redirigir al dashboard (que pasará por profile completion middleware automáticamente)
             return redirect()->intended('/dashboard');
 
         } catch (\Exception $e) {

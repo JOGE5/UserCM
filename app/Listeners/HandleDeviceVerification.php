@@ -18,37 +18,25 @@ class HandleDeviceVerification
         //
     }
 
-    /**
-     * Handle the event.
-     */
     public function handle(Login $event): void
     {
         $user = $event->user;
-        $userAgent = request()->userAgent();
-        $ip = request()->ip();
-        
-        $deviceHash = hash('sha256', $userAgent . '|' . $ip);
+        $request = request();
 
-        // Check if device is trusted
-        $isTrusted = TrustedDevice::where('user_id', $user->id)
-                                  ->where('device_hash', $deviceHash)
-                                  ->exists();
+        // Si el usuario marcó la casilla de confiar en el dispositivo durante el desafío TOTP
+        if ($request->boolean('trust_device')) {
+            $token = \Illuminate\Support\Str::random(60);
 
-        if (!$isTrusted) {
-            // New device! Generate code and block session
-            $code = rand(100000, 999999);
-            
-            Session::put('device_verification_required', true);
-            Session::put('device_verification_code', $code);
-            Session::put('device_verification_expires_at', now()->addMinutes(10));
+            TrustedDevice::create([
+                'user_id' => $user->id,
+                'device_hash' => $token, // Usamos la columna device_hash para guardar el token único
+                'device_name' => substr($request->userAgent(), 0, 255),
+                'ip_address' => $request->ip(),
+                'last_used_at' => now(),
+            ]);
 
-            // Send Email
-            Mail::to($user->email)->send(new DeviceVerificationMail($code, substr($userAgent, 0, 100)));
-        } else {
-            // Update last used at
-            TrustedDevice::where('user_id', $user->id)
-                         ->where('device_hash', $deviceHash)
-                         ->update(['last_used_at' => now(), 'ip_address' => $ip]);
+            // Guardamos la cookie por 7 días
+            \Illuminate\Support\Facades\Cookie::queue('trusted_device_token', $token, 60 * 24 * 7);
         }
     }
 }

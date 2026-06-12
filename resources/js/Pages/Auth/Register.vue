@@ -20,22 +20,40 @@ const form = useForm({
 
 const showCamera = ref(false);
 const nameError = ref('');
+const emailError = ref('');
 
 const handleNameInput = (e) => {
-    const value = e.target.value;
-    if (/^\d+$/.test(value.trim())) {
-        nameError.value = 'El nombre no puede ser solo números.';
+    let value = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').substring(0, 40);
+    
+    // Capitalizar la primera letra de cada palabra
+    form.name = value.split(' ').map(word => {
+        if (word.length > 0) {
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        }
+        return word;
+    }).join(' ');
+
+    if (form.name.length > 0 && form.name.length < 3) {
+        nameError.value = 'El nombre debe tener al menos 3 caracteres.';
     } else {
         nameError.value = '';
+    }
+};
+
+const handleEmailInput = (e) => {
+    const value = e.target.value;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (value.length > 0 && !emailRegex.test(value)) {
+        emailError.value = 'Por favor, ingresa un correo electrónico válido.';
+    } else {
+        emailError.value = '';
     }
 };
 
 
 
 const submit = () => {
-    form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
-    });
+    form.post(route('register'));
 };
 </script>
 
@@ -108,8 +126,10 @@ const submit = () => {
                             placeholder="tu@correo.com"
                             required
                             autocomplete="username"
+                            @input="handleEmailInput"
                         />
                     </div>
+                    <p v-if="emailError" class="mt-1 text-xs text-rose-400">{{ emailError }}</p>
                     <InputError class="mt-1 text-xs text-red-500" :message="form.errors.email" />
                 </div>
 

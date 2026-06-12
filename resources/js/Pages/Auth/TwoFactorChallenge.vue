@@ -7,12 +7,14 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
+import Checkbox from '@/Components/Checkbox.vue';
 
 const recovery = ref(false);
 
 const form = useForm({
     code: '',
     recovery_code: '',
+    trust_device: false,
 });
 
 const recoveryCodeInput = ref(null);
@@ -38,7 +40,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Two-factor Confirmation" />
+    <Head title="Confirmación de Doble Factor" />
 
     <AuthenticationCard>
         <template #logo>
@@ -47,17 +49,17 @@ const submit = () => {
 
         <div class="mb-4 text-sm text-gray-600">
             <template v-if="! recovery">
-                Please confirm access to your account by entering the authentication code provided by your authenticator application.
+                Por favor, confirma el acceso a tu cuenta ingresando el código de autenticación proporcionado por Google Authenticator.
             </template>
 
             <template v-else>
-                Please confirm access to your account by entering one of your emergency recovery codes.
+                Por favor, confirma el acceso a tu cuenta ingresando uno de tus códigos de recuperación de emergencia.
             </template>
         </div>
 
         <form @submit.prevent="submit">
             <div v-if="! recovery">
-                <InputLabel for="code" value="Code" />
+                <InputLabel for="code" value="Código" />
                 <TextInput
                     id="code"
                     ref="codeInput"
@@ -72,7 +74,7 @@ const submit = () => {
             </div>
 
             <div v-else>
-                <InputLabel for="recovery_code" value="Recovery Code" />
+                <InputLabel for="recovery_code" value="Código de Recuperación" />
                 <TextInput
                     id="recovery_code"
                     ref="recoveryCodeInput"
@@ -84,19 +86,26 @@ const submit = () => {
                 <InputError class="mt-2" :message="form.errors.recovery_code" />
             </div>
 
+            <div class="block mt-4">
+                <label class="flex items-center">
+                    <Checkbox v-model:checked="form.trust_device" name="trust_device" />
+                    <span class="ms-2 text-sm text-gray-600">Confiar en este dispositivo por 1 semana</span>
+                </label>
+            </div>
+
             <div class="flex items-center justify-end mt-4">
                 <button type="button" class="text-sm text-gray-600 hover:text-gray-900 underline cursor-pointer" @click.prevent="toggleRecovery">
                     <template v-if="! recovery">
-                        Use a recovery code
+                        Usar código de recuperación
                     </template>
 
                     <template v-else>
-                        Use an authentication code
+                        Usar código de Google Authenticator
                     </template>
                 </button>
 
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Log in
+                <PrimaryButton class="ms-4 bg-brand-600 hover:bg-brand-500" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                    Ingresar
                 </PrimaryButton>
             </div>
         </form>

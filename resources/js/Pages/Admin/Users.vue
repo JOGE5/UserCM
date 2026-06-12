@@ -151,7 +151,7 @@ const submitCreate = () => {
                                     </button>
                                 </td>
                                 <td class="px-5 py-4 text-center">
-                                    <Link :href="route('usuarios.show', u.id)" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-all">
+                                    <Link :href="route('usuarios.show', u.hashid)" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-[10px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-all">
                                         <User class="w-3 h-3" />
                                         Ver perfil
                                     </Link>

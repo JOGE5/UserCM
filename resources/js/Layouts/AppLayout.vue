@@ -273,7 +273,7 @@ const profilePhotoUrl = computed(() => {
             <div class="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="flex items-center gap-3 opacity-60">
                     <img src="/images/posters/logo-team.png" alt="Logo" class="w-6 h-6 grayscale" />
-                    <span class="text-xs font-black tracking-[0.2em] uppercase text-gray-500 dark:text-gray-400">Campus Market E-Commerce</span>
+                    <span class="text-xs font-black tracking-[0.2em] uppercase text-gray-500 dark:text-gray-400">Campus Market E-Commerce <span class="text-brand-500 ml-2 bg-brand-500/10 px-2 py-0.5 rounded-md">v1.2.0</span></span>
                 </div>
                 <div class="flex items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                     <a href="#" class="hover:text-brand-500 transition-colors">Términos</a>

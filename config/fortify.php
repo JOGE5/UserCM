@@ -151,9 +151,28 @@ return [
         Features::updatePasswords(),
         Features::twoFactorAuthentication([
             'confirm' => true,
-            'confirmPassword' => true,
+            'confirmPassword' => false,
             // 'window' => 0,
         ]),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pipelines
+    |--------------------------------------------------------------------------
+    |
+    | Override Fortify's default authentication pipeline to inject our custom
+    | Two Factor Authentication bypass for trusted devices.
+    |
+    */
+
+    'pipelines' => [
+        'login' => [
+            \Laravel\Fortify\Actions\EnsureLoginIsNotThrottled::class,
+            \App\Actions\Fortify\RedirectIfTwoFactorAuthenticatableCustom::class,
+            \Laravel\Fortify\Actions\AttemptToAuthenticate::class,
+            \Laravel\Fortify\Actions\PrepareAuthenticatedSession::class,
+        ],
     ],
 
 ];

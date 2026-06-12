@@ -23,6 +23,8 @@ class RedirectIfProfileIncomplete
                 if (! $request->routeIs('profile.complete') && 
                     ! $request->routeIs('profile.complete.*') && 
                     ! $request->routeIs('device.verification.*') && 
+                    ! $request->routeIs('two-factor.*') &&
+                    ! $request->is('user/two-factor*') &&
                     ! $request->routeIs('logout')) {
                     return redirect()->route('profile.complete.form');
                 }

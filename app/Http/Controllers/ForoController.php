@@ -35,8 +35,8 @@ class ForoController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'Titulo_Foro' => ['required','string','max:200', new NoProfanity()],
-            'Descripcion_Foro' => ['required','string', new NoProfanity()],
+            'Titulo_Foro' => ['required','string','max:50', new NoProfanity()],
+            'Descripcion_Foro' => ['required','string','max:100', new NoProfanity()],
             'Cod_Categoria' => 'required|exists:categorias_foros,Cod_Categoria',
             'Imagen_Foro' => 'nullable|image|max:2048',
             'tipo_acceso' => 'required|in:abierto,exclusivo',
@@ -118,8 +118,8 @@ class ForoController extends Controller
         $this->authorize('update', $foro);
 
         $data = $request->validate([
-            'Titulo_Foro' => ['required','string','max:200', new NoProfanity()],
-            'Descripcion_Foro' => ['required','string', new NoProfanity()],
+            'Titulo_Foro' => ['required','string','max:50', new NoProfanity()],
+            'Descripcion_Foro' => ['required','string','max:100', new NoProfanity()],
             'Cod_Categoria' => 'required|exists:categorias_foros,Cod_Categoria',
             'Imagen_Foro' => 'nullable|image|max:2048',
         ]);

@@ -11,8 +11,14 @@ use Inertia\Inertia;
 
 class UserProfileController extends Controller
 {
-    public function show(int $id)
+    public function show(string $hash)
     {
+        // Instanciar hashids (igual que en el Trait HasHashid)
+        $hashids = new \Hashids\Hashids(config('app.key', 'campus-market-salt'), 8);
+        $decoded = $hashids->decode($hash);
+        
+        $id = empty($decoded) ? abort(404) : $decoded[0];
+
         $user = User::with([
             'usuarioCampusMarket.carrera',
             'usuarioCampusMarket.universidad',
@@ -41,6 +47,7 @@ class UserProfileController extends Controller
         return Inertia::render('Perfil/Vendedor', [
             'vendedor' => [
                 'id'                => $user->id,
+                'hashid'            => $user->hashid,
                 'name'              => $user->name,
                 'profile_photo_url' => $user->profile_photo_url,
                 'carrera'           => $perfil?->carrera?->Nombre_Carrera,
