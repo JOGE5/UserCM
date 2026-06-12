@@ -28,7 +28,8 @@ class ForoController extends Controller
     public function create()
     {
         $categorias = Categoria_foros::all();
-        return Inertia::render('Foros/Create', ['categorias' => $categorias]);
+        $carreras = \App\Models\Carrera::all();
+        return Inertia::render('Foros/Create', ['categorias' => $categorias, 'carreras' => $carreras]);
     }
 
     public function store(Request $request)
@@ -38,6 +39,8 @@ class ForoController extends Controller
             'Descripcion_Foro' => ['required','string', new NoProfanity()],
             'Cod_Categoria' => 'required|exists:categorias_foros,Cod_Categoria',
             'Imagen_Foro' => 'nullable|image|max:2048',
+            'tipo_acceso' => 'required|in:abierto,exclusivo',
+            'carrera_destino' => 'nullable|required_if:tipo_acceso,exclusivo|exists:carreras,Cod_Carrera',
         ]);
 
         // Asegurar que usamos el ID_Usuario de la tabla usuarios_campus_markets
@@ -55,6 +58,9 @@ class ForoController extends Controller
         $data['ID_Creador'] = $perfil->id;
         $data['Estado_Foro'] = 1;
 
+        // Gamificación: Otorgar XP por crear un foro
+        $perfil->addExperiencia(5);
+
         if ($request->hasFile('Imagen_Foro')) {
             $path = $request->file('Imagen_Foro')->store('foros', 'public');
             $data['Imagen_Foro'] = $path;
@@ -67,10 +73,11 @@ class ForoController extends Controller
         // dispatch moderation job (async)
         ModerateContentJob::dispatch($foro->ID_Foro);
 
-        return redirect()->route('productos')->with('success', 'Foro creado y en revisión.');
+        return redirect()->route('productos', ['foro_id' => $foro->ID_Foro])
+            ->with('success', 'Foro creado exitosamente.');
     }
 
-    public function show(Foro $foro)
+    public function show(Request $request, Foro $foro)
     {
         $foro->load('categoria', 'creador.user', 'comentarios.usuario');
 
@@ -88,11 +95,15 @@ class ForoController extends Controller
             }
         }
 
-        return Inertia::render('Foros/Show', [
-            'foro' => $foro,
-            'currentUserId' => auth()->id(),
-            'canEdit' => $isCreator,
-        ]);
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'foro' => $foro,
+                'canEdit' => $isCreator,
+            ]);
+        }
+
+        // Redirigir al index con el ID del foro para cargarlo en el split-pane
+        return redirect()->route('productos', ['foro_id' => $foro->ID_Foro]);
     }
 
     public function edit(Foro $foro)

@@ -65,14 +65,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
     Route::get('/device-verification', [DeviceVerificationController::class, 'showVerificationForm'])->name('device.verification.form');
     Route::post('/device-verification/verify', [DeviceVerificationController::class, 'verify'])->name('device.verification.verify');
     Route::post('/device-verification/resend', [DeviceVerificationController::class, 'resend'])->name('device.verification.resend');
-
-    // 2FA Facial
-    Route::get('/face-verify', function () {
-        return Inertia::render('Auth/FaceVerify');
-    })->name('face.verify.form');
-
-    // Rutas para validación de Login Facial
-    Route::post('/api/auth/login-facial/verify', [App\Http\Controllers\Auth\FaceAuthController::class, 'verifyAndLogin'])->name('facial.verifyAndLogin');
 });
 
 Route::middleware([
@@ -93,7 +85,7 @@ Route::middleware([
     Route::get('/mensajes', [ChatController::class, 'index'])->name('mensajes.index');
     Route::post('/chats/private', [ChatController::class, 'createPrivateChat'])->name('chats.private.create');
     Route::get('/chats/{chat}', [ChatController::class, 'show'])->name('chats.show');
-    Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->middleware(['throttle:30,1', 'prevent.duplicate'])->name('chats.messages.store');
+    Route::post('/chats/{chat}/messages', [ChatController::class, 'storeMessage'])->middleware(['throttle:30,1'])->name('chats.messages.store');
     Route::post('/chats/{chat}/typing', [ChatController::class, 'typing'])->name('chats.typing');
     Route::post('/chats/{chat}/messages/{message}/react', [ChatController::class, 'toggleReaction'])->name('chats.messages.react');
     Route::post('/chats/{chat}/mute', [ChatController::class, 'toggleMute'])->name('chats.mute');
@@ -120,16 +112,16 @@ Route::middleware([
 
     Route::get('/borradores', function () {
         $userId = auth()->id();
-        // Obtener solo los borradores del usuario actual
-        $borradores = \App\Models\Publicaciones::with('categoria', 'vendedor.user')
-            ->where('estado', 'borrador')
+        // Obtener TODAS las publicaciones del usuario actual
+        $publicaciones = \App\Models\Publicaciones::with('categoria', 'vendedor.user')
             ->whereHas('vendedor', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return Inertia::render('Borradores', [
-            'borradores' => $borradores,
+            'publicaciones' => $publicaciones,
             'currentUserId' => $userId,
         ]);
     })->name('borradores');
@@ -139,7 +131,7 @@ Route::middleware([
     Route::post('/publicaciones/{publicacion}/favorito', [App\Http\Controllers\FavoritoController::class, 'toggle'])->name('favoritos.toggle');
 
     Route::get('/ajustes', function () {
-        return Inertia::render('Ajustes/Index');
+        return redirect()->route('profile.show');
     })->name('ajustes');
 
     // Ruta para crear publicación

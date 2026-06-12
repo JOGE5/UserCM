@@ -35,6 +35,8 @@ class Foro extends Model
         'moderation_scores',
         'moderation_checked_at',
         'moderation_reason',
+        'tipo_acceso',
+        'carrera_destino',
     ];
 
     public $timestamps = true;

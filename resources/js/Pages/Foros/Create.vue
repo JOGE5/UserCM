@@ -5,13 +5,15 @@ import InputError from '@/Components/InputError.vue';
 import { ref, computed } from 'vue';
 import { Hash, Image as ImageIcon, ArrowLeft, ChevronRight, X, Upload, Send } from 'lucide-vue-next';
 
-const props = defineProps({ categorias: Array });
+const props = defineProps({ categorias: Array, carreras: Array });
 
 const form = useForm({
     Titulo_Foro: '',
     Descripcion_Foro: '',
     Cod_Categoria: null,
     Imagen_Foro: null,
+    tipo_acceso: 'abierto',
+    carrera_destino: null,
 });
 
 const imagePreview = ref(null);
@@ -125,6 +127,44 @@ function submit() {
                             <option v-for="c in categorias" :key="c.Cod_Categoria" :value="c.Cod_Categoria">{{ c.Nombre_Categoria }}</option>
                         </select>
                         <InputError :message="form.errors.Cod_Categoria" />
+                    </div>
+
+                    <!-- Tipo de Acceso (Abierto / Exclusivo) -->
+                    <div class="space-y-4 p-5 bg-brand-500/5 border border-brand-500/20 rounded-[2rem]">
+                        <div class="space-y-2">
+                            <label class="text-xs font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest">Privacidad de la Sala</label>
+                            <div class="flex gap-3">
+                                <label class="flex-1 relative cursor-pointer group">
+                                    <input type="radio" v-model="form.tipo_acceso" value="abierto" class="peer sr-only" />
+                                    <div class="p-4 bg-white dark:bg-black/40 border border-light-border dark:border-dark-border rounded-2xl peer-checked:border-brand-500 peer-checked:ring-2 peer-checked:ring-brand-500/20 transition-all text-center">
+                                        <span class="block text-sm font-black text-gray-900 dark:text-white mb-1">🌍 Foro Abierto</span>
+                                        <span class="block text-[10px] text-gray-500">Cualquier estudiante puede entrar</span>
+                                    </div>
+                                </label>
+                                <label class="flex-1 relative cursor-pointer group">
+                                    <input type="radio" v-model="form.tipo_acceso" value="exclusivo" class="peer sr-only" />
+                                    <div class="p-4 bg-white dark:bg-black/40 border border-light-border dark:border-dark-border rounded-2xl peer-checked:border-brand-500 peer-checked:ring-2 peer-checked:ring-brand-500/20 transition-all text-center">
+                                        <span class="block text-sm font-black text-gray-900 dark:text-white mb-1">🔒 Exclusivo</span>
+                                        <span class="block text-[10px] text-gray-500">Solo para una carrera específica</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <InputError :message="form.errors.tipo_acceso" />
+                        </div>
+
+                        <!-- Selector de Carrera (Solo si es exclusivo) -->
+                        <div v-if="form.tipo_acceso === 'exclusivo'" class="space-y-2 pt-2 animate-fade-in-up">
+                            <label for="carrera_destino" class="text-xs font-black text-gray-700 dark:text-gray-300 uppercase tracking-widest">¿Para qué carrera es?</label>
+                            <select
+                                id="carrera_destino"
+                                v-model="form.carrera_destino"
+                                class="w-full px-5 py-3.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-black/30 border border-light-border dark:border-dark-border rounded-2xl focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-all outline-none font-medium appearance-none cursor-pointer"
+                            >
+                                <option :value="null" disabled>Selecciona la carrera permitida...</option>
+                                <option v-for="c in carreras" :key="c.Cod_Carrera" :value="c.Cod_Carrera">{{ c.Nombre_Carrera }}</option>
+                            </select>
+                            <InputError :message="form.errors.carrera_destino" />
+                        </div>
                     </div>
 
                     <!-- Imagen -->

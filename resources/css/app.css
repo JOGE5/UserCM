@@ -13,7 +13,7 @@
         --text-secondary: #64748b;
     }
 
-    .dark {
+    html.dark {
         --bg-color: #0a0a0d;
         --surface-color: #16161a;
         --border-color: #232329;
@@ -34,6 +34,40 @@
     h6 {
         @apply font-bold tracking-tight text-[var(--text-primary)];
     }
+}
+
+@layer utilities {
+    .glass-panel {
+        @apply bg-white/40 dark:bg-black/40 backdrop-blur-2xl border border-white/40 dark:border-white/10 shadow-[0_8px_32px_0_rgba(124,58,237,0.05)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)];
+    }
+    
+    .glass-nav {
+        @apply bg-white/70 dark:bg-[#0a0a0d]/80 backdrop-blur-xl border-b border-white/20 dark:border-white/5 shadow-sm;
+    }
+
+    .float-3d {
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+    }
+    
+    .float-3d:hover {
+        transform: translateY(-8px) scale(1.02);
+        @apply shadow-[0_20px_40px_-15px_rgba(124,58,237,0.25)] dark:shadow-[0_20px_40px_-15px_rgba(124,58,237,0.4)];
+    }
+
+    .bg-dynamic {
+        @apply bg-light-bg dark:bg-dark-bg;
+        background-image: 
+            radial-gradient(circle at center, rgba(124, 58, 237, 0.12) 2px, transparent 2px),
+            radial-gradient(circle at center, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
+        background-size: 60px 60px, 30px 30px;
+        background-position: 0 0, 15px 15px;
+        animation: panBg 40s linear infinite;
+    }
+}
+
+@keyframes panBg {
+    0% { background-position: 0 0, 15px 15px; }
+    100% { background-position: 60px 60px, 75px 75px; }
 }
 
 [x-cloak] {

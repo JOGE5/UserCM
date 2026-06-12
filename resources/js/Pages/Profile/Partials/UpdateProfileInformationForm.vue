@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue';
-import { Link, router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import ActionMessage from '@/Components/ActionMessage.vue';
 import FormSection from '@/Components/FormSection.vue';
 import InputError from '@/Components/InputError.vue';
@@ -17,6 +17,10 @@ const form = useForm({
     _method: 'PUT',
     name: props.user.name,
     email: props.user.email,
+    apellidos: usePage().props.userPerfil?.apellidos || '',
+    telefono: usePage().props.userPerfil?.telefono || '',
+    Cod_Carrera: usePage().props.userPerfil?.Cod_Carrera || '',
+    Cod_Universidad: usePage().props.userPerfil?.Cod_Universidad || '',
     photo: null,
 });
 
@@ -129,27 +133,53 @@ const clearPhotoFileInput = () => {
             </div>
 
             <!-- Name -->
-            <div class="col-span-6 sm:col-span-4">
-                <InputLabel for="name" value="Nombre" />
+            <div class="col-span-6 sm:col-span-3">
+                <InputLabel for="name" value="Nombres" />
                 <TextInput
                     id="name"
                     v-model="form.name"
                     type="text"
-                    class="mt-1 block w-full"
+                    class="mt-1 block w-full bg-white/50 dark:bg-black/30 border-white/20 dark:border-white/10"
                     required
                     autocomplete="name"
                 />
                 <InputError :message="form.errors.name" class="mt-2" />
             </div>
 
+            <!-- Apellidos -->
+            <div class="col-span-6 sm:col-span-3">
+                <InputLabel for="apellidos" value="Apellidos" />
+                <TextInput
+                    id="apellidos"
+                    v-model="form.apellidos"
+                    type="text"
+                    class="mt-1 block w-full bg-white/50 dark:bg-black/30 border-white/20 dark:border-white/10"
+                    autocomplete="family-name"
+                />
+                <InputError :message="form.errors.apellidos" class="mt-2" />
+            </div>
+
+            <!-- Teléfono -->
+            <div class="col-span-6 sm:col-span-3">
+                <InputLabel for="telefono" value="Teléfono" />
+                <TextInput
+                    id="telefono"
+                    v-model="form.telefono"
+                    type="text"
+                    class="mt-1 block w-full bg-white/50 dark:bg-black/30 border-white/20 dark:border-white/10"
+                    autocomplete="tel"
+                />
+                <InputError :message="form.errors.telefono" class="mt-2" />
+            </div>
+
             <!-- Email -->
-            <div class="col-span-6 sm:col-span-4">
+            <div class="col-span-6 sm:col-span-3">
                 <InputLabel for="email" value="Correo electrónico" />
                 <TextInput
                     id="email"
                     v-model="form.email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="mt-1 block w-full bg-white/50 dark:bg-black/30 border-white/20 dark:border-white/10"
                     required
                     autocomplete="username"
                 />
@@ -174,6 +204,37 @@ const clearPhotoFileInput = () => {
                         Se ha enviado un nuevo enlace de verificación a tu correo.
                     </div>
                 </div>
+            </div>
+
+            <!-- Universidad y Carrera -->
+            <div class="col-span-6 sm:col-span-3">
+                <InputLabel for="universidad" value="Universidad" />
+                <select
+                    id="universidad"
+                    v-model="form.Cod_Universidad"
+                    class="mt-1 block w-full px-4 py-2.5 bg-white/50 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium text-sm shadow-inner appearance-none"
+                >
+                    <option value="" disabled>Selecciona tu universidad</option>
+                    <option v-for="uni in $page.props.universidadesGlobales" :key="uni.Cod_Universidad" :value="uni.Cod_Universidad">
+                        {{ uni.Nombre_Universidad }}
+                    </option>
+                </select>
+                <InputError :message="form.errors.Cod_Universidad" class="mt-2" />
+            </div>
+
+            <div class="col-span-6 sm:col-span-3">
+                <InputLabel for="carrera" value="Carrera" />
+                <select
+                    id="carrera"
+                    v-model="form.Cod_Carrera"
+                    class="mt-1 block w-full px-4 py-2.5 bg-white/50 dark:bg-black/30 backdrop-blur-md border border-white/20 dark:border-white/10 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-medium text-sm shadow-inner appearance-none"
+                >
+                    <option value="" disabled>Selecciona tu carrera</option>
+                    <option v-for="carrera in $page.props.carrerasGlobales" :key="carrera.Cod_Carrera" :value="carrera.Cod_Carrera">
+                        {{ carrera.Nombre_Carrera }}
+                    </option>
+                </select>
+                <InputError :message="form.errors.Cod_Carrera" class="mt-2" />
             </div>
         </template>
 

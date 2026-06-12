@@ -48,6 +48,8 @@ class UsuarioCampusMarket extends Model
         'Cod_Universidad',
         'Cod_Categoria_Default',
         'verificado',
+        'experiencia',
+        'nivel',
     ];
 
     /**
@@ -62,7 +64,38 @@ class UsuarioCampusMarket extends Model
             'Genero'     => 'string',
             'Telefono'   => 'encrypted',
             'verificado' => 'boolean',
+            'experiencia' => 'integer',
+            'nivel' => 'integer',
         ];
+    }
+
+    /**
+     * Accesor para obtener el nombre de la Insignia del usuario basado en su nivel.
+     */
+    public function getInsigniaAttribute()
+    {
+        if ($this->nivel >= 10) return 'Vendedor Élite';
+        if ($this->nivel >= 5) return 'Contribuidor';
+        if ($this->nivel >= 2) return 'Explorador';
+        return 'Novato';
+    }
+
+    /**
+     * Añade experiencia al usuario y calcula si sube de nivel.
+     * Fórmula simple: cada 100 XP = 1 nivel.
+     */
+    public function addExperiencia(int $xp)
+    {
+        $this->experiencia += $xp;
+        
+        // Calcular nuevo nivel (ejemplo: 100 XP = Nivel 2, 200 XP = Nivel 3)
+        $nuevoNivel = 1 + (int) floor($this->experiencia / 100);
+        
+        if ($nuevoNivel > $this->nivel) {
+            $this->nivel = $nuevoNivel;
+        }
+
+        $this->save();
     }
 
     /**

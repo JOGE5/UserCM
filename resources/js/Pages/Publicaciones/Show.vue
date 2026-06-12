@@ -346,6 +346,61 @@
       </div>
     </Transition>
   </Teleport>
+
+  <!-- Modal: Confirmar Borrador -->
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="showBorradorModal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showBorradorModal = false"></div>
+
+        <!-- Panel -->
+        <div class="relative z-10 w-full max-w-md bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] shadow-2xl p-8">
+          <!-- Header -->
+          <div class="flex items-start justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                <CheckCircle class="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h3 class="text-lg font-black text-gray-900 dark:text-white">¿Publicar ahora?</h3>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Hacer público</p>
+              </div>
+            </div>
+            <button @click="showBorradorModal = false" class="p-2 rounded-xl text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <p class="text-sm text-gray-600 dark:text-gray-400 font-medium leading-relaxed mb-8">
+            Esta acción activará <span class="font-black text-gray-900 dark:text-white">«{{ publicacion.Titulo_Publicacion }}»</span> y será visible para todos en el marketplace.
+          </p>
+
+          <div class="flex gap-3">
+            <button
+              @click="showBorradorModal = false"
+              class="flex-1 py-4 text-xs font-black tracking-widest uppercase border border-light-border dark:border-dark-border text-gray-600 dark:text-gray-400 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="confirmarBorrador"
+              class="flex-1 py-4 text-xs font-black tracking-widest uppercase bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95"
+            >
+              Sí, publicar
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <ReportModal
+    v-if="showReportModal"
+    :publicacionId="publicacion.id"
+    :ownerId="publicacion.vendedor?.user?.id"
+    @close="showReportModal = false"
+  />
 </template>
 
 <script setup>
@@ -355,6 +410,7 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
+import ReportModal from '@/Components/ReportModal.vue'
 import {
     ChevronRight,
     MessageCircle,
@@ -370,6 +426,7 @@ import {
     MapPin,
     BadgeCheck,
     ShoppingBag,
+    CheckCircle,
     X,
 } from 'lucide-vue-next'
 
@@ -483,7 +540,7 @@ const quitarBorrador = () => {
 
 const confirmarBorrador = () => {
   router.patch(route('publicaciones.active', props.publicacion.id), {}, {
-    onSuccess: () => router.visit(route('dashboard'))
+    onSuccess: () => { showBorradorModal.value = false; }
   })
 }
 

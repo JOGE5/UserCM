@@ -116,14 +116,30 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
             </div>
         </template>
 
-        <div class="max-w-5xl mx-auto pb-20">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Formulario de Edición -->
-                <div class="lg:col-span-2 space-y-8">
-                    <div class="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] p-8 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-full -mr-16 -mt-16 pointer-events-none"></div>
-                        
-                        <form @submit.prevent="submit" class="space-y-6">
+        <div class="max-w-4xl mx-auto flex items-center justify-center min-h-[80vh] py-10">
+            <!-- Modal 3D Flotante -->
+            <div class="w-full glass-panel rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden float-3d border border-white/30 dark:border-white/10">
+                <!-- Luces Internas -->
+                <div class="absolute -top-32 -right-32 w-64 h-64 bg-brand-500/30 blur-[80px] rounded-full pointer-events-none"></div>
+                <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-purple-500/30 blur-[80px] rounded-full pointer-events-none"></div>
+
+                <div class="relative z-10">
+                    <div class="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                        <div>
+                            <h2 class="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-purple-600">Editar Publicación</h2>
+                            <p class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-2">ID: #{{ publicacion.id }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <SecondaryButton @click="showDraftModal = true" class="!px-4 py-2 border-amber-500/20 hover:border-amber-500/50 hover:bg-amber-500/10 hover:text-amber-600 transition-all">
+                                <Archive class="w-4 h-4 mr-2" /> Borrador
+                             </SecondaryButton>
+                             <button @click="showDeleteModal = true" class="p-2 border border-rose-500/20 hover:border-rose-500/50 bg-rose-500/5 hover:bg-rose-500/10 text-rose-500 rounded-xl transition-all" title="Eliminar">
+                                <Trash2 class="w-5 h-5" />
+                             </button>
+                        </div>
+                    </div>
+                    
+                    <form @submit.prevent="submit" class="space-y-8">
                             <!-- Título -->
                             <div>
                                 <InputLabel for="titulo" value="Título" />
@@ -150,7 +166,7 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                     <select
                                         id="categoria"
                                         v-model="form.Cod_Categoria"
-                                        class="mt-1 block w-full px-5 py-3.5 bg-gray-50/50 dark:bg-white/5 border border-light-border dark:border-dark-border text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-bold text-sm outline-none"
+                                        class="mt-1 block w-full px-5 py-3.5 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/50 dark:border-white/10 text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold text-sm outline-none shadow-inner"
                                         required
                                     >
                                         <option v-for="cat in categorias" :key="cat.Cod_Categoria" :value="cat.Cod_Categoria">
@@ -179,7 +195,7 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                     <select
                                         id="condicion"
                                         v-model="form.condicion_producto"
-                                        class="mt-1 block w-full px-5 py-3.5 bg-gray-50/50 dark:bg-white/5 border border-light-border dark:border-dark-border text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-bold text-sm outline-none"
+                                        class="mt-1 block w-full px-5 py-3.5 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/50 dark:border-white/10 text-gray-900 dark:text-white rounded-2xl focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold text-sm outline-none shadow-inner"
                                     >
                                         <option value="usado">Usado</option>
                                         <option value="nuevo">Nuevo</option>
@@ -195,7 +211,7 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                     id="descripcion"
                                     v-model="form.Descripcion_Publicacion"
                                     rows="5"
-                                    class="mt-1 block w-full px-5 py-4 bg-gray-50/50 dark:bg-white/5 border border-light-border dark:border-dark-border text-gray-900 dark:text-white rounded-[2rem] focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-medium text-sm outline-none resize-none"
+                                    class="mt-1 block w-full px-5 py-4 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/50 dark:border-white/10 text-gray-900 dark:text-white rounded-[2rem] focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-medium text-sm outline-none resize-none shadow-inner"
                                     required
                                 ></textarea>
                                 <InputError :message="form.errors.Descripcion_Publicacion" class="mt-2" />
@@ -225,8 +241,8 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                     @dragleave.prevent="isDragging = false"
                                     @drop.prevent="isDragging = false; processFiles($event.dataTransfer.files)"
                                     :class="[
-                                        'group relative mt-2 flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-[2.5rem] transition-all duration-500',
-                                        isDragging ? 'border-brand-500 bg-brand-500/10' : 'border-light-border dark:border-dark-border bg-gray-50/30 dark:bg-black/5'
+                                        'group relative mt-2 flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-[2.5rem] transition-all duration-500 backdrop-blur-sm',
+                                        isDragging ? 'border-brand-500 bg-brand-500/20' : 'border-brand-500/30 bg-white/20 dark:bg-black/20 hover:border-brand-500/60 hover:bg-white/40 dark:hover:bg-black/40'
                                     ]"
                                 >
                                     <input
@@ -261,46 +277,11 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                 <Link :href="route('dashboard')" class="text-sm font-bold text-gray-400 hover:text-gray-900 transition-colors">
                                     Descartar cambios
                                 </Link>
-                                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+                                <PrimaryButton class="px-8 py-3.5 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 shadow-[0_8px_20px_-6px_rgba(124,58,237,0.6)]" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
                                     Actualizar Publicación
                                 </PrimaryButton>
                             </div>
                         </form>
-                    </div>
-                </div>
-
-                <!-- Opciones de Gestión Adicionales -->
-                <div class="space-y-6">
-                    <div class="bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] p-8 shadow-sm">
-                        <h3 class="font-black text-gray-900 dark:text-white mb-6 uppercase tracking-widest text-xs flex items-center gap-2">
-                             <Settings class="w-4 h-4 text-brand-500" />
-                             Opciones de Estado
-                        </h3>
-                        
-                        <div class="space-y-4">
-                             <SecondaryButton @click="showDraftModal = true" class="w-full justify-center gap-2 py-4">
-                                <Archive class="w-5 h-5" />
-                                Pasar a Borrador
-                             </SecondaryButton>
-                             <p class="text-[10px] font-medium text-gray-400 text-center leading-tight">La publicación se ocultará para todos excepto para ti.</p>
-
-                             <div class="pt-6 border-t border-light-border/50 dark:border-dark-border/50">
-                                 <DangerButton @click="showDeleteModal = true" class="w-full justify-center gap-2 py-4">
-                                    <Trash2 class="w-5 h-5" />
-                                    Eliminar Oferta
-                                 </DangerButton>
-                             </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-amber-500/10 border border-amber-500/20 rounded-[2.5rem] p-8">
-                        <div class="flex items-center gap-3 mb-4 text-amber-600 dark:text-amber-400">
-                             <AlertTriangle class="w-6 h-6" />
-                             <h4 class="font-black text-sm uppercase tracking-widest">Atención</h4>
-                        </div>
-                        <p class="text-xs font-bold text-amber-800 dark:text-amber-200/80 leading-relaxed">
-                            Los cambios realizados son permanentes y se reflejan instantáneamente en el marketplace de Campus Market. Revise el precio antes de guardar.
-                        </p>
                     </div>
                 </div>
             </div>

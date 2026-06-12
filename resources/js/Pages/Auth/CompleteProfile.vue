@@ -4,7 +4,6 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import axios from 'axios';
 import InputError from '@/Components/InputError.vue';
 import { User, Mail, Phone, Users, Image as ImageIcon, Camera, GraduationCap, BookOpen, ChevronLeft, ChevronRight, Check, ChevronDown, Upload, X, RefreshCw, ScanFace } from 'lucide-vue-next';
-import CamaraRegistro from '@/Components/CamaraRegistro.vue';
 
 const props = defineProps({
     user: Object,
@@ -32,10 +31,6 @@ const isSubmitting = ref(false);
 const submitStatus = ref('Subiendo su información...');
 const submitProgress = ref(0);
 const showSuccess = ref(false);
-
-// Estado de carga post-captura facial
-const faceLoading = ref(false);
-const faceMessage = ref('');
 
 const openGenero = ref(false);
 const openUniversidad = ref(false);
@@ -76,8 +71,6 @@ const form = useForm({
     Cod_Universidad: '',
     Cod_Carrera: '',
     Cod_Rol: '',
-    fotoBase64: null,
-    descriptorFacial: null,
 });
 
 const isLoadingCarreras = ref(false);
@@ -155,32 +148,12 @@ const isStep3Valid = computed(() => {
     return form.Cod_Universidad && form.Cod_Carrera;
 });
 
-const isStep4Valid = computed(() => {
-    return true;
-});
-
-const handleFaceCaptured = ({ base64, descriptor }) => {
-    form.fotoBase64 = base64;
-    form.descriptorFacial = descriptor;
-    faceLoading.value = true;
-    faceMessage.value = 'Verificando que eres tú...';
-    setTimeout(() => {
-        faceMessage.value = 'Cargando...';
-        setTimeout(() => {
-            faceMessage.value = 'A punto de entrar';
-            setTimeout(() => submit(), 700);
-        }, 700);
-    }, 800);
-};
-
 const nextStep = () => {
     closeAllSelects();
     if (currentStep.value === 1 && isStep1Valid.value) {
         currentStep.value = 2;
     } else if (currentStep.value === 2 && isStep2Valid.value) {
         currentStep.value = 3;
-    } else if (currentStep.value === 3 && isStep3Valid.value) {
-        currentStep.value = 4;
     }
 };
 
@@ -289,7 +262,7 @@ const removeImage = (type) => {
 };
 
 const submit = () => {
-    if (isStep4Valid.value) {
+    if (isStep3Valid.value) {
         form.post(route('profile.complete'), {
             forceFormData: true,
             preserveState: true,
@@ -373,13 +346,13 @@ const submit = () => {
                     </div>
                 </Transition>
                 <div class="flex flex-col items-center justify-between gap-2 mb-4 sm:flex-row">
-                    <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Paso {{ currentStep }} de 4</span>
-                    <span class="px-3 py-1 text-xs font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-sm">{{ Math.round((currentStep / 4) * 100) }}% completado</span>
+                    <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">Paso {{ currentStep }} de 3</span>
+                    <span class="px-3 py-1 text-xs font-bold text-indigo-300 border rounded-full bg-indigo-500/20 border-indigo-500/30 backdrop-blur-sm">{{ Math.round((currentStep / 3) * 100) }}% completado</span>
                 </div>
                 <div class="w-full h-2.5 rounded-full bg-white/10 overflow-hidden relative shadow-inner">
                     <div
                         class="absolute top-0 left-0 h-full transition-all duration-700 ease-out rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.6)]"
-                        :style="{ width: `${(currentStep / 4) * 100}%` }"
+                        :style="{ width: `${(currentStep / 3) * 100}%` }"
                     ></div>
                 </div>
             </div>
@@ -727,9 +700,9 @@ const submit = () => {
                                     <GraduationCap class="w-6 h-6 text-indigo-400" />
                                 </div>
                                 <div>
-                                    <h4 class="mb-1 text-sm font-bold text-white">Solo un paso más</h4>
+                                    <h4 class="mb-1 text-sm font-bold text-white">¡Todo listo!</h4>
                                     <p class="text-sm leading-relaxed text-indigo-200/70">
-                                        Has seleccionado tu universidad y carrera correctamente. Presiona siguiente para el registro de seguridad.
+                                        Has seleccionado tu universidad y carrera correctamente. Ya puedes finalizar y entrar al sistema.
                                     </p>
                                 </div>
                             </div>
@@ -737,80 +710,38 @@ const submit = () => {
                     </div>
                 </Transition>
 
-                <!--================ PASO 4: Reconocimiento Facial ================-->
-                <Transition name="fade-slide" mode="out-in">
-                    <div v-if="currentStep === 4" key="step4" class="relative z-10 space-y-6">
-                        <div class="p-6 border bg-pink-900/20 border-pink-500/30 rounded-3xl backdrop-blur-md">
-                            <div class="flex items-start gap-4 mb-4">
-                                <div class="p-3 rounded-full bg-pink-500/20 shrink-0">
-                                    <ScanFace class="w-6 h-6 text-pink-400" />
-                                </div>
-                                <div>
-                                    <h4 class="mb-1 text-sm font-bold text-white">Último paso: Configuración Completa</h4>
-                                    <p class="text-sm leading-relaxed text-pink-200/70">
-                                        Has completado todos los pasos necesarios. Presiona "Finalizar y Entrar" para acceder a tu cuenta.
-                                    </p>
-                                </div>
-                            </div>
+                <!-- Botones de Navegación -->
+                <div class="pt-6 mt-8 border-t border-white/10">
+                    <div class="flex gap-4" :class="{'justify-end': currentStep === 1, 'justify-between': currentStep > 1}">
+                        <button type="button" @click="prevStep" v-if="currentStep > 1"
+                            class="flex items-center justify-center px-6 py-4 text-sm font-bold text-white transition-all duration-300 border bg-white/5 border-white/10 rounded-2xl hover:bg-white/10 active:scale-95 group">
+                            <ChevronLeft class="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
+                            Anterior
+                        </button>
+                        
+                        <!-- Next Button (Step 1 & 2) -->
+                        <button type="button" @click="nextStep" v-if="currentStep < 3"
+                            class="relative flex items-center justify-center px-8 py-4 text-sm font-black tracking-wider text-white transition-all duration-300 shadow-xl overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-500/25 active:scale-95 group"
+                            :class="{'opacity-50 cursor-not-allowed': (currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)}"
+                            :disabled="(currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid)">
+                            <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
+                            Siguiente
+                            <ChevronRight class="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
+                        </button>
 
-                            <!-- Cámara oculta porque Face ID está deshabilitado -->
-                            <div v-if="false" class="flex justify-center w-full">
-                                <CamaraRegistro @capturado="handleFaceCaptured" @error="e => profileError = e" />
-                            </div>
-
-                            <!-- Estado de carga post-captura -->
-                            <div v-if="faceLoading" class="flex flex-col items-center justify-center py-10 space-y-6">
-                                <div class="relative">
-                                    <div class="w-20 h-20 border-4 border-indigo-500/20 rounded-full"></div>
-                                    <div class="absolute top-0 left-0 w-20 h-20 border-4 border-indigo-400 rounded-full border-t-transparent animate-spin"></div>
-                                    <div class="absolute inset-0 flex items-center justify-center">
-                                        <ScanFace class="w-7 h-7 text-indigo-300" />
-                                    </div>
-                                </div>
-                                <p class="text-sm font-bold tracking-widest text-indigo-300 uppercase animate-pulse">
-                                    {{ faceMessage }}
-                                </p>
-                            </div>
-                        </div>
+                        <!-- Finalizar Button (Step 3) -->
+                        <button v-if="currentStep === 3" type="button" @click="submit" :disabled="isSubmitting || !isStep3Valid"
+                            class="relative flex items-center justify-center flex-1 sm:flex-none sm:px-12 py-4 text-sm font-black tracking-wider text-white transition-all duration-300 shadow-xl overflow-hidden rounded-2xl bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/25 active:scale-95 group">
+                            <span v-if="isSubmitting" class="flex items-center gap-2">
+                                <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Guardando...
+                            </span>
+                            <span v-else class="flex items-center gap-2">
+                                Finalizar y Entrar
+                                <Check class="w-5 h-5 ml-1 transition-transform group-hover:scale-110" />
+                            </span>
+                        </button>
                     </div>
-                </Transition>
-
-                <!-- Footer de Controles / Navegación -->
-                <div class="relative z-0 flex items-center justify-between pt-6 mt-6 border-t border-white/10">
-                    <button
-                        type="button"
-                        v-if="currentStep > 1"
-                        @click="prevStep"
-                        class="flex items-center gap-2 px-6 py-3.5 text-sm font-bold text-gray-300 transition-all border rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 hover:text-white focus:outline-none"
-                    >
-                        <ChevronLeft class="w-5 h-5" />
-                        Anterior
-                    </button>
-                    <div v-else></div> <!-- Placeholder para flex-between -->
-
-                    <button
-                        type="button"
-                        v-if="currentStep < 4"
-                        @click="nextStep"
-                        :disabled="(currentStep === 1 && !isStep1Valid) || (currentStep === 2 && !isStep2Valid) || (currentStep === 3 && !isStep3Valid)"
-                        class="flex items-center gap-2 px-8 py-3.5 text-sm font-bold text-white transition-all bg-indigo-600 rounded-2xl group hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-indigo-600"
-                    >
-                        Siguiente
-                        <ChevronRight class="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                    </button>
-
-                    <button
-                        type="submit"
-                        v-else
-                        :disabled="!isStep4Valid || form.processing"
-                        class="relative flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-bold text-white transition-all bg-emerald-600 rounded-2xl group hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_40px_rgba(16,185,129,0.5)] overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-emerald-600"
-                    >
-                        <span class="relative z-10 flex items-center gap-2">
-                            Finalizar y Entrar
-                            <Check class="w-5 h-5" />
-                        </span>
-                        <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white/20 to-transparent"></div>
-                    </button>
                 </div>
             </form>
         </div>

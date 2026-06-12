@@ -23,9 +23,7 @@
         "vue": "^3.3.13"
     },
     "dependencies": {
-        "@vladmandic/face-api": "^1.7.15",
         "animejs": "^4.4.1",
-        "face-api.js": "^0.22.2",
         "gsap": "^3.15.0",
         "laravel-echo": "^2.3.4",
         "lucide-vue": "^0.517.0",

@@ -58,36 +58,65 @@ function close() { emit('close'); }
 </script>
 
 <template>
-  <div class="p-4">
-    <h3 class="font-semibold mb-2">Reportar publicación</h3>
-    <div class="mb-2">
-      <label class="block text-sm">Motivo</label>
-      <select v-model="form.reason" class="mt-1 border rounded w-full px-2 py-1">
-        <option value="">Selecciona un motivo</option>
-        <option>Lenguaje ofensivo</option>
-        <option>Imagen explícita/indecente</option>
-        <option>Spam</option>
-        <option>Otro</option>
-      </select>
-    </div>
-    <div class="mb-2">
-      <label class="block text-sm">Comentario (opcional)</label>
-      <textarea v-model="form.comment" rows="3" class="mt-1 border rounded w-full px-2 py-1" placeholder="Agrega contexto o ejemplos"></textarea>
-    </div>
-    <div class="mb-2">
-      <label class="inline-flex items-center">
-        <input type="checkbox" v-model="form.flags.image" class="mr-2" /> Contiene imagen explícita
-      </label>
-    </div>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div class="fixed inset-0 z-[100] flex items-center justify-center px-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="close"></div>
+        
+        <!-- Panel -->
+        <div class="relative z-10 w-full max-w-md bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] shadow-2xl p-8">
+          <h3 class="font-black text-xl mb-6 text-gray-900 dark:text-white">Reportar publicación</h3>
+          
+          <div class="mb-5">
+            <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Motivo</label>
+            <select v-model="form.reason" class="w-full bg-gray-100 dark:bg-black/40 border border-light-border dark:border-dark-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-500/50 dark:text-white transition-all">
+              <option value="">Selecciona un motivo</option>
+              <option>Lenguaje ofensivo</option>
+              <option>Imagen explícita/indecente</option>
+              <option>Spam</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          
+          <div class="mb-5">
+            <label class="block text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2">Comentario (opcional)</label>
+            <textarea v-model="form.comment" rows="3" class="w-full bg-gray-100 dark:bg-black/40 border border-light-border dark:border-dark-border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-rose-500/50 dark:text-white transition-all resize-none" placeholder="Agrega contexto o ejemplos"></textarea>
+          </div>
+          
+          <div class="mb-5">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" v-model="form.flags.image" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 dark:bg-dark-surface text-rose-500 focus:ring-rose-500" />
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Contiene imagen explícita</span>
+            </label>
+          </div>
 
-    <div v-if="detected" class="mb-2 text-yellow-700">Se ha detectado lenguaje potencialmente ofensivo en tu comentario.</div>
+          <div v-if="detected" class="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs font-bold text-amber-700 dark:text-amber-400">
+            Se ha detectado lenguaje potencialmente ofensivo en tu comentario.
+          </div>
 
-    <div class="flex gap-2 mt-3">
-      <button class="px-3 py-1 bg-red-600 text-white rounded" @click.prevent="submit">Enviar reporte</button>
-      <button class="px-3 py-1 bg-gray-300 rounded" @click.prevent="close">Cancelar</button>
-    </div>
-  </div>
+          <div class="flex gap-3">
+            <button class="flex-1 py-4 text-xs font-black tracking-widest uppercase border border-light-border dark:border-dark-border text-gray-600 dark:text-gray-400 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all" @click.prevent="close">
+              Cancelar
+            </button>
+            <button class="flex-1 py-4 text-xs font-black tracking-widest uppercase bg-rose-600 hover:bg-rose-500 text-white rounded-2xl shadow-lg shadow-rose-500/20 transition-all active:scale-95 disabled:opacity-50" @click.prevent="submit" :disabled="form.processing">
+              Enviar reporte
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: all 0.3s ease;
+}
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
 </style>

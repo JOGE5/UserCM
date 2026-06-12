@@ -16,13 +16,18 @@ defineProps({
 <template>
     <AppLayout title="Profile">
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Edicion de Perfil
-            </h2>
+            <div class="flex flex-col gap-2">
+                <h2 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
+                    Ajustes de <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-500 to-purple-500">Perfil</span>
+                </h2>
+                <p class="text-[10px] font-bold text-brand-400/80 uppercase tracking-widest mt-1">
+                    Configuración y Seguridad
+                </p>
+            </div>
         </template>
 
         <div>
-            <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto py-10 sm:px-6 lg:px-8 space-y-10">
                 <div v-if="$page.props.jetstream.canUpdateProfileInformation">
                     <UpdateProfileInformationForm :user="$page.props.auth.user" />
 

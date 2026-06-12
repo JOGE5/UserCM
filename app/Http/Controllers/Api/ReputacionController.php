@@ -58,6 +58,11 @@ class ReputacionController extends Controller
             // Actualizar estado del usuario calificado
             $usuario = User::find($userId);
             if ($usuario) {
+                // Gamificación: Dar XP si la calificación es buena (4 o 5 estrellas)
+                if ($validated['Puntuacion'] >= 4 && $usuario->usuarioCampusMarket) {
+                    $usuario->usuarioCampusMarket->addExperiencia(50);
+                }
+
                 $reputacion = $this->markovService->actualizarEstado($usuario);
                 $promedio = $this->markovService->calcularPromedioCalificaciones($usuario);
                 $totalCalificaciones = \App\Models\ReputacionEntreUsuarios::where('ID_Usuario_Calificado', $usuario->id)->count();

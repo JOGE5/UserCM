@@ -38,6 +38,10 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            'categoriasGlobales' => fn () => \App\Models\Categorias::all(),
+            'carrerasGlobales' => fn () => \App\Models\Carrera::all(),
+            'universidadesGlobales' => fn () => \App\Models\Universidad::all(),
+            'userPerfil' => fn () => Auth::check() ? Auth::user()->usuarioCampusMarket : null,
             'unreadCount' => fn () => Auth::check()
                 ? DB::table('chat_users as cu')
                     ->where('cu.user_id', Auth::id())

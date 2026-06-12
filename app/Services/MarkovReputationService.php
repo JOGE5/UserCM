@@ -58,9 +58,9 @@ class MarkovReputationService
     }
 
     /**
-     * Aplica la matriz de transición
+     * Aplica la matriz de transición dinámicamente basándose en el comportamiento real del usuario (Gamificación).
      */
-    public function aplicarTransicion(string $estadoActual): array
+    public function aplicarTransicion(User $user, string $estadoActual): array
     {
         $estadoIndex = array_search($estadoActual, self::STATES);
 
@@ -69,6 +69,45 @@ class MarkovReputationService
         }
 
         $transiciones = self::TRANSITION_MATRIX[$estadoIndex];
+
+        // Lógica Dinámica de Markov (Gamificación)
+        $perfil = $user->usuarioCampusMarket;
+        $xp = $perfil ? $perfil->experiencia : 0;
+        
+        // Obtener reportes asociados a publicaciones del usuario (simulado si no hay relación directa)
+        $reportsCount = DB::table('reportsPubli')
+            ->where('reportable_type', \App\Models\Publicaciones::class)
+            ->whereIn('reportable_id', function($q) use ($perfil) {
+                if ($perfil) {
+                    $q->select('id')->from('publicaciones')->where('ID_Vendedor', $perfil->id);
+                } else {
+                    $q->select('id')->from('publicaciones')->where('ID_Vendedor', 0);
+                }
+            })
+            ->count();
+
+        // Si tiene muchos reportes, penalizar empujando la probabilidad hacia "Malo" o "Regular"
+        if ($reportsCount > 0) {
+            $penalizacion = min(0.30, $reportsCount * 0.10); // Máximo 30% de penalización
+            $transiciones[0] += $penalizacion; // Aumentar "Malo"
+            $transiciones[2] = max(0, $transiciones[2] - ($penalizacion / 2)); // Reducir "Bueno"
+            $transiciones[3] = max(0, $transiciones[3] - ($penalizacion / 2)); // Reducir "Excelente"
+        }
+
+        // Si tiene mucha experiencia (Gamificación alta), premiar empujando probabilidad a "Bueno" o "Excelente"
+        if ($xp > 100) {
+            $bonificacion = min(0.20, floor($xp / 100) * 0.05); // +5% por nivel, max 20%
+            $transiciones[3] += $bonificacion; // Aumentar "Excelente"
+            $transiciones[2] += ($bonificacion / 2); // Aumentar "Bueno"
+            $transiciones[0] = max(0, $transiciones[0] - $bonificacion); // Reducir "Malo"
+            $transiciones[1] = max(0, $transiciones[1] - ($bonificacion / 2)); // Reducir "Regular"
+        }
+
+        // Normalizar para asegurar que sumen exactamente 1.0 (100%)
+        $suma = array_sum($transiciones);
+        if ($suma > 0) {
+            $transiciones = array_map(function($val) use ($suma) { return $val / $suma; }, $transiciones);
+        }
 
         return [
             'p_malo' => $transiciones[0],
@@ -117,7 +156,7 @@ class MarkovReputationService
             $estadoBase = $this->determinarEstadoPorPromedio($promedio);
         }
 
-        $probabilidades = $this->aplicarTransicion($estadoBase);
+        $probabilidades = $this->aplicarTransicion($user, $estadoBase);
         $estadoNuevo = $this->obtenerEstadoMayorProbabilidad($probabilidades);
 
         $reputacion = ReputacionEstado::updateOrCreate(

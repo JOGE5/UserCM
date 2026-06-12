@@ -111,6 +111,17 @@ function onCalificacionExitosa(data) {
               <BadgeCheck v-if="vendedor.verificado" class="w-6 h-6 text-sky-500 shrink-0" title="Vendedor verificado" />
             </div>
 
+            <!-- Gamificación: Insignia y Nivel -->
+            <div class="flex items-center gap-2 mt-2 mb-3">
+              <div class="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                <Award class="w-3 h-3" />
+                {{ vendedor.insignia }}
+              </div>
+              <div class="px-3 py-1 bg-brand-500/10 border border-brand-500/20 text-brand-600 dark:text-brand-400 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+                Nivel {{ vendedor.nivel }}
+              </div>
+            </div>
+
             <!-- Carrera / Universidad -->
             <div v-if="vendedor.carrera" class="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
               <BookOpen class="w-3 h-3" />

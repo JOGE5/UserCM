@@ -1,19 +1,18 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
+import { ref, computed, onMounted } from 'vue';
+import { Link, usePage, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ForumArea from '@/Components/ForumArea.vue';
 import { 
     MessageSquare, 
     Search, 
     Plus, 
-    TrendingUp, 
-    Sparkles, 
-    ArrowRight,
     MessageCircle,
     User,
     Calendar,
     ChevronRight,
-    Hash
+    Hash,
+    Lock
 } from 'lucide-vue-next';
 
 const page = usePage();
@@ -21,6 +20,16 @@ const items = computed(() => (page.props.foros ?? page.props.productos) ?? []);
 
 const selectedCategory = ref(null);
 const searchTerm = ref("");
+const activeForoId = ref(null);
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const foroIdParam = urlParams.get('foro_id');
+    if (foroIdParam) {
+        activeForoId.value = parseInt(foroIdParam);
+        window.history.replaceState({}, '', route('productos'));
+    }
+});
 
 const categories = computed(() => {
     if (!items.value || items.value.length === 0) return [];
@@ -59,158 +68,155 @@ const formatDate = (dateString) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(date);
 };
+
+const selectForo = (foro) => {
+    activeForoId.value = foro.ID_Foro || foro.id;
+};
 </script>
 
 <template>
     <AppLayout title="Foros">
-        <template #header>
-            <div class="flex flex-col gap-2">
-                <div class="flex items-center gap-2 text-brand-500 dark:text-brand-400 font-black tracking-widest text-[10px] uppercase">
-                    <MessageSquare class="w-3 h-3" />
-                    <span>Comunidad Universitaria</span>
-                </div>
-                <h1 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-                    Foros de <span class="text-brand-600 dark:text-brand-400">Discusión</span>
-                </h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-2xl">
-                    Comparte ideas, dudas y proyectos con compañeros de todas las facultades.
-                </p>
-            </div>
-        </template>
-
-        <div class="space-y-12 pb-20">
-            <!-- Barra de Herramientas -->
-            <div class="sticky top-24 z-30 flex flex-col gap-4 p-5 lg:flex-row lg:items-center bg-white/80 dark:bg-dark-surface/80 backdrop-blur-2xl border border-light-border dark:border-dark-border rounded-[2.5rem] shadow-xl shadow-black/5">
-                <div class="relative flex-1 group">
-                    <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
-                    <input
-                        type="text"
-                        v-model="searchTerm"
-                        class="w-full py-3.5 pl-12 pr-4 text-sm bg-gray-100/50 dark:bg-black/40 border-0 focus:ring-2 focus:ring-brand-500/50 rounded-2xl transition-all dark:text-white dark:placeholder-gray-500"
-                        placeholder="Buscar en los foros..."
-                    >
-                </div>
-
-                <div class="flex flex-wrap items-center gap-2 lg:border-l lg:border-light-border dark:lg:border-dark-border lg:pl-4">
-                    <button
-                        @click="selectedCategory = null"
-                        :class="[
-                            'px-5 py-2.5 text-[10px] font-black tracking-widest uppercase rounded-xl border transition-all duration-300',
-                            selectedCategory === null 
-                                ? 'bg-brand-500 border-brand-400 text-white shadow-lg shadow-brand-500/30' 
-                                : 'bg-white dark:bg-dark-surface border-light-border dark:border-dark-border text-gray-500 dark:text-gray-400 hover:border-brand-500/50'
-                        ]"
-                    >
-                        Todos
-                    </button>
-                    <button
-                        v-for="cat in categories"
-                        :key="cat.Cod_Categoria"
-                        @click="selectedCategory = cat.Cod_Categoria"
-                        :class="[
-                            'px-5 py-2.5 text-[10px] font-black tracking-widest uppercase rounded-xl border transition-all duration-300',
-                            selectedCategory === cat.Cod_Categoria 
-                                ? 'bg-brand-500 border-brand-400 text-white shadow-lg shadow-brand-500/30' 
-                                : 'bg-white dark:bg-dark-surface border-light-border dark:border-dark-border text-gray-500 dark:text-gray-400 hover:border-brand-500/50'
-                        ]"
-                    >
-                        {{ cat.Nombre_Categoria }}
-                    </button>
-                </div>
-
-                <Link 
-                    :href="route('productos.create')" 
-                    class="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-brand-500 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-500/20"
-                >
-                    <Plus class="w-4 h-4" />
-                    Nueva Discusión
-                </Link>
-            </div>
-
-            <!-- Grid de Foros -->
-            <div v-if="filteredItems.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <article v-for="foro in filteredItems" :key="foro.ID_Foro || foro.id" class="group relative flex flex-col bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] overflow-hidden hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-500">
-                    <!-- Imagen de cabecera del foro (opcional) -->
-                    <div class="relative h-48 w-full overflow-hidden bg-gray-100 dark:bg-black/20">
-                        <img 
-                            v-if="foro.Imagen_Foro" 
-                            :src="getImageUrl(foro.Imagen_Foro)" 
-                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                        />
-                        <div v-else class="w-full h-full flex items-center justify-center">
-                            <Hash class="w-12 h-12 text-gray-200 dark:text-white/5" />
+        <!-- Eliminamos el header estándar para darle el 100% de la altura al Workspace -->
+        
+        <div class="h-[calc(100vh-73px)] pt-6 pb-6 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto w-full flex overflow-hidden">
+            
+            <!-- Panel Izquierdo: Lista de Salas -->
+            <div 
+                class="flex flex-col w-full md:w-[380px] lg:w-[450px] shrink-0 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-xl border border-light-border dark:border-dark-border rounded-[2.5rem] shadow-2xl shadow-brand-500/5 overflow-hidden transition-all duration-300 relative z-20"
+                :class="activeForoId ? 'hidden md:flex' : 'flex'"
+            >
+                <div class="p-6 pb-4 border-b border-light-border dark:border-dark-border bg-white/50 dark:bg-black/20 shrink-0">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+                                Salas de Chat
+                                <span class="px-2 py-1 bg-brand-500/10 text-brand-600 dark:text-brand-400 text-[10px] uppercase tracking-widest rounded-full font-bold border border-brand-500/20">{{ items.length }}</span>
+                            </h1>
+                            <p class="text-[10px] text-gray-500 mt-1 font-bold">Comunidad Universitaria</p>
                         </div>
-                        
-                        <!-- Badge de Categoría -->
-                        <div class="absolute top-4 left-4 px-3 py-1.5 bg-white/90 dark:bg-black/60 backdrop-blur-md rounded-xl border border-white/20">
-                            <span class="text-[9px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-tighter">
-                                {{ foro.categoria?.Nombre_Categoria || 'General' }}
-                            </span>
-                        </div>
+                        <Link 
+                            :href="route('productos.create')" 
+                            class="flex items-center justify-center w-10 h-10 bg-brand-600 text-white rounded-full hover:bg-brand-500 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-500/20"
+                            title="Nueva Sala"
+                        >
+                            <Plus class="w-5 h-5" />
+                        </Link>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="relative group mb-4">
+                        <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
+                        <input
+                            type="text"
+                            v-model="searchTerm"
+                            class="w-full py-3 pl-11 pr-4 text-sm bg-gray-100/50 dark:bg-black/40 border-0 focus:ring-2 focus:ring-brand-500/50 rounded-2xl transition-all dark:text-white dark:placeholder-gray-500 outline-none"
+                            placeholder="Buscar temas o salas..."
+                        >
                     </div>
 
-                    <div class="p-8 flex-1 flex flex-col">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-9 h-9 rounded-full bg-brand-500/10 border border-brand-500/20 flex items-center justify-center overflow-hidden shrink-0">
-                                <img v-if="foro.creador?.user?.profile_photo_url" :src="foro.creador.user.profile_photo_url" class="w-full h-full object-cover" />
-                                <User v-else class="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                            </div>
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest leading-none truncate">
-                                    {{ foro.creador?.user?.name ?? 'Comunidad' }}
-                                </span>
-                                <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">{{ formatDate(foro.created_at) }}</span>
-                            </div>
-                        </div>
-
-                        <h3 class="text-xl font-black text-gray-900 dark:text-white mb-3 line-clamp-2 min-h-[3.5rem] group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                            {{ foro.Titulo_Foro || 'Sin Título' }}
-                        </h3>
-
-                        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed line-clamp-3 mb-6 flex-1">
-                            {{ foro.Descripcion_Foro || 'Inicia la conversación en este nuevo foro de la comunidad.' }}
-                        </p>
-
-                        <div class="flex items-center justify-between pt-6 border-t border-light-border/50 dark:border-dark-border/50">
-                            <div class="flex items-center gap-4 text-gray-400">
-                                <div class="flex items-center gap-1.5">
-                                    <MessageCircle class="w-4 h-4" />
-                                    <span class="text-[10px] font-black">{{ foro.comentarios_count ?? 0 }}</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                    <TrendingUp class="w-4 h-4" />
-                                    <span class="text-[10px] font-black">Activo</span>
-                                </div>
-                            </div>
-
-                            <Link :href="route('productos.show', foro.ID_Foro || foro.id)" class="flex items-center gap-2 text-[10px] font-black text-brand-600 dark:text-brand-400 uppercase tracking-widest hover:translate-x-1 transition-transform">
-                                Unirse al hilo
-                                <ChevronRight class="w-4 h-4" />
-                            </Link>
-                        </div>
+                    <!-- Filtros Inteligentes -->
+                    <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                        <button @click="selectedCategory = null" :class="['px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap', selectedCategory === null ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white']">
+                            Todas
+                        </button>
+                        <button v-for="cat in categories" :key="cat.Cod_Categoria" @click="selectedCategory = cat.Cod_Categoria" :class="['px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1', selectedCategory === cat.Cod_Categoria ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white']">
+                            {{ cat.Nombre_Categoria }}
+                        </button>
                     </div>
-                </article>
+                </div>
+
+                <!-- Lista de Salas -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 bg-gray-50/30 dark:bg-black/10">
+                    <div v-for="foro in filteredItems" :key="foro.ID_Foro || foro.id" class="group relative">
+                        <button
+                            @click="selectForo(foro)"
+                            class="w-full text-left p-4 rounded-3xl transition-all relative overflow-hidden"
+                            :class="activeForoId === (foro.ID_Foro || foro.id) ? 'bg-brand-500/10 border-brand-500/30 shadow-inner' : 'hover:bg-white dark:hover:bg-white/5 border-transparent'"
+                            style="border-width: 1px"
+                        >
+                            <div class="relative flex items-center gap-4">
+                                <!-- Avatar de la sala -->
+                                <div class="relative flex-shrink-0">
+                                    <div v-if="foro.Imagen_Foro" class="w-12 h-12 rounded-full overflow-hidden shadow-md">
+                                        <img :src="getImageUrl(foro.Imagen_Foro)" class="w-full h-full object-cover" />
+                                    </div>
+                                    <div v-else class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 shadow-md flex items-center justify-center">
+                                        <Hash class="w-6 h-6 text-white" />
+                                    </div>
+                                    
+                                    <div v-if="foro.tipo_acceso === 'exclusivo'" class="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center bg-rose-500 border-2 border-white dark:border-dark-border rounded-full shadow-lg">
+                                        <Lock class="w-3 h-3 text-white" />
+                                    </div>
+                                </div>
+
+                                <!-- Info -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h3 class="text-sm font-black truncate text-gray-900 dark:text-white">
+                                            {{ foro.Titulo_Foro || 'Sin Título' }}
+                                        </h3>
+                                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-2 shrink-0">
+                                            {{ foro.comentarios_count ?? 0 }} msjs
+                                        </span>
+                                    </div>
+                                    <p class="text-xs truncate text-gray-500 dark:text-gray-400 font-medium">
+                                        {{ foro.Descripcion_Foro }}
+                                    </p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Empty States -->
+                    <div v-if="filteredItems.length === 0" class="flex flex-col items-center justify-center py-16 text-center opacity-60">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4">
+                            <MessageSquare class="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p class="text-xs font-black uppercase tracking-widest text-gray-500">No hay salas disponibles</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Empty State -->
-            <div v-else class="relative flex flex-col items-center justify-center py-32 px-10 text-center bg-white/30 dark:bg-dark-surface/30 backdrop-blur-md border border-light-border dark:border-dark-border rounded-[4rem] overflow-hidden">
-                <div class="p-8 rounded-full bg-gray-50 dark:bg-black/40 mb-8 border border-white dark:border-white/5">
-                    <MessageSquare class="w-16 h-16 text-gray-300 dark:text-gray-600" />
+            <!-- Panel Derecho: Área de Chat -->
+            <div 
+                class="flex-1 flex flex-col relative bg-transparent overflow-hidden"
+                :class="activeForoId ? 'flex' : 'hidden md:flex'"
+            >
+                <div v-if="activeForoId" class="absolute inset-0 md:ml-4">
+                    <ForumArea 
+                        :foro-id="activeForoId" 
+                        @close="activeForoId = null" 
+                        class="h-full rounded-[2.5rem] shadow-2xl shadow-brand-500/10 border border-light-border dark:border-dark-border" 
+                    />
                 </div>
-                <h3 class="text-3xl font-black text-gray-900 dark:text-white mb-3">No hay discusiones aún</h3>
-                <p class="text-gray-500 dark:text-gray-400 max-w-lg mb-10 text-lg font-medium">Sé el primero en iniciar un tema de conversación o ajusta los filtros de búsqueda.</p>
-                <button @click="searchTerm = ''; selectedCategory = null" class="px-8 py-3.5 bg-brand-600 text-white font-black rounded-2xl hover:bg-brand-500 transition-all">Limpiar Filtros</button>
+                
+                <!-- Estado Vacío -->
+                <div v-else class="absolute inset-0 md:ml-4 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-dark-surface/40 backdrop-blur-md rounded-[2.5rem] border border-light-border dark:border-dark-border">
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+                    <div class="relative z-10 p-8 rounded-full bg-white/50 dark:bg-black/20 mb-8 shadow-inner border border-white dark:border-white/5">
+                        <Hash class="w-16 h-16 text-brand-500/50" />
+                    </div>
+                    <h2 class="relative z-10 text-3xl font-black text-gray-900 dark:text-white mb-2">Comunidad en Vivo</h2>
+                    <p class="relative z-10 text-sm text-gray-500 font-medium max-w-sm mb-6">
+                        Selecciona una sala de la izquierda para comenzar a chatear o crea un nuevo espacio de discusión.
+                    </p>
+                    <Link 
+                        :href="route('productos.create')" 
+                        class="relative z-10 flex items-center justify-center gap-2 px-6 py-3 bg-brand-600 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-brand-500 transition-all shadow-lg shadow-brand-500/20"
+                    >
+                        <Plus class="w-4 h-4" />
+                        Nueva Sala
+                    </Link>
+                </div>
             </div>
+
         </div>
     </AppLayout>
 </template>
 
 <style scoped>
-.animate-in {
-    animation: slideUp 0.6s ease-out;
-}
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.1); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(124,58,237,0.3); }
 </style>

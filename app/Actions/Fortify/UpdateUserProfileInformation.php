@@ -21,6 +21,10 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
+            'apellidos' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:20'],
+            'Cod_Carrera' => ['nullable', 'integer', 'exists:carreras,Cod_Carrera'],
+            'Cod_Universidad' => ['nullable', 'integer', 'exists:universidades,Cod_Universidad'],
         ])->validateWithBag('updateProfileInformation');
 
         if (isset($input['photo'])) {
@@ -35,6 +39,16 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
                 'name' => $input['name'],
                 'email' => $input['email'],
             ])->save();
+        }
+
+        // Actualizar datos extendidos
+        if ($user->usuarioCampusMarket) {
+            $user->usuarioCampusMarket->update([
+                'apellidos' => $input['apellidos'] ?? $user->usuarioCampusMarket->apellidos,
+                'telefono' => $input['telefono'] ?? $user->usuarioCampusMarket->telefono,
+                'Cod_Carrera' => $input['Cod_Carrera'] ?? $user->usuarioCampusMarket->Cod_Carrera,
+                'Cod_Universidad' => $input['Cod_Universidad'] ?? $user->usuarioCampusMarket->Cod_Universidad,
+            ]);
         }
     }
 

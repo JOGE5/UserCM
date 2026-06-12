@@ -17,7 +17,6 @@ class EncryptSensitiveFields extends Command
         $this->info('Encriptando campos sensibles...');
 
         $this->encryptTelefono();
-        $this->encryptDescriptorFacial();
 
         $this->info('Proceso completado.');
         return Command::SUCCESS;
@@ -52,29 +51,5 @@ class EncryptSensitiveFields extends Command
         }
 
         $this->line("  Telefono: {$updated}/{$rows->count()} registros encriptados.");
-    }
-
-    private function encryptDescriptorFacial(): void
-    {
-        $rows = DB::table('users')
-            ->whereNotNull('descriptor_facial')
-            ->select('id', 'descriptor_facial')
-            ->get();
-
-        $updated = 0;
-        foreach ($rows as $row) {
-            $raw = $row->descriptor_facial;
-            if ($this->isAlreadyEncrypted($raw)) {
-                continue;
-            }
-            // Garantiza que sea JSON string antes de encriptar
-            $jsonStr = is_string($raw) ? $raw : json_encode($raw);
-            DB::table('users')
-                ->where('id', $row->id)
-                ->update(['descriptor_facial' => Crypt::encryptString($jsonStr)]);
-            $updated++;
-        }
-
-        $this->line("  descriptor_facial: {$updated}/{$rows->count()} registros encriptados.");
     }
 }

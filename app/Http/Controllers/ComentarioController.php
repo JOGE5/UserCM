@@ -15,11 +15,19 @@ class ComentarioController extends Controller
             'texto' => ['required','string','max:2000', new NoProfanity()],
         ]);
 
-        Comentario::create([
+        $comentario = Comentario::create([
             'foro_id' => $foro->ID_Foro,
             'user_id' => auth()->id(),
             'texto' => $request->input('texto'),
         ]);
+
+        $comentario->load('usuario');
+
+        broadcast(new \App\Events\ForumMessageSent($comentario))->toOthers();
+
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json($comentario);
+        }
 
         return back();
     }

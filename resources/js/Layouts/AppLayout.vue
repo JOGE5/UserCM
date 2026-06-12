@@ -5,6 +5,7 @@ import { useDarkMode } from '@/Composables/useDarkMode';
 import Banner from '@/Components/Banner.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import CreateModal from '@/Components/CreateModal.vue';
 import { 
     LayoutDashboard, 
     MessageSquare, 
@@ -18,15 +19,13 @@ import {
     User,
     Settings,
     Bell,
-    ChevronLeft,
+    ChevronDown,
     ChevronRight,
-    PanelLeftClose,
-    PanelLeftOpen,
     Menu,
     X,
     Sparkles,
     Plus,
-    ChevronDown
+    ShoppingCart
 } from 'lucide-vue-next';
 
 defineProps({
@@ -35,21 +34,37 @@ defineProps({
 
 const page = usePage();
 const { isDark, toggleDark } = useDarkMode();
-const sidebarOpen = ref(false); // Móvil
-const sidebarCollapsed = ref(false); // Desktop
+const mobileMenuOpen = ref(false);
+const showCreateModal = ref(false);
 
 const logout = () => {
     router.post(route('logout'));
 };
 
 const unreadCount = computed(() => page.props.unreadCount ?? 0);
+const categoriasGlobales = computed(() => page.props.categoriasGlobales ?? []);
+
+// Evento global para abrir el modal desde cualquier componente
+import { onMounted, onUnmounted } from 'vue';
+
+const openModalHandler = () => {
+    showCreateModal.value = true;
+};
+
+onMounted(() => {
+    window.addEventListener('open-create-modal', openModalHandler);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('open-create-modal', openModalHandler);
+});
 
 const navigation = [
-    { name: 'Publicaciones', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
-    { name: 'Mensajes', href: route('mensajes.index'), icon: MessageSquare, active: route().current('mensajes.index'), badge: unreadCount },
+    { name: 'Tienda', href: route('dashboard'), icon: Sparkles, active: route().current('dashboard') },
     { name: 'Foros', href: route('productos'), icon: Layers, active: route().current('productos') },
-    { name: 'Borradores', href: route('borradores'), icon: Archive, active: route().current('borradores') },
+    { name: 'Mensajes', href: route('mensajes.index'), icon: MessageSquare, active: route().current('mensajes.index'), badge: unreadCount },
     { name: 'Favoritos', href: route('favoritos.index'), icon: Heart, active: route().current('favoritos.index') },
+    { name: 'Mis Publicaciones', href: route('borradores'), icon: Archive, active: route().current('borradores') },
 ];
 
 const user = computed(() => page.props.auth.user);
@@ -61,229 +76,231 @@ const profilePhotoUrl = computed(() => {
 </script>
 
 <template>
-    <div class="min-h-screen font-sans antialiased text-gray-900 bg-light-bg dark:bg-dark-bg transition-colors duration-500">
+    <div class="min-h-screen bg-dynamic font-sans antialiased text-light-text dark:text-dark-text transition-colors duration-500 relative overflow-x-hidden flex flex-col">
         <Head :title="title" />
-
         <Banner />
 
-        <!-- Sidebar Móvil Overlay -->
-        <Transition name="fade">
-            <div v-if="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden"></div>
-        </Transition>
+        <!-- Decoración de fondo extra (Luces) -->
+        <div class="absolute top-[5%] left-[-10%] w-[40%] h-[40%] rounded-full bg-brand-500/20 blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-[20%] right-[-10%] w-[30%] h-[30%] rounded-full bg-purple-500/20 blur-[100px] pointer-events-none"></div>
 
-        <!-- SIDEBAR -->
-        <aside 
-            :class="[
-                'fixed inset-y-0 left-0 z-[70] flex flex-col transition-all duration-300 ease-in-out border-r shadow-2xl backdrop-blur-xl',
-                sidebarCollapsed ? 'lg:w-20' : 'lg:w-64',
-                sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0',
-                'bg-white/90 dark:bg-dark-surface/95 border-light-border dark:border-dark-border'
-            ]"
-        >
-            <!-- Logo Area -->
-            <div class="relative flex items-center h-24 px-6 shrink-0 group">
-                <Link :href="route('dashboard')" class="flex items-center gap-3 overflow-hidden">
-                    <div class="flex items-center justify-center shrink-0">
-                        <img 
-                            src="/images/posters/logo-team.png" 
-                            alt="Logo" 
-                            :class="['transition-all duration-500 object-contain', sidebarCollapsed ? 'w-10 h-10' : 'w-12 h-12']"
-                        />
-                    </div>
-                    <div 
-                        v-show="!sidebarCollapsed" 
-                        class="flex flex-col transition-all duration-300 whitespace-nowrap"
-                        :class="sidebarCollapsed ? 'opacity-0' : 'opacity-100'"
-                    >
-                        <span class="text-sm font-black tracking-tighter text-brand-600 dark:text-brand-400 uppercase">Campus Market</span>
-                        <span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 tracking-widest uppercase">Ecosistema Uni</span>
+        <!-- NAVBAR PRINCIPAL (E-COMMERCE) -->
+        <header class="sticky top-0 z-[100] w-full glass-nav px-4 sm:px-6 lg:px-12 py-3 flex items-center justify-between transition-all duration-300">
+            <div class="flex items-center gap-2">
+                <Link :href="route('dashboard')" class="flex items-center gap-3 float-3d group">
+                    <div class="px-3 py-1.5 bg-white/10 dark:bg-black/10 backdrop-blur-md rounded-xl shadow-sm hover:shadow-lg group-hover:bg-brand-500/10 transition-all flex items-center justify-center">
+                        <img src="/images/posters/logo-team.png" alt="Logo" class="h-6 sm:h-8 w-auto object-contain drop-shadow-md" />
                     </div>
                 </Link>
-
-                <!-- Toggle Button (Desktop) -->
-                <button 
-                    @click="sidebarCollapsed = !sidebarCollapsed"
-                    class="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-7 h-7 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-full items-center justify-center shadow-lg hover:text-brand-500 transition-all z-50 text-gray-400 hover:scale-110 active:scale-90"
-                >
-                    <PanelLeftClose v-if="!sidebarCollapsed" class="w-4 h-4" />
-                    <PanelLeftOpen v-else class="w-4 h-4" />
-                </button>
             </div>
 
-            <!-- Navegación -->
-            <nav class="flex-1 px-3 py-6 space-y-2 overflow-y-auto custom-scrollbar overflow-x-hidden">
-                <div v-for="item in navigation" :key="item.name">
-                    <Link 
-                        :href="item.href"
-                        :class="[
-                            'flex items-center gap-3 px-3 py-3 rounded-2xl font-bold transition-all duration-300 group relative',
-                            item.active 
-                                ? 'bg-brand-600 text-white shadow-[0_8px_20px_-6px_rgba(124,58,237,0.5)]' 
-                                : 'text-gray-500 dark:text-gray-400 hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400'
-                        ]"
+            <!-- Centro: Navegación Principal (Desktop) -->
+            <nav class="hidden lg:flex items-center gap-1 bg-white/30 dark:bg-black/30 backdrop-blur-md border border-white/40 dark:border-white/10 p-1.5 rounded-[2rem] shadow-sm">
+                <Link 
+                    v-for="item in navigation" 
+                    :key="item.name"
+                    :href="item.href"
+                    :class="[
+                        'relative px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2 group overflow-hidden',
+                        item.active 
+                            ? 'text-white shadow-lg shadow-brand-500/40' 
+                            : 'text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white/50 dark:hover:bg-white/10'
+                    ]"
+                >
+                    <!-- Fondo animado activo -->
+                    <div v-if="item.active" class="absolute inset-0 bg-gradient-to-r from-brand-600 to-purple-600 z-0"></div>
+                    
+                    <component :is="item.icon" class="w-4 h-4 z-10 relative group-hover:scale-110 transition-transform" />
+                    <span class="z-10 relative tracking-wide uppercase">{{ item.name }}</span>
+                    
+                    <span v-if="item.badge?.value > 0"
+                        class="z-10 relative ml-1 min-w-[1.2rem] h-[1.2rem] flex items-center justify-center bg-rose-500 text-white text-[9px] font-black rounded-full shadow-lg animate-pulse"
                     >
-                        <div class="relative shrink-0">
-                            <component :is="item.icon" :class="['w-6 h-6 transition-transform duration-300', item.active ? '' : 'group-hover:scale-110']" />
-                            <span v-if="item.badge?.value > 0"
-                                class="absolute -top-1.5 -right-1.5 min-w-[1.1rem] h-[1.1rem] flex items-center justify-center bg-rose-500 text-white text-[9px] font-black rounded-full px-0.5 shadow-lg shadow-rose-500/40 animate-pulse"
-                            >
-                                {{ item.badge.value > 99 ? '99+' : item.badge.value }}
-                            </span>
-                        </div>
-                        <span
-                            class="text-sm transition-all duration-300 flex-1"
-                            :class="[sidebarCollapsed ? 'lg:opacity-0 lg:w-0' : 'opacity-100 w-auto']"
-                        >
-                            {{ item.name }}
-                        </span>
-                        <span v-if="!sidebarCollapsed && item.badge?.value > 0"
-                            class="shrink-0 min-w-[1.4rem] h-[1.4rem] flex items-center justify-center bg-rose-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg shadow-rose-500/40"
-                        >
-                            {{ item.badge.value > 99 ? '99+' : item.badge.value }}
-                        </span>
-                    </Link>
+                        {{ item.badge.value > 99 ? '99+' : item.badge.value }}
+                    </span>
+                </Link>
+
+                <!-- Menú Dropdown de Categorías -->
+                <div class="relative z-50 float-3d ml-1 group/cat cursor-pointer">
+                    <Dropdown align="left" width="64">
+                        <template #trigger>
+                            <button class="relative px-5 py-2.5 rounded-full text-xs font-bold transition-all duration-300 flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white/50 dark:hover:bg-white/10 overflow-hidden">
+                                <Layers class="w-4 h-4 z-10 relative transition-transform group-hover/cat:scale-110" />
+                                <span class="z-10 relative tracking-wide uppercase">Categorías</span>
+                                <ChevronDown class="w-3 h-3 z-10 relative ml-1 opacity-60" />
+                            </button>
+                        </template>
+
+                        <template #content>
+                            <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 !bg-white/90 dark:!bg-[#16161a]/90 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                <div class="px-4 py-3 bg-brand-50/50 dark:bg-brand-500/10 border-b border-light-border dark:border-dark-border sticky top-0 backdrop-blur-md z-10">
+                                    <p class="text-[10px] font-black tracking-widest text-brand-600 dark:text-brand-400 uppercase">Explorar Catálogo</p>
+                                </div>
+                                <div class="py-2 flex flex-col">
+                                    <Link 
+                                        :href="route('dashboard')" 
+                                        class="px-5 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-2"
+                                    >
+                                        <Sparkles class="w-3.5 h-3.5" />
+                                        <span>Todas las Categorías</span>
+                                    </Link>
+                                    <Link 
+                                        v-for="cat in categoriasGlobales" 
+                                        :key="cat.Cod_Categoria"
+                                        :href="route('dashboard', { categoria: cat.Cod_Categoria })" 
+                                        class="px-5 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-2 border-t border-light-border/50 dark:border-dark-border/50"
+                                    >
+                                        <ChevronRight class="w-3.5 h-3.5 opacity-50" />
+                                        <span>{{ cat.Nombre_Categoria }}</span>
+                                    </Link>
+                                </div>
+                            </div>
+                        </template>
+                    </Dropdown>
                 </div>
             </nav>
 
-            <!-- User Footer Sidebar -->
-            <div class="p-3 border-t border-light-border dark:border-dark-border/50">
-                <div 
-                    :class="[
-                        'flex items-center gap-3 p-2 rounded-[1.5rem] bg-gray-50 dark:bg-black/20 border border-light-border dark:border-dark-border transition-all duration-300 overflow-hidden',
-                        sidebarCollapsed ? 'justify-center' : 'px-3'
-                    ]"
-                >
-                    <div class="relative shrink-0">
-                        <img 
-                            :src="profilePhotoUrl" 
-                            class="h-10 w-10 min-w-[40px] rounded-xl object-cover ring-2 ring-brand-500/20"
-                            :alt="user?.name"
-                        />
-                    </div>
-                    
-                    <div 
-                        v-show="!sidebarCollapsed" 
-                        class="flex flex-col min-w-0 flex-1 transition-all duration-300"
-                    >
-                        <span class="text-xs font-black truncate text-gray-800 dark:text-white leading-tight">{{ user?.name }}</span>
-                        <span class="text-[9px] font-bold text-gray-400 truncate dark:text-gray-500 uppercase tracking-tighter">{{ user?.email }}</span>
-                    </div>
-
-                    <button @click="logout" v-show="!sidebarCollapsed" class="p-2 text-gray-400 hover:text-rose-500 transition-colors">
-                        <LogOut class="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main 
-            :class="[
-                'flex flex-col min-h-screen transition-all duration-300 ease-in-out',
-                sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
-            ]"
-        >
-            <!-- Top Header -->
-            <header class="sticky top-0 z-[40] h-20 flex items-center justify-between px-6 lg:px-10 bg-light-bg/80 dark:bg-dark-bg/80 backdrop-blur-xl border-b border-light-border dark:border-dark-border">
-                <div class="flex items-center gap-4">
-                    <button @click="sidebarOpen = !sidebarOpen" class="p-2.5 text-gray-500 bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-xl lg:hidden shadow-sm">
-                        <Menu class="w-5 h-5" />
-                    </button>
-
-                    <div class="hidden sm:flex items-center gap-2 text-xs font-bold text-gray-400 lg:text-[10px] uppercase tracking-widest">
-                        <span>Panel</span>
-                        <ChevronRight class="w-3 h-3" />
-                        <span class="text-brand-600 dark:text-brand-400">{{ title || 'Dashboard' }}</span>
-                    </div>
+            <!-- Derecha: Acciones, Buscador y Perfil -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- Buscar (Icono expandible o barra pequeña) -->
+                <div class="hidden md:flex relative group float-3d">
+                    <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-brand-600" />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar productos..." 
+                        class="pl-11 pr-4 py-2.5 text-xs font-medium bg-white/40 dark:bg-dark-surface/40 border border-white/50 dark:border-white/10 focus:bg-white/80 dark:focus:bg-dark-surface/80 focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 rounded-[2rem] w-48 lg:w-64 backdrop-blur-md transition-all duration-300 shadow-inner dark:text-white outline-none"
+                    />
                 </div>
 
-                <div class="flex items-center gap-2 sm:gap-4">
-                    <!-- Search -->
-                    <div class="hidden md:flex relative group">
-                        <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-brand-600" />
-                        <input 
-                            type="text" 
-                            placeholder="Buscar..." 
-                            class="pl-12 pr-4 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-light-border dark:border-dark-border focus:bg-white dark:focus:bg-black/30 focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 rounded-2xl w-64 lg:w-80 transition-all duration-300"
-                        />
-                    </div>
+                <!-- Dark Mode -->
+                <button @click="toggleDark" class="p-2.5 text-gray-600 dark:text-gray-300 bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/80 rounded-full transition-all backdrop-blur-md shadow-sm float-3d">
+                    <Sun v-if="isDark" class="w-4 h-4" />
+                    <Moon v-else class="w-4 h-4" />
+                </button>
 
-                    <!-- Actions -->
-                    <div class="flex items-center gap-2">
-                        <button @click="toggleDark" class="p-2.5 text-gray-500 hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 rounded-2xl transition-all">
-                            <Sun v-if="isDark" class="w-5 h-5" />
-                            <Moon v-else class="w-5 h-5" />
-                        </button>
+                <!-- Menú Usuario -->
+                <div class="relative z-50 float-3d">
+                    <Dropdown align="right" width="56">
+                        <template #trigger>
+                            <button class="flex items-center gap-2 p-1.5 pr-4 rounded-full bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/80 transition-all shadow-sm backdrop-blur-md">
+                                <img :src="profilePhotoUrl" class="h-8 w-8 rounded-full object-cover ring-2 ring-white/50 dark:ring-white/10" :alt="user?.name" />
+                                <span class="hidden md:inline text-xs font-bold text-gray-800 dark:text-gray-200">{{ user?.name?.split(' ')[0] }}</span>
+                                <ChevronDown class="w-3 h-3 text-gray-500" />
+                            </button>
+                        </template>
 
-                        <div class="h-8 w-px bg-light-border dark:bg-dark-border mx-2 hidden sm:block"></div>
-
-                        <!-- User Dropdown (Igual que Jetstream original pero rediseñado) -->
-                        <div class="relative">
-                            <Dropdown align="right" width="48">
-                                <template #trigger>
-                                    <button class="flex items-center gap-2 p-1.5 pr-3 rounded-2xl bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border hover:border-brand-500/50 transition-all shadow-sm">
-                                        <img :src="profilePhotoUrl" class="h-8 w-8 rounded-xl object-cover" :alt="user?.name" />
-                                        <span class="hidden md:inline text-xs font-bold text-gray-700 dark:text-gray-300">{{ user?.name?.split(' ')[0] }}</span>
-                                        <ChevronDown class="w-4 h-4 text-gray-400" />
-                                    </button>
-                                </template>
-
-                                <template #content>
-                                    <div class="block px-4 py-2 text-xs text-gray-400 font-black uppercase tracking-widest">Administrar Cuenta</div>
-                                    <DropdownLink :href="route('profile.show')">Mi Perfil</DropdownLink>
-                                    <DropdownLink v-if="$page.props.jetstream.hasApiFeatures" :href="route('api-tokens.index')">API Tokens</DropdownLink>
-                                    <div class="border-t border-light-border dark:border-dark-border" />
+                        <template #content>
+                            <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 !bg-white/90 dark:!bg-[#16161a]/90">
+                                <div class="px-4 py-3 bg-brand-50/50 dark:bg-brand-500/10 border-b border-light-border dark:border-dark-border">
+                                    <p class="text-[10px] font-black tracking-widest text-brand-600 dark:text-brand-400 uppercase">Mi Cuenta</p>
+                                    <p class="text-xs font-bold text-gray-900 dark:text-white truncate mt-1">{{ user?.email }}</p>
+                                </div>
+                                <div class="py-1">
+                                    <DropdownLink :href="route('profile.show')" class="!text-xs font-semibold">Configuración de Perfil</DropdownLink>
+                                    <div class="border-t border-light-border dark:border-dark-border my-1" />
                                     <form @submit.prevent="logout">
-                                        <DropdownLink as="button">Cerrar Sesión</DropdownLink>
+                                        <DropdownLink as="button" class="!text-xs font-semibold !text-rose-600 dark:!text-rose-400 hover:!bg-rose-50 dark:hover:!bg-rose-500/10">
+                                            Cerrar Sesión
+                                        </DropdownLink>
                                     </form>
-                                </template>
-                            </Dropdown>
-                        </div>
-
-                        <Link 
-                            :href="route('dashboard.create')" 
-                            class="hidden sm:flex items-center gap-2 ml-2 px-6 py-2.5 text-sm font-black text-white bg-brand-600 hover:bg-brand-500 rounded-2xl shadow-lg shadow-brand-500/30 active:scale-95 transition-all group"
-                        >
-                            <Plus class="w-4 h-4 group-hover:rotate-90 transition-transform" />
-                            <span>Publicar</span>
-                        </Link>
-                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </Dropdown>
                 </div>
-            </header>
 
-            <!-- Content -->
-            <div class="flex-1 p-6 lg:p-10 w-full max-w-[1700px] mx-auto">
-                <div v-if="$slots.header" class="mb-10 animate-fade-in">
+                <!-- Botón Publicar (Principal) -->
+                <button 
+                    @click="showCreateModal = true"
+                    class="hidden sm:flex items-center gap-2 ml-1 px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 rounded-full shadow-[0_8px_20px_-6px_rgba(124,58,237,0.6)] hover:shadow-[0_12px_25px_-6px_rgba(124,58,237,0.8)] transition-all float-3d group border border-white/20"
+                >
+                    <Plus class="w-4 h-4 group-hover:rotate-90 transition-transform" />
+                    <span class="tracking-widest uppercase">Vender</span>
+                </button>
+
+                <!-- Menú Hamburguesa (Móvil) -->
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden p-2.5 text-gray-600 dark:text-gray-300 bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 rounded-full shadow-sm backdrop-blur-md float-3d">
+                    <X v-if="mobileMenuOpen" class="w-5 h-5" />
+                    <Menu v-else class="w-5 h-5" />
+                </button>
+            </div>
+        </header>
+
+        <!-- Menú Móvil -->
+        <Transition name="fade">
+            <div v-if="mobileMenuOpen" class="lg:hidden fixed inset-0 z-[90] glass-panel pt-24 px-6 flex flex-col gap-4 overflow-y-auto">
+                <Link 
+                    v-for="item in navigation" 
+                    :key="item.name"
+                    :href="item.href"
+                    class="flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-black/50 border border-white/50 dark:border-white/10 shadow-sm"
+                    @click="mobileMenuOpen = false"
+                >
+                    <div class="flex items-center gap-3">
+                        <component :is="item.icon" :class="['w-5 h-5', item.active ? 'text-brand-600' : 'text-gray-500']" />
+                        <span :class="['font-bold', item.active ? 'text-brand-600' : 'text-gray-700 dark:text-gray-200']">{{ item.name }}</span>
+                    </div>
+                    <ChevronRight class="w-4 h-4 text-gray-400" />
+                </Link>
+                
+                <button 
+                    @click="mobileMenuOpen = false; showCreateModal = true"
+                    class="mt-4 flex items-center justify-center gap-2 p-4 rounded-2xl text-white font-black bg-gradient-to-r from-brand-600 to-purple-600 shadow-lg w-full"
+                >
+                    <Plus class="w-5 h-5" /> Vender Producto
+                </button>
+            </div>
+        </Transition>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 flex flex-col">
+            <!-- Header dinámico (opcional) -->
+            <div v-if="$slots.header" class="mb-8 animate-fade-in glass-panel p-6 sm:p-8 rounded-[2.5rem] relative overflow-hidden shadow-xl float-3d">
+                <div class="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none z-0"></div>
+                <div class="relative z-10">
                     <slot name="header" />
                 </div>
-                <div class="animate-fade-in">
-                    <slot />
-                </div>
             </div>
 
-            <!-- Footer -->
-            <footer class="p-8 text-center bg-white/30 dark:bg-dark-surface/10 border-t border-light-border dark:border-dark-border mt-auto">
-                <div class="flex flex-col md:flex-row items-center justify-between gap-4 max-w-[1700px] mx-auto px-6">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">&copy; {{ new Date().getFullYear() }} Campus Market • Unifranz</p>
-                    <div class="flex items-center gap-6">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Privacidad</span>
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Términos</span>
-                    </div>
-                </div>
-            </footer>
+            <!-- Main Slot -->
+            <div class="animate-fade-in flex-1">
+                <slot />
+            </div>
         </main>
+
+        <!-- FOOTER E-COMMERCE -->
+        <footer class="mt-auto glass-panel border-t border-white/20 dark:border-white/5 py-8 relative z-10">
+            <div class="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3 opacity-60">
+                    <img src="/images/posters/logo-team.png" alt="Logo" class="w-6 h-6 grayscale" />
+                    <span class="text-xs font-black tracking-[0.2em] uppercase text-gray-500 dark:text-gray-400">Campus Market E-Commerce</span>
+                </div>
+                <div class="flex items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    <a href="#" class="hover:text-brand-500 transition-colors">Términos</a>
+                    <a href="#" class="hover:text-brand-500 transition-colors">Privacidad</a>
+                    <a href="#" class="hover:text-brand-500 transition-colors">Soporte</a>
+                </div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">&copy; {{ new Date().getFullYear() }} Unifranz</p>
+            </div>
+        </footer>
+
+        <!-- Modal Global de Venta -->
+        <CreateModal :show="showCreateModal" @close="showCreateModal = false" />
     </div>
 </template>
 
 <style>
-.custom-scrollbar::-webkit-scrollbar { width: 3px; }
+/* Los estilos de fade y scrollbar se mantienen, glass-panel y bg-dynamic ya están en app.css */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-gray-200 dark:bg-white/10 rounded-full; }
+.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-brand-500/30 rounded-full hover:bg-brand-500/50; }
 
-.animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(20px) scale(0.98); } 
+    to { opacity: 1; transform: translateY(0) scale(1); } 
+}
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-body { overflow-x: hidden; }
+.fade-enter-active, .fade-leave-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-10px); }
 </style>

@@ -1,24 +1,22 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Link, usePage, router } from '@inertiajs/vue3';
+import { usePage, router } from '@inertiajs/vue3';
 import axios from 'axios';
+import ChatArea from '@/Components/ChatArea.vue';
 import {
     MessageSquare,
     Search,
-    MessageCircle,
     Inbox,
     Clock,
     ChevronRight,
     Users,
     BellOff,
-    Bell,
     EyeOff,
     Eye,
     Globe,
+    Filter
 } from 'lucide-vue-next';
-
-const route = window.route;
 
 const props = defineProps({
     chats: { type: Array, default: () => [] },
@@ -26,19 +24,40 @@ const props = defineProps({
 
 const page = usePage();
 const currentUserId = page.props.auth.user.id;
+
 const searchTerm = ref('');
-const showHidden = ref(false);
+const activeTab = ref('todos'); // 'todos', 'noleidos', 'archivados'
+const activeChatId = ref(null);
 
-const visibleChats = computed(() =>
-    props.chats.filter(c => !c.is_hidden && (
-        !searchTerm.value.trim() ||
-        chatDisplayName(c).toLowerCase().includes(searchTerm.value.toLowerCase())
-    ))
-);
+// Leer chat_id de la URL si se redirigió
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatIdParam = urlParams.get('chat_id');
+    if (chatIdParam) {
+        activeChatId.value = parseInt(chatIdParam);
+        // Limpiar la URL para que no quede el query string
+        window.history.replaceState({}, '', route('mensajes.index'));
+    }
+});
 
-const hiddenChats = computed(() =>
-    props.chats.filter(c => c.is_hidden)
-);
+const filteredChats = computed(() => {
+    let list = props.chats;
+    
+    if (activeTab.value === 'archivados') {
+        list = list.filter(c => c.is_hidden);
+    } else if (activeTab.value === 'noleidos') {
+        list = list.filter(c => !c.is_hidden && c.unread_count > 0);
+    } else {
+        list = list.filter(c => !c.is_hidden);
+    }
+
+    if (searchTerm.value.trim()) {
+        const term = searchTerm.value.toLowerCase();
+        list = list.filter(c => chatDisplayName(c).toLowerCase().includes(term));
+    }
+
+    return list;
+});
 
 const formatTime = (dateString) => {
     if (!dateString) return '';
@@ -72,231 +91,179 @@ const getLastMessage = (chat) => {
     return msg.contenido || '...';
 };
 
-const muteLoading = ref(null);
-const hideLoading = ref(null);
-
 const toggleMute = async (chat, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (muteLoading.value === chat.id) return;
-    muteLoading.value = chat.id;
-    try {
-        await axios.post(route('chats.mute', chat.id));
-        router.reload({ only: ['chats'] });
-    } finally {
-        muteLoading.value = null;
-    }
+    e.preventDefault(); e.stopPropagation();
+    await axios.post(route('chats.mute', chat.id));
+    reloadChats();
 };
 
 const toggleHide = async (chat, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (hideLoading.value === chat.id) return;
-    hideLoading.value = chat.id;
-    try {
-        await axios.post(route('chats.hide', chat.id));
-        router.reload({ only: ['chats'] });
-    } finally {
-        hideLoading.value = null;
+    e.preventDefault(); e.stopPropagation();
+    await axios.post(route('chats.hide', chat.id));
+    if (activeChatId.value === chat.id && !chat.is_hidden) {
+        activeChatId.value = null; // Cerrar si se oculta
     }
+    reloadChats();
+};
+
+const selectChat = (chat) => {
+    activeChatId.value = chat.id;
+    // Si tenía unread_count, lo refrescamos
+    if (chat.unread_count > 0) {
+        // Optimistic UI update
+        chat.unread_count = 0;
+        // La actualización real se hará cuando ChatArea llame a /show (que marca como leído)
+        setTimeout(() => reloadChats(), 500);
+    }
+};
+
+const reloadChats = () => {
+    router.reload({ only: ['chats'], preserveScroll: true });
+};
+
+// Escuchar evento del ChatArea
+const onChatUpdated = (id) => {
+    reloadChats();
 };
 </script>
 
 <template>
     <AppLayout title="Mensajes">
-        <template #header>
-            <div class="flex flex-col gap-2">
-                <div class="flex items-center gap-2 text-brand-500 dark:text-brand-400 font-black tracking-widest text-[10px] uppercase">
-                    <MessageCircle class="w-3 h-3" />
-                    <span>Centro de Comunicación</span>
+        <!-- Eliminamos el header estándar para darle el 100% de la altura al Workspace -->
+        
+        <div class="h-[calc(100vh-73px)] pt-6 pb-6 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto w-full flex overflow-hidden">
+            
+            <!-- Panel Izquierdo: Lista de Chats -->
+            <div 
+                class="flex flex-col w-full md:w-[380px] lg:w-[450px] shrink-0 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-xl border border-light-border dark:border-dark-border rounded-[2.5rem] shadow-2xl shadow-brand-500/5 overflow-hidden transition-all duration-300 relative z-20"
+                :class="activeChatId ? 'hidden md:flex' : 'flex'"
+            >
+                <div class="p-6 pb-4 border-b border-light-border dark:border-dark-border bg-white/50 dark:bg-black/20">
+                    <div class="flex items-center justify-between mb-6">
+                        <h1 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
+                            Mensajes
+                            <span class="px-2 py-1 bg-brand-500/10 text-brand-600 dark:text-brand-400 text-[10px] uppercase tracking-widest rounded-full font-bold border border-brand-500/20">{{ props.chats.length }}</span>
+                        </h1>
+                    </div>
+                    
+                    <!-- Search -->
+                    <div class="relative group mb-4">
+                        <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
+                        <input
+                            type="text"
+                            v-model="searchTerm"
+                            class="w-full py-3 pl-11 pr-4 text-sm bg-gray-100/50 dark:bg-black/40 border-0 focus:ring-2 focus:ring-brand-500/50 rounded-2xl transition-all dark:text-white dark:placeholder-gray-500"
+                            placeholder="Buscar chats..."
+                        >
+                    </div>
+
+                    <!-- Filtros Inteligentes -->
+                    <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                        <button @click="activeTab = 'todos'" :class="['px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap', activeTab === 'todos' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white']">
+                            Todos
+                        </button>
+                        <button @click="activeTab = 'noleidos'" :class="['px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap flex items-center gap-1', activeTab === 'noleidos' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white']">
+                            No Leídos
+                            <span v-if="props.chats.filter(c => !c.is_hidden && c.unread_count > 0).length > 0" class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        </button>
+                        <button @click="activeTab = 'archivados'" :class="['px-4 py-2 rounded-xl text-xs font-black transition-all whitespace-nowrap', activeTab === 'archivados' ? 'bg-brand-600 text-white shadow-md shadow-brand-500/30' : 'bg-gray-100 dark:bg-white/5 text-gray-500 hover:text-gray-900 dark:hover:text-white']">
+                            Archivados
+                        </button>
+                    </div>
                 </div>
-                <h1 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-                    Bandeja de <span class="text-brand-600 dark:text-brand-400">Entrada</span>
-                </h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium leading-relaxed max-w-2xl">
-                    Gestiona tus conversaciones con la comunidad Unifranz.
-                </p>
-            </div>
-        </template>
 
-        <div class="space-y-12 pb-20">
-            <!-- Barra de Herramientas -->
-            <div class="sticky top-24 z-30 flex flex-col gap-4 p-5 lg:flex-row lg:items-center bg-white/80 dark:bg-dark-surface/80 backdrop-blur-2xl border border-light-border dark:border-dark-border rounded-[2.5rem] shadow-xl shadow-black/5">
-                <div class="relative flex-1 group">
-                    <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-brand-500 transition-colors" />
-                    <input
-                        type="text"
-                        v-model="searchTerm"
-                        class="w-full py-3.5 pl-12 pr-4 text-sm bg-gray-100/50 dark:bg-black/40 border-0 focus:ring-2 focus:ring-brand-500/50 rounded-2xl transition-all dark:text-white dark:placeholder-gray-500"
-                        placeholder="Buscar en tus conversaciones..."
-                    >
-                </div>
-                <div class="flex items-center gap-4 px-4 py-2 bg-brand-500/5 rounded-2xl border border-brand-500/10">
-                    <Inbox class="w-4 h-4 text-brand-500" />
-                    <span class="text-[10px] font-black uppercase tracking-widest text-brand-600 dark:text-brand-400">
-                        {{ visibleChats.length }} Chats Activos
-                    </span>
-                </div>
-            </div>
-
-            <!-- Lista de Chats -->
-            <div v-if="visibleChats.length" class="max-w-4xl mx-auto space-y-4">
-                <div v-for="chat in visibleChats" :key="chat.id" class="group relative">
-                    <Link
-                        :href="route('chats.show', chat.id)"
-                        class="block bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2.5rem] p-6 hover:shadow-2xl hover:shadow-brand-500/10 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden"
-                        :class="chat.tipo === 'general' ? 'border-brand-500/20' : ''"
-                    >
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-full -mr-16 -mt-16 pointer-events-none group-hover:bg-brand-500/10 transition-colors"></div>
-
-                        <div class="relative flex items-center gap-6">
-                            <!-- Avatar -->
-                            <div class="relative flex-shrink-0">
-                                <div v-if="chat.tipo === 'general'"
-                                    class="w-16 h-16 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 border-4 border-white dark:border-dark-border shadow-lg flex items-center justify-center ring-2 ring-brand-500/20"
-                                >
-                                    <Globe class="w-8 h-8 text-white" />
-                                </div>
-                                <div v-else
-                                    class="w-16 h-16 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 border-4 border-white dark:border-dark-border shadow-lg flex items-center justify-center text-white ring-2 ring-brand-500/20"
-                                >
-                                    <span class="text-xl font-black">{{ chatAvatar(chat) }}</span>
+                <!-- Lista de Chats -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+                    <div v-for="chat in filteredChats" :key="chat.id" class="group relative">
+                        <button
+                            @click="selectChat(chat)"
+                            class="w-full text-left p-4 rounded-3xl transition-all relative overflow-hidden"
+                            :class="activeChatId === chat.id ? 'bg-brand-500/10 border-brand-500/30 shadow-inner' : 'hover:bg-gray-50 dark:hover:bg-white/5 border-transparent'"
+                            style="border-width: 1px"
+                        >
+                            <div class="relative flex items-center gap-4">
+                                <!-- Avatar -->
+                                <div class="relative flex-shrink-0">
+                                    <div v-if="chat.tipo === 'general'" class="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 shadow-md flex items-center justify-center">
+                                        <Globe class="w-6 h-6 text-white" />
+                                    </div>
+                                    <div v-else class="w-12 h-12 rounded-full bg-brand-500 shadow-md flex items-center justify-center text-white font-black text-lg">
+                                        {{ chatAvatar(chat) }}
+                                    </div>
+                                    <div v-if="chat.unread_count > 0" class="absolute -top-1 -right-1 min-w-[1.2rem] h-[1.2rem] flex items-center justify-center bg-rose-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg border-2 border-white dark:border-dark-border">
+                                        {{ chat.unread_count > 99 ? '99+' : chat.unread_count }}
+                                    </div>
+                                    <div v-else-if="chat.is_muted" class="absolute -bottom-1 -right-1 w-4 h-4 flex items-center justify-center bg-gray-400 border-2 border-white dark:border-dark-border rounded-full">
+                                        <BellOff class="w-2.5 h-2.5 text-white" />
+                                    </div>
+                                    <div v-else class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-dark-border rounded-full"></div>
                                 </div>
 
-                                <!-- Badge de no-leídos -->
-                                <div v-if="chat.unread_count > 0"
-                                    class="absolute -top-1 -right-1 min-w-[1.4rem] h-[1.4rem] flex items-center justify-center bg-rose-500 text-white text-[9px] font-black rounded-full px-1 shadow-lg shadow-rose-500/40 border-2 border-white dark:border-dark-border"
-                                >
-                                    {{ chat.unread_count > 99 ? '99+' : chat.unread_count }}
-                                </div>
-                                <div v-else-if="chat.is_muted"
-                                    class="absolute -bottom-1 -right-1 w-5 h-5 flex items-center justify-center bg-gray-400 border-2 border-white dark:border-dark-border rounded-full"
-                                >
-                                    <BellOff class="w-2.5 h-2.5 text-white" />
-                                </div>
-                                <div v-else class="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-dark-border rounded-full shadow-sm"></div>
-                            </div>
-
-                            <!-- Info del Chat -->
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center justify-between mb-1">
-                                    <div class="flex items-center gap-2 min-w-0 flex-1">
-                                        <h3 class="text-lg font-black truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors"
-                                            :class="chat.unread_count > 0 ? 'text-brand-700 dark:text-brand-300' : 'text-gray-900 dark:text-white'"
-                                        >
+                                <!-- Info -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h3 class="text-sm font-black truncate" :class="[chat.unread_count > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-gray-900 dark:text-white']">
                                             {{ chatDisplayName(chat) }}
                                         </h3>
-                                        <span v-if="chat.tipo === 'general'"
-                                            class="shrink-0 px-2 py-0.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 text-[9px] font-black uppercase tracking-widest rounded-full border border-brand-500/20"
-                                        >
-                                            General
-                                        </span>
-                                        <span v-if="chat.tipo === 'general' && chat.users"
-                                            class="shrink-0 flex items-center gap-1 text-[9px] font-bold text-gray-400"
-                                        >
-                                            <Users class="w-3 h-3" />
-                                            {{ chat.users.length }}
+                                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-2 shrink-0">
+                                            {{ formatTime(chat.updated_at) }}
                                         </span>
                                     </div>
-                                    <div class="shrink-0 flex items-center gap-1.5 text-gray-400 font-bold text-[10px] uppercase tracking-tighter ml-2">
-                                        <Clock class="w-3 h-3" />
-                                        {{ formatTime(chat.updated_at) }}
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center justify-between">
-                                    <p class="text-sm truncate max-w-xs"
-                                        :class="chat.unread_count > 0
-                                            ? 'text-gray-800 dark:text-gray-200 font-bold'
-                                            : 'text-gray-500 dark:text-gray-400 font-medium'"
-                                    >
-                                        <span v-if="chat.is_muted" class="text-gray-400 italic text-xs mr-1">Silenciado · </span>
+                                    <p class="text-xs truncate max-w-[200px]" :class="chat.unread_count > 0 ? 'font-black text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'">
                                         {{ getLastMessage(chat) }}
                                     </p>
-                                    <ChevronRight class="w-5 h-5 text-gray-300 dark:text-gray-600 group-hover:translate-x-1 group-hover:text-brand-500 transition-all shrink-0" />
                                 </div>
                             </div>
+                        </button>
+                        
+                        <!-- Hover Actions (Solo Desktop) -->
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-sm p-1 rounded-2xl shadow-sm border border-white/20">
+                            <button v-if="chat.tipo !== 'general'" @click="toggleHide(chat, $event)" class="p-1.5 rounded-xl hover:bg-rose-500/10 text-gray-400 hover:text-rose-500 transition-colors" :title="chat.is_hidden ? 'Desarchivar' : 'Archivar'">
+                                <component :is="chat.is_hidden ? Eye : EyeOff" class="w-3.5 h-3.5" />
+                            </button>
                         </div>
-                    </Link>
+                    </div>
 
-                    <!-- Acciones al hacer hover -->
-                    <div class="absolute right-20 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <button @click="toggleMute(chat, $event)"
-                            class="p-2 rounded-xl bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border shadow-md hover:border-amber-400 text-gray-400 hover:text-amber-500 transition-all"
-                            :title="chat.is_muted ? 'Activar notificaciones' : 'Silenciar'"
-                        >
-                            <component :is="chat.is_muted ? Bell : BellOff" class="w-4 h-4" />
-                        </button>
-                        <button v-if="chat.tipo !== 'general'"
-                            @click="toggleHide(chat, $event)"
-                            class="p-2 rounded-xl bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border shadow-md hover:border-rose-400 text-gray-400 hover:text-rose-500 transition-all"
-                            title="Archivar conversación"
-                        >
-                            <EyeOff class="w-4 h-4" />
-                        </button>
+                    <!-- Empty States -->
+                    <div v-if="filteredChats.length === 0" class="flex flex-col items-center justify-center py-16 text-center opacity-60">
+                        <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4">
+                            <MessageSquare class="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p class="text-xs font-black uppercase tracking-widest text-gray-500">No hay chats aquí</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Chats archivados -->
-            <div v-if="hiddenChats.length" class="max-w-4xl mx-auto">
-                <button @click="showHidden = !showHidden"
-                    class="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-brand-500 transition-colors mb-4"
-                >
-                    <component :is="showHidden ? Eye : EyeOff" class="w-3.5 h-3.5" />
-                    {{ showHidden ? 'Ocultar' : 'Mostrar' }} archivados ({{ hiddenChats.length }})
-                </button>
-
-                <div v-if="showHidden" class="space-y-3 opacity-60">
-                    <div v-for="chat in hiddenChats" :key="chat.id" class="group relative">
-                        <Link :href="route('chats.show', chat.id)"
-                            class="block bg-white/50 dark:bg-dark-surface/50 border border-dashed border-light-border dark:border-dark-border rounded-[2rem] p-5 hover:opacity-100 transition-all"
-                        >
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-gray-500 text-sm font-black">
-                                    {{ chatAvatar(chat) ?? '🌐' }}
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-black text-gray-700 dark:text-gray-300 truncate">{{ chatDisplayName(chat) }}</p>
-                                    <p class="text-xs text-gray-400 truncate">{{ getLastMessage(chat) }}</p>
-                                </div>
-                            </div>
-                        </Link>
-                        <button @click="toggleHide(chat, $event)"
-                            class="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-white dark:bg-dark-surface border border-light-border text-gray-400 hover:text-brand-500 opacity-0 group-hover:opacity-100 transition-all"
-                            title="Restaurar"
-                        >
-                            <Eye class="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Empty State -->
-            <div v-if="!visibleChats.length && !hiddenChats.length"
-                class="relative flex flex-col items-center justify-center py-32 px-10 text-center bg-white/30 dark:bg-dark-surface/30 backdrop-blur-md border border-light-border dark:border-dark-border rounded-[4rem] overflow-hidden"
+            <!-- Panel Derecho: Chat Area -->
+            <div 
+                class="flex-1 flex flex-col relative bg-transparent overflow-hidden"
+                :class="activeChatId ? 'flex' : 'hidden md:flex'"
             >
-                <div class="p-8 rounded-full bg-gray-50 dark:bg-black/40 mb-8 shadow-inner border border-white dark:border-white/5">
-                    <MessageSquare class="w-16 h-16 text-gray-300 dark:text-gray-600 animate-pulse" />
+                <div v-if="activeChatId" class="absolute inset-0 md:ml-4">
+                    <!-- Componente Inyectado Dinámicamente -->
+                    <ChatArea :chat-id="activeChatId" @close="activeChatId = null" @chat-updated="onChatUpdated" class="h-full rounded-[2.5rem] shadow-2xl shadow-brand-500/10 border border-light-border dark:border-dark-border" />
                 </div>
-                <h3 class="text-3xl font-black text-gray-900 dark:text-white mb-3">Tu buzón está impecable</h3>
-                <p class="text-gray-500 dark:text-gray-400 max-w-lg mb-10 text-lg font-medium">
-                    Inicia conversaciones desde las publicaciones del marketplace para contactar a los vendedores.
-                </p>
-                <Link :href="route('dashboard')" class="px-10 py-4 bg-brand-600 text-white font-black rounded-2xl hover:bg-brand-500 shadow-xl shadow-brand-500/30 transition-all">
-                    Explorar Ecosistema
-                </Link>
+                
+                <!-- Estado Vacío (Sin chat seleccionado) -->
+                <div v-else class="absolute inset-0 md:ml-4 flex flex-col items-center justify-center text-center bg-white/40 dark:bg-dark-surface/40 backdrop-blur-md rounded-[2.5rem] border border-light-border dark:border-dark-border">
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+                    <div class="relative z-10 p-8 rounded-full bg-white/50 dark:bg-black/20 mb-8 shadow-inner border border-white dark:border-white/5">
+                        <MessageSquare class="w-16 h-16 text-brand-500/50 animate-pulse" />
+                    </div>
+                    <h2 class="relative z-10 text-3xl font-black text-gray-900 dark:text-white mb-2">Mensajería Unifranz</h2>
+                    <p class="relative z-10 text-sm text-gray-500 font-medium max-w-sm">
+                        Selecciona una conversación de la izquierda para comenzar a chatear o busca un producto en la tienda.
+                    </p>
+                </div>
             </div>
+
         </div>
     </AppLayout>
 </template>
 
 <style scoped>
-.animate-in {
-    animation: slideUp 0.6s ease-out;
-}
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.1); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(124,58,237,0.3); }
 </style>

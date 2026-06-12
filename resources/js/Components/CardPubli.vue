@@ -12,6 +12,8 @@ import {
     TrendingUp,
     Clock,
     MapPin,
+    AlertTriangle,
+    CameraOff,
 } from 'lucide-vue-next';
 import ReportModal from '@/Components/ReportModal.vue';
 
@@ -52,7 +54,7 @@ const images = computed(() => {
   return props.image ? [props.image] : [];
 });
 
-const currentImage = computed(() => images.value[carouselIndex.value] || '/images/placeholder.jpg');
+const currentImage = computed(() => images.value[carouselIndex.value] || null);
 
 function toggleFavorito() {
   if (!props.publicacion || props.isOwner) return;
@@ -72,9 +74,7 @@ function open() {
 
 function activateBorrador() {
   if (!confirm('¿Deseas publicar esta oferta ahora?')) return;
-  router.patch(route('publicaciones.active', props.id), {}, {
-    onSuccess: () => router.visit(route('dashboard'))
-  });
+  router.patch(route('publicaciones.active', props.id));
 }
 
 onMounted(() => {
@@ -93,18 +93,23 @@ onBeforeUnmount(() => {
 
 <template>
   <div 
-    class="group relative flex flex-col w-full bg-white dark:bg-dark-surface border border-light-border dark:border-dark-border rounded-[2rem] overflow-hidden transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1.5 active:scale-[0.98]"
+    class="group relative flex flex-col w-full glass-panel border border-white/30 dark:border-white/10 rounded-[2.5rem] overflow-hidden float-3d"
   >
     <!-- Imagen / Header de la Card -->
     <div @click="open" class="relative aspect-[4/3] overflow-hidden cursor-pointer">
       <img 
+        v-if="currentImage"
         :src="currentImage" 
         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         :alt="props.title"
       />
+      <div v-else class="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-dark-surface border-b border-light-border dark:border-dark-border text-gray-400 gap-2">
+        <CameraOff class="w-10 h-10 opacity-30" />
+        <span class="font-bold tracking-widest uppercase text-[10px] opacity-60">Sin imagen</span>
+      </div>
       
-      <!-- Overlay de Degradado -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+      <!-- Overlay de Degradado Glass -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-500"></div>
 
       <!-- Overlay VENDIDO -->
       <div v-if="props.estado === 'vendida'" class="absolute inset-0 z-20 bg-black/55 flex items-center justify-center pointer-events-none">
@@ -235,8 +240,15 @@ onBeforeUnmount(() => {
           </template>
           <template v-else>
             <button 
+              @click.stop="showReport = true"
+              class="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-colors"
+              title="Reportar publicación"
+            >
+              <AlertTriangle class="w-4 h-4" />
+            </button>
+            <button 
               @click.stop="emit('contact', props.id)"
-              class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-[10px] font-black rounded-xl shadow-lg shadow-brand-500/20 transition-all active:scale-90"
+              class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white text-[10px] font-black rounded-xl shadow-lg shadow-brand-500/30 transition-all active:scale-90"
             >
               <MessageCircle class="w-3.5 h-3.5" />
               CONTACTAR
@@ -260,7 +272,7 @@ onBeforeUnmount(() => {
   <ReportModal 
     v-if="showReport" 
     :publicacionId="props.id" 
-    :ownerId="props.publicion?.vendedor?.user_id" 
+    :ownerId="props.publicacion?.vendedor?.user_id" 
     @close="showReport = false" 
   />
 </template>

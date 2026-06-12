@@ -43,9 +43,7 @@ class ProfileController extends Controller
             'Foto_de_portada'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Cod_Universidad'   => 'required|exists:universidades,Cod_Universidad',
             'Cod_Carrera'       => 'required|exists:carreras,Cod_Carrera',
-            'fotoBase64'        => 'required|string',
-            'descriptorFacial'  => 'required|array',
-        ], [
+            'Cod_Carrera'       => 'required|exists:carreras,Cod_Carrera',
             'Apellidos.required' => 'Los apellidos son requeridos.',
             'Apellidos.regex'    => 'Los apellidos solo pueden contener letras y espacios.',
             'Apellidos.max'      => 'Los apellidos no pueden superar los 60 caracteres.',
@@ -77,10 +75,6 @@ class ProfileController extends Controller
 
         // Verificar que no exista ya un perfil para este usuario
         try {
-            $user->update([
-                'foto_base64' => $request->fotoBase64,
-                'descriptor_facial' => $request->descriptorFacial,
-            ]);
 
             if ($user->usuarioCampusMarket) {
                 // Si ya existe, actualizar el perfil existente

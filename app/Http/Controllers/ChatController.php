@@ -82,7 +82,7 @@ class ChatController extends Controller
         return response()->json(['chat_id' => $chat->id, 'is_new' => true]);
     }
 
-    public function show(Chat $chat)
+    public function show(Request $request, Chat $chat)
     {
         if (! $chat->users()->where('user_id', Auth::id())->exists()) {
             abort(403);
@@ -95,11 +95,15 @@ class ChatController extends Controller
 
         $chat->load('users', 'messages.sender', 'messages.reactions', 'messages.replyTo.sender');
 
-        return Inertia::render('Mensajes/Show', [
-            'chat'      => $chat,
-            'is_muted'  => (bool) $pivot->is_muted,
-            'is_hidden' => (bool) $pivot->is_hidden,
-        ]);
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'chat'      => $chat,
+                'is_muted'  => (bool) $pivot->is_muted,
+                'is_hidden' => (bool) $pivot->is_hidden,
+            ]);
+        }
+
+        return redirect()->route('mensajes.index', ['chat_id' => $chat->id]);
     }
 
     public function storeMessage(Request $request, Chat $chat)

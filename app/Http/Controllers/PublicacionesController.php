@@ -43,6 +43,15 @@ class PublicacionesController extends Controller
 
         $publicaciones = Publicaciones::with('categoria', 'vendedor.user')
             ->where('estado', 'activa')
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $q->where(function ($sub) use ($request) {
+                    $term = '%' . $request->search . '%';
+                    $sub->where('Titulo_Publicacion', 'like', $term)
+                        ->orWhere('Descripcion_Publicacion', 'like', $term);
+                });
+            })
+            ->when($request->filled('categoria'), fn ($q) =>
+                $q->where('Cod_Categoria', $request->categoria))
             ->when($request->filled('precio_min'), fn ($q) =>
                 $q->where('Precio_Publicacion', '>=', $request->precio_min))
             ->when($request->filled('precio_max'), fn ($q) =>
@@ -57,18 +66,42 @@ class PublicacionesController extends Controller
 
         try {
             $markov = new MarkovReputationService();
+            $userUniversidad = $usuarioCampusMarket?->Cod_Universidad;
+
             $mejores = Publicaciones::with(['categoria', 'vendedor.user.reputacionEstado'])
                 ->where('estado', 'activa')
                 ->get()
-                ->map(function ($pub) use ($markov) {
+                ->map(function ($pub) use ($markov, $userUniversidad) {
                     $promedio = $markov->calcularPromedioCalificaciones($pub->vendedor?->user);
+                    
+                    // Algoritmo de Scoring (Recomendación)
+                    $score = 0;
+                    
+                    // 1. Afinidad de Universidad (+50 pts)
+                    if ($userUniversidad && $pub->vendedor?->Cod_Universidad == $userUniversidad) {
+                        $score += 50;
+                    }
+
+                    // 2. Popularidad (+1 pt por cada 5 vistas, max 30)
+                    $score += min(30, floor($pub->Vistas_Publicacion / 5));
+
+                    // 3. Reputación del vendedor (+20 pts si promedio >= 4)
+                    if ($promedio >= 4) {
+                        $score += 20;
+                    } elseif ($promedio < 2 && $promedio > 0) {
+                        $score -= 20; // Penalización si es mal vendedor
+                    }
+
                     $arr = $pub->toArray();
                     if (isset($arr['vendedor']) && $pub->vendedor?->user_id) {
                         $arr['vendedor']['user_id'] = $pub->vendedor->user_id;
                     }
-                    return array_merge($arr, ['calificacion_promedio' => $promedio]);
+                    return array_merge($arr, [
+                        'calificacion_promedio' => $promedio,
+                        'recommendation_score' => $score
+                    ]);
                 })
-                ->sortByDesc('calificacion_promedio')
+                ->sortByDesc('recommendation_score')
                 ->values()
                 ->take(6)
                 ->all();
@@ -82,7 +115,7 @@ class PublicacionesController extends Controller
             'mejores'       => $mejores,
             'currentUserId' => $userId,
             'userEstado'    => $userEstado,
-            'filters'       => $request->only(['precio_min', 'precio_max', 'ubicacion', 'condicion', 'orden']),
+            'filters'       => $request->only(['search', 'categoria', 'precio_min', 'precio_max', 'ubicacion', 'condicion', 'orden']),
         ]);
     }
 
@@ -142,14 +175,21 @@ class PublicacionesController extends Controller
         // Asignar el ID del vendedor (referencia a usuarios_campus_markets.id)
         $validated['ID_Vendedor'] = $vendor->id;
 
-        // Por defecto, las nuevas publicaciones son 'activas'
-        $validated['estado'] = 'activa';
+        // El estado de la publicación viene del formulario (true = activa, false = borrador)
+        $validated['estado'] = $request->boolean('Estado_Publicacion', true) ? 'activa' : 'borrador';
 
         // Procesar y guardar imágenes (hasta 3) usando el método helper
         $paths = $this->handleImageUploads($request);
         $validated['Imagen_Publicacion'] = json_encode($paths);
 
         Publicaciones::create($validated);
+
+        // Gamificación: Otorgar XP por crear una publicación
+        $vendor->addExperiencia(15);
+
+        if ($validated['estado'] === 'borrador') {
+            return redirect()->route('borradores')->with('success', 'Borrador guardado exitosamente');
+        }
 
         return redirect()->route('dashboard')->with('success', 'Publicación creada exitosamente');
     }
@@ -162,8 +202,8 @@ class PublicacionesController extends Controller
         // Incrementar contador de vistas
         $publicaciones->increment('Vistas_Publicacion');
 
-        // Publicaciones ocultas solo visibles para su dueño
-        if ($publicaciones->estado === 'oculta') {
+        // Publicaciones ocultas o en borrador solo visibles para su dueño
+        if (in_array($publicaciones->estado, ['oculta', 'borrador'])) {
             $esVendedor = $publicaciones->vendedor?->user_id === Auth::id();
             if (! $esVendedor) {
                 abort(404);
@@ -273,7 +313,7 @@ class PublicacionesController extends Controller
 
         $publicaciones->update(['estado' => 'borrador']);
 
-        return redirect()->route('dashboard')->with('success', 'Publicación convertida a borrador');
+        return redirect()->back()->with('success', 'Publicación convertida a borrador');
     }
 
     /**
@@ -288,7 +328,7 @@ class PublicacionesController extends Controller
 
         $publicaciones->update(['estado' => 'activa']);
 
-        return redirect()->route('dashboard')->with('success', 'Publicación activada');
+        return redirect()->back()->with('success', 'Publicación activada');
     }
 
     /**
