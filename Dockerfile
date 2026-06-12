@@ -19,7 +19,7 @@ COPY . .
 
 RUN composer install --optimize-autoloader --no-dev
 
-RUN echo "VITE_REVERB_APP_KEY=campus-market-key\nVITE_REVERB_HOST=campus-market.lat\nVITE_REVERB_PORT=443\nVITE_REVERB_SCHEME=https\nVITE_APP_NAME=Campus Market" > .env
+RUN printf 'VITE_REVERB_APP_KEY=campus-market-key\nVITE_REVERB_HOST=campus-market.lat\nVITE_REVERB_PORT=443\nVITE_REVERB_SCHEME=https\nVITE_APP_NAME="Campus Market"\n' > .env
 
 RUN npm install --legacy-peer-deps && npm run build
 
