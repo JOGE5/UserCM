@@ -6,11 +6,12 @@ services:
     image: campus_app:latest
     restart: unless-stopped
     ports:
-      - "8081:8080" # WebSockets Reverb
+      - "8081:8080"
     env_file:
       - .env
     volumes:
       - storage_data:/var/www/html/storage
+      - app_public:/var/www/html/public
     depends_on:
       - mysql
     networks:
@@ -25,7 +26,7 @@ services:
     ports:
       - "8001:80"
     volumes:
-      - ./public:/var/www/html/public
+      - app_public:/var/www/html/public
     depends_on:
       - app
     networks:
@@ -54,3 +55,4 @@ networks:
 volumes:
   mysql_data:
   storage_data:
+  app_public:
