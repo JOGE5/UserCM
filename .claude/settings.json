@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/jasser/Documentos/GITPROYECTOS/**)",
+      "Read(//home/jasser/Documentos/GITPROYECTOS/UserCM/**)",
+      "Read(//home/jasser/Documentos/GITPROYECTOS/UserCM/public/build/**)"
+    ]
+  }
+}

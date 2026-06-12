@@ -1,12 +1,13 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { ref, watch } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
-import { Search, BadgeCheck, ShieldCheck, User, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-vue-next';
+import { ref, watch, computed } from 'vue';
+import { router, Link, useForm } from '@inertiajs/vue3';
+import { Search, BadgeCheck, ShieldCheck, User, ChevronLeft, ChevronRight, MoreHorizontal, UserPlus, X } from 'lucide-vue-next';
 
 const props = defineProps({
     usuarios: Object,
     roles: Array,
+    universidades: Array,
     filters: Object,
 });
 
@@ -37,6 +38,34 @@ const updateRol = (userId, codRol) => {
 
 const openMenuId = ref(null);
 const toggleMenu = (id) => { openMenuId.value = openMenuId.value === id ? null : id; };
+
+// ---- Crear usuario ----
+const showCreate = ref(false);
+const createForm = useForm({
+    name: '',
+    Apellidos: '',
+    email: '',
+    password: '',
+    Cod_Rol: 3,
+    Cod_Universidad: '',
+    Cod_Carrera: '',
+    verificado: true,
+});
+
+const carrerasDisponibles = computed(() => {
+    const uni = props.universidades?.find(u => u.Cod_Universidad === Number(createForm.Cod_Universidad));
+    return uni?.carreras ?? [];
+});
+
+watch(() => createForm.Cod_Universidad, () => { createForm.Cod_Carrera = ''; });
+
+const openCreate = () => { createForm.reset(); createForm.clearErrors(); showCreate.value = true; };
+const submitCreate = () => {
+    createForm.post(route('admin.usuarios.store'), {
+        preserveScroll: true,
+        onSuccess: () => { showCreate.value = false; createForm.reset(); },
+    });
+};
 </script>
 
 <template>
@@ -48,6 +77,10 @@ const toggleMenu = (id) => { openMenuId.value = openMenuId.value === id ? null :
                     <h1 class="text-xl font-black text-white">Gestión de Usuarios</h1>
                     <p class="text-xs text-gray-500 mt-1">{{ usuarios.total }} usuarios registrados</p>
                 </div>
+                <button @click="openCreate" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-all shrink-0">
+                    <UserPlus class="w-4 h-4" />
+                    Crear usuario
+                </button>
             </div>
 
             <!-- Filtros -->
@@ -151,6 +184,96 @@ const toggleMenu = (id) => { openMenuId.value = openMenuId.value === id ? null :
                         </Link>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Modal: Crear usuario -->
+        <div v-if="showCreate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" @click.self="showCreate = false">
+            <div class="w-full max-w-lg bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800 sticky top-0 bg-gray-900">
+                    <h2 class="flex items-center gap-2 text-sm font-black text-white">
+                        <UserPlus class="w-4 h-4 text-indigo-400" /> Crear usuario
+                    </h2>
+                    <button @click="showCreate = false" class="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg">
+                        <X class="w-4 h-4" />
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitCreate" class="p-6 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Nombre</label>
+                            <input v-model="createForm.name" type="text" placeholder="Nombre"
+                                class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
+                            <p v-if="createForm.errors.name" class="text-xs text-rose-400">{{ createForm.errors.name }}</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Apellidos</label>
+                            <input v-model="createForm.Apellidos" type="text" placeholder="Apellidos"
+                                class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
+                            <p v-if="createForm.errors.Apellidos" class="text-xs text-rose-400">{{ createForm.errors.Apellidos }}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Correo</label>
+                        <input v-model="createForm.email" type="email" placeholder="correo@ejemplo.com"
+                            class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
+                        <p v-if="createForm.errors.email" class="text-xs text-rose-400">{{ createForm.errors.email }}</p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Contraseña</label>
+                        <input v-model="createForm.password" type="text" placeholder="Mínimo 8 caracteres"
+                            class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
+                        <p v-if="createForm.errors.password" class="text-xs text-rose-400">{{ createForm.errors.password }}</p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Rol</label>
+                        <select v-model="createForm.Cod_Rol"
+                            class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all">
+                            <option v-for="r in roles" :key="r.Cod_Rol" :value="r.Cod_Rol">{{ r.Nombre_Rol }}</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Universidad</label>
+                            <select v-model="createForm.Cod_Universidad"
+                                class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all">
+                                <option value="" disabled>Selecciona…</option>
+                                <option v-for="u in universidades" :key="u.Cod_Universidad" :value="u.Cod_Universidad">{{ u.Nombre_Universidad }}</option>
+                            </select>
+                            <p v-if="createForm.errors.Cod_Universidad" class="text-xs text-rose-400">{{ createForm.errors.Cod_Universidad }}</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Carrera</label>
+                            <select v-model="createForm.Cod_Carrera" :disabled="!createForm.Cod_Universidad"
+                                class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                <option value="" disabled>{{ createForm.Cod_Universidad ? 'Selecciona…' : 'Elige universidad primero' }}</option>
+                                <option v-for="c in carrerasDisponibles" :key="c.Cod_Carrera" :value="c.Cod_Carrera">{{ c.Nombre_Carrera }}</option>
+                            </select>
+                            <p v-if="createForm.errors.Cod_Carrera" class="text-xs text-rose-400">{{ createForm.errors.Cod_Carrera }}</p>
+                        </div>
+                    </div>
+
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" v-model="createForm.verificado" class="h-4 w-4 rounded border-white/20 bg-black/40 text-indigo-500 focus:ring-indigo-500" />
+                        <span class="text-sm text-gray-400">Marcar como verificado</span>
+                    </label>
+
+                    <div class="flex items-center gap-2 pt-2">
+                        <button type="submit" :disabled="createForm.processing"
+                            class="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            Crear usuario
+                        </button>
+                        <button type="button" @click="showCreate = false"
+                            class="px-4 py-2.5 text-sm font-bold text-gray-400 bg-gray-800 border border-gray-700 rounded-xl hover:text-white transition-all">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </AdminLayout>
