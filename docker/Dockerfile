@@ -28,7 +28,7 @@ COPY . .
 
 # Correr composer install y npm install/build
 RUN composer install --no-dev --optimize-autoloader
-RUN npm install && npm run build
+RUN npm install --legacy-peer-deps && npm run build
 
 # Ajustar permisos para carpetas de storage y bootstrap/cache
 RUN chown -R www-data:www-data storage bootstrap/cache
