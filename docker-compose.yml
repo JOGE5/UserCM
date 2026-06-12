@@ -23,7 +23,9 @@ services:
     image: campus_nginx:latest
     restart: unless-stopped
     ports:
-      - "8001:80" # Aplicacion web
+      - "8001:80"
+    volumes:
+      - ./public:/var/www/html/public
     depends_on:
       - app
     networks:
