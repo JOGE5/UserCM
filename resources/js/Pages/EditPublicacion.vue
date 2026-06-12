@@ -299,7 +299,6 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
             </div>
         </div>
     </AppLayout>
-</template>
 
     <!-- Modal Eliminar -->
     <Transition name="modal-fade">

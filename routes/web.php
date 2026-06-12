@@ -59,6 +59,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleController::class, 'redirect'])->name('google.login');
     Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleController::class, 'callback']);
 
+    // Login dedicado del panel de administración
+    Route::get('/admin/login', [\App\Http\Controllers\Auth\AdminLoginController::class, 'create'])->name('admin.login');
+    Route::post('/admin/login', [\App\Http\Controllers\Auth\AdminLoginController::class, 'store'])->name('admin.login.store');
+
 });
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
@@ -192,6 +196,7 @@ Route::middleware([
 
     // Usuarios
     Route::get('/usuarios', [AdminController::class, 'users'])->name('usuarios');
+    Route::post('/usuarios', [AdminController::class, 'storeUser'])->name('usuarios.store');
     Route::patch('/usuarios/{user}/rol', [AdminController::class, 'updateRol'])->name('usuarios.rol');
     Route::patch('/usuarios/{user}/verificado', [AdminController::class, 'updateVerificado'])->name('usuarios.verificado');
 
@@ -202,4 +207,10 @@ Route::middleware([
     // Reportes
     Route::get('/reportes', [AdminController::class, 'reports'])->name('reportes');
     Route::patch('/reportes/{publicacionId}/ocultar', [AdminController::class, 'hideReportedPublication'])->name('reportes.ocultar');
+
+    // Roles (CRUD)
+    Route::get('/roles', [AdminController::class, 'roles'])->name('roles');
+    Route::post('/roles', [AdminController::class, 'rolesStore'])->name('roles.store');
+    Route::patch('/roles/{rol}', [AdminController::class, 'rolesUpdate'])->name('roles.update');
+    Route::delete('/roles/{rol}', [AdminController::class, 'rolesDestroy'])->name('roles.destroy');
 });

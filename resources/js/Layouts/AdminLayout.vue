@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     LayoutDashboard, Users, FileText, MessageSquare,
-    Flag, LogOut, Menu, X, ChevronDown, Shield
+    Flag, LogOut, Menu, X, ChevronDown, Shield, KeyRound
 } from 'lucide-vue-next';
 
 defineProps({ title: String });
@@ -16,6 +16,7 @@ const user = computed(() => page.props.auth.user);
 const navigation = [
     { name: 'Dashboard',     href: route('admin.dashboard'),    icon: LayoutDashboard, active: route().current('admin.dashboard') },
     { name: 'Usuarios',      href: route('admin.usuarios'),     icon: Users,           active: route().current('admin.usuarios') },
+    { name: 'Roles',         href: route('admin.roles'),        icon: KeyRound,        active: route().current('admin.roles') },
     { name: 'Publicaciones', href: route('admin.publicaciones'),icon: FileText,        active: route().current('admin.publicaciones') },
     { name: 'Reportes',      href: route('admin.reportes'),     icon: Flag,            active: route().current('admin.reportes') },
     { name: 'Marketplace',   href: route('dashboard'),          icon: MessageSquare,   active: false },

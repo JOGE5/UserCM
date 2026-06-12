@@ -18,5 +18,11 @@ class RolesSeeder extends Seeder
             ['Cod_Rol' => 2, 'Nombre_Rol' => 'Moderador', 'Descripcion' => 'Puede gestionar publicaciones y usuarios.'],
             ['Cod_Rol' => 3, 'Nombre_Rol' => 'Estudiante', 'Descripcion' => 'Rol por defecto para nuevos usuarios.'],
         ]);
+
+        // Sincronizar la secuencia tras insertar con IDs explícitos (PostgreSQL),
+        // si no, crear roles nuevos desde el panel choca con la PK.
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('SELECT setval(pg_get_serial_sequence(\'roles\', \'Cod_Rol\'), (SELECT MAX("Cod_Rol") FROM roles))');
+        }
     }
 }

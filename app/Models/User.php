@@ -71,6 +71,26 @@ class User extends Authenticatable
     }
 
     /**
+     * Avatar por defecto generado localmente (SVG data-URI), sin depender de ui-avatars.com.
+     */
+    protected function defaultProfilePhotoUrl(): string
+    {
+        $initials = collect(explode(' ', trim((string) $this->name)))
+            ->filter()
+            ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
+            ->take(2)
+            ->implode('');
+
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">'
+            .'<rect width="100" height="100" fill="#EBF4FF"/>'
+            .'<text x="50" y="52" fill="#7F9CF5" font-family="Arial, sans-serif" font-size="40" '
+            .'font-weight="600" text-anchor="middle" dominant-baseline="central">'.e($initials).'</text>'
+            .'</svg>';
+
+        return 'data:image/svg+xml;base64,'.base64_encode($svg);
+    }
+
+    /**
      * Relación con el modelo UsuarioCampusMarket.
      */
     public function usuarioCampusMarket()

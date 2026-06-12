@@ -55,12 +55,49 @@ class AdminController extends Controller
 
         $usuarios = $query->paginate(20)->withQueryString();
         $roles    = Roles::all();
+        $universidades = \App\Models\Universidad::with('carreras')
+            ->orderBy('Nombre_Universidad')
+            ->get();
 
         return Inertia::render('Admin/Users', [
-            'usuarios' => $usuarios,
-            'roles'    => $roles,
-            'filters'  => $request->only('search', 'rol'),
+            'usuarios'      => $usuarios,
+            'roles'         => $roles,
+            'universidades' => $universidades,
+            'filters'       => $request->only('search', 'rol'),
         ]);
+    }
+
+    public function storeUser(Request $request)
+    {
+        $data = $request->validate([
+            'name'            => 'required|string|max:255',
+            'Apellidos'       => 'nullable|string|max:60',
+            'email'           => 'required|email|max:255|unique:users,email',
+            'password'        => 'required|string|min:8',
+            'Cod_Rol'         => 'required|exists:roles,Cod_Rol',
+            'Cod_Universidad' => 'required|exists:universidades,Cod_Universidad',
+            'Cod_Carrera'     => 'required|exists:carreras,Cod_Carrera',
+            'verificado'      => 'boolean',
+        ]);
+
+        $user = User::create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => $data['password'],
+        ]);
+        $user->email_verified_at = now();
+        $user->save();
+
+        $user->usuarioCampusMarket()->create([
+            'Apellidos'       => $data['Apellidos'] ?? null,
+            'Estado'          => 'Activo',
+            'Cod_Rol'         => $data['Cod_Rol'],
+            'Cod_Universidad' => $data['Cod_Universidad'],
+            'Cod_Carrera'     => $data['Cod_Carrera'],
+            'verificado'      => $request->boolean('verificado'),
+        ]);
+
+        return back()->with('success', 'Usuario creado correctamente.');
     }
 
     public function updateRol(Request $request, User $user)
@@ -85,6 +122,60 @@ class AdminController extends Controller
         $perfil->update(['verificado' => ! $perfil->verificado]);
 
         return back()->with('success', 'Estado de verificación actualizado.');
+    }
+
+    // ==================== GESTIÓN DE ROLES ====================
+
+    public function roles()
+    {
+        $roles = Roles::withCount('usuariosCampusMarket')
+            ->orderBy('Cod_Rol')
+            ->get();
+
+        return Inertia::render('Admin/Roles', [
+            'roles' => $roles,
+        ]);
+    }
+
+    public function rolesStore(Request $request)
+    {
+        $data = $request->validate([
+            'Nombre_Rol'  => 'required|string|max:255|unique:roles,Nombre_Rol',
+            'Descripcion' => 'nullable|string|max:255',
+        ]);
+
+        Roles::create($data);
+
+        return back()->with('success', 'Rol creado correctamente.');
+    }
+
+    public function rolesUpdate(Request $request, Roles $rol)
+    {
+        $data = $request->validate([
+            'Nombre_Rol'  => 'required|string|max:255|unique:roles,Nombre_Rol,'.$rol->Cod_Rol.',Cod_Rol',
+            'Descripcion' => 'nullable|string|max:255',
+        ]);
+
+        $rol->update($data);
+
+        return back()->with('success', 'Rol actualizado correctamente.');
+    }
+
+    public function rolesDestroy(Roles $rol)
+    {
+        // Los 3 roles base del sistema no se pueden borrar.
+        if (in_array($rol->Cod_Rol, [1, 2, 3])) {
+            return back()->with('error', 'No se pueden eliminar los roles base del sistema.');
+        }
+
+        // No borrar un rol que tenga usuarios asignados.
+        if ($rol->usuariosCampusMarket()->count() > 0) {
+            return back()->with('error', 'No se puede eliminar un rol que tiene usuarios asignados.');
+        }
+
+        $rol->delete();
+
+        return back()->with('success', 'Rol eliminado correctamente.');
     }
 
     public function publications(Request $request)
