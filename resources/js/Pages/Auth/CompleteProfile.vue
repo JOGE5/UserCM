@@ -156,7 +156,7 @@ const isStep3Valid = computed(() => {
 });
 
 const isStep4Valid = computed(() => {
-    return form.fotoBase64 && form.descriptorFacial;
+    return true;
 });
 
 const handleFaceCaptured = ({ base64, descriptor }) => {
@@ -746,15 +746,15 @@ const submit = () => {
                                     <ScanFace class="w-6 h-6 text-pink-400" />
                                 </div>
                                 <div>
-                                    <h4 class="mb-1 text-sm font-bold text-white">Último paso: Seguridad</h4>
+                                    <h4 class="mb-1 text-sm font-bold text-white">Último paso: Configuración Completa</h4>
                                     <p class="text-sm leading-relaxed text-pink-200/70">
-                                        Campus Market requiere verificar tu identidad. Mira a la cámara y mantén el rostro centrado. Solo se tomará una captura.
+                                        Has completado todos los pasos necesarios. Presiona "Finalizar y Entrar" para acceder a tu cuenta.
                                     </p>
                                 </div>
                             </div>
 
-                            <!-- Cámara: solo se muestra si no se ha capturado aún -->
-                            <div v-if="!faceLoading && !form.descriptorFacial" class="flex justify-center w-full">
+                            <!-- Cámara oculta porque Face ID está deshabilitado -->
+                            <div v-if="false" class="flex justify-center w-full">
                                 <CamaraRegistro @capturado="handleFaceCaptured" @error="e => profileError = e" />
                             </div>
 

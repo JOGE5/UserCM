@@ -116,7 +116,7 @@ class AdminController extends Controller
         return back()->with('success', 'Estado de publicación actualizado.');
     }
 
-    public function reports(Request $request)
+    public function reports(Request $request, \App\Services\QueueTheoryService $queueService)
     {
         $query = DB::table('reportsPubli')
             ->leftJoin('publicaciones', 'reportsPubli.reportable_id', '=', 'publicaciones.id')
@@ -137,9 +137,45 @@ class AdminController extends Controller
 
         $reportes = $query->paginate(20)->withQueryString();
 
+        // -------------------------------------------------------------
+        // CÁLCULOS TEORÍA DE COLAS (M/M/c) PARA LA PRESENTACIÓN
+        // -------------------------------------------------------------
+        $c = max(1, (int) $request->get('c', 2)); // Número de moderadores (editable desde UI)
+        
+        $days = 30;
+        $totalReports = DB::table('reportsPubli')
+            ->where('created_at', '>=', now()->subDays($days))
+            ->count();
+            
+        $urgentReports = DB::table('reportsPubli')
+            ->where('created_at', '>=', now()->subDays($days))
+            ->where(function($q) {
+                $q->where('reason', 'like', '%ofensiv%')
+                  ->orWhere('reason', 'like', '%acoso%')
+                  ->orWhere('reason', 'like', '%insult%')
+                  ->orWhere('reason', 'like', '%explícit%')
+                  ->orWhere('reason', 'like', '%imagen%');
+            })->count();
+
+        $normalReports = $totalReports - $urgentReports;
+
+        $realLambda1 = $days > 0 ? $urgentReports / $days : 0;
+        $realLambda2 = $days > 0 ? $normalReports / $days : 0;
+        
+        // Si no hay suficientes datos en la DB, usamos los valores del Escenario Ejemplo (Lambda=20)
+        if ($realLambda1 + $realLambda2 < 1) {
+            $realLambda1 = 8;  // Reportes ofensivos/urgentes
+            $realLambda2 = 12; // Reportes menores/bugs
+        }
+        
+        $realMu = 15; // Tasa de servicio promedio por moderador (según Diapositiva 3)
+
+        $queueMetrics = $queueService->calculateMetrics($realLambda1, $realLambda2, $realMu, $c);
+
         return Inertia::render('Admin/Reports', [
             'reportes' => $reportes,
-            'filters'  => $request->only('search'),
+            'filters'  => $request->only('search', 'c'),
+            'queueMetrics' => $queueMetrics,
         ]);
     }
 

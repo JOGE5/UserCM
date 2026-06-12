@@ -5,7 +5,7 @@ Este entorno de Docker ha sido preparado para levantar el proyecto `CampusMarket
 ## Requisitos Previos
 
 - **Docker Desktop** (con WSL2 habilitado en Windows).
-- Los puertos `8080`, `3306` y `5173` **deben estar libres** (Cerrar Laragon, XAMPP u otros servidores que ocupen estos puertos).
+- Los puertos `8000`, `3307` y `5173` **deben estar libres** (Cerrar Laragon, XAMPP u otros servidores que ocupen estos puertos).
 
 ## Pasos para levantar el proyecto
 
@@ -28,7 +28,7 @@ Este entorno de Docker ha sido preparado para levantar el proyecto `CampusMarket
    ```
 
 4. **Acceder a la aplicación:**
-   - App Laravel: [http://localhost:8080](http://localhost:8080)
+   - App Laravel: [http://localhost:8000](http://localhost:8000)
    - Servidor Vite (Hot Reload): [http://localhost:5173](http://localhost:5173)
 
 ---
@@ -79,7 +79,7 @@ docker compose up -d --build
 
 ## Solución de Problemas (Troubleshooting)
 
-- **Conflictos de puertos:** Si obtienes un error como `bind: address already in use`, significa que algún servicio local (Laragon, MySQL local) está usando el puerto `3306` u `8080`. Asegúrate de detenerlos.
+- **Conflictos de puertos:** Si obtienes un error como `bind: address already in use`, significa que algún servicio local (Laragon, MySQL local) está usando el puerto `3307` u `8000`. Asegúrate de detenerlos.
 - **Permisos en Windows:** El script `entrypoint.sh` intenta corregir los permisos de las carpetas `storage` y `bootstrap/cache`. Si ves errores de permisos en los logs, puedes ejecutar manualmente:
   ```bash
   docker compose exec app chmod -R 777 storage bootstrap/cache

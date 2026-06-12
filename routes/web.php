@@ -78,8 +78,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(fun
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
-    'verified',
-    'face.verified'
+    'verified'
 ])->group(function () {
     Route::get('/dashboard', [PublicacionesController::class, 'index'])->name('dashboard');
 

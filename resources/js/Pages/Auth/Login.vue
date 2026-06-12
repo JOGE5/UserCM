@@ -140,7 +140,7 @@ const submit = () => {
                         <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-white/20 to-transparent"></div>
                     </button>
 
-                    <button v-if="!showFaceLogin" type="button" @click="toggleFaceLogin" class="relative flex items-center justify-center w-full h-14 overflow-hidden font-bold text-white transition-all bg-pink-600/20 border border-pink-500/50 rounded-2xl group hover:bg-pink-600/30 hover:scale-[1.02] active:scale-[0.98]">
+                    <button v-if="false" type="button" @click="toggleFaceLogin" class="relative flex items-center justify-center w-full h-14 overflow-hidden font-bold text-white transition-all bg-pink-600/20 border border-pink-500/50 rounded-2xl group hover:bg-pink-600/30 hover:scale-[1.02] active:scale-[0.98]">
                         <ScanFace class="w-5 h-5 mr-2 text-pink-400 group-hover:text-pink-300" />
                         <span class="relative z-10 text-pink-400 group-hover:text-pink-300">Face ID</span>
                     </button>
@@ -149,7 +149,7 @@ const submit = () => {
 
                     <!-- Componente Face ID -->
                     <CamaraLogin 
-                        v-if="showFaceLogin" 
+                        v-if="false" 
                         :email="form.email"
                         @cancel="showFaceLogin = false"
                         @error="(m) => { faceLoginError = m; showFaceLogin = false; }"

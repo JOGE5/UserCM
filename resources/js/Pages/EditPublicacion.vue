@@ -57,6 +57,9 @@ const currentImages = computed(() => {
 const submit = () => {
     form.post(route('publicaciones.update', props.publicacion.id), {
         forceFormData: true,
+        onError: (errors) => {
+            console.error('Validation errors:', errors);
+        }
     });
 };
 
@@ -248,6 +251,10 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                                         </button>
                                     </div>
                                 </div>
+                                <InputError :message="form.errors.Imagen_Publicacion" class="mt-2" />
+                                <InputError :message="form.errors['Imagen_Publicacion.0']" class="mt-1" />
+                                <InputError :message="form.errors['Imagen_Publicacion.1']" class="mt-1" />
+                                <InputError :message="form.errors['Imagen_Publicacion.2']" class="mt-1" />
                             </div>
 
                             <div class="flex items-center justify-end gap-4 pt-4">
@@ -298,9 +305,6 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
                 </div>
             </div>
         </div>
-    </AppLayout>
-</template>
-
     <!-- Modal Eliminar -->
     <Transition name="modal-fade">
         <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -336,6 +340,7 @@ const getFullUrl = (img) => `/files/publicaciones/${img.split('/').pop()}`;
             </div>
         </div>
     </Transition>
+    </AppLayout>
 </template>
 
 <style scoped>

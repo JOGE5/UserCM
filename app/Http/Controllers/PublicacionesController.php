@@ -115,7 +115,7 @@ class PublicacionesController extends Controller
             'ubicacion'               => 'nullable|string|max:100',
             'condicion_producto'      => 'nullable|in:nuevo,usado',
             'Imagen_Publicacion'      => 'nullable|array|max:3',
-            'Imagen_Publicacion.*'    => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'Imagen_Publicacion.*'    => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
         // Obtener o crear registro en usuarios_campus_markets para el usuario autenticado
@@ -128,6 +128,8 @@ class PublicacionesController extends Controller
                 'user_id' => $userId,
                 'Estado' => 'Habilitado',
                 'Cod_Rol' => 3,
+                'Cod_Carrera' => 1, // Valor por defecto requerido
+                'Cod_Universidad' => 1, // Valor por defecto requerido
             ];
 
             // Solo incluir campos si tienen valor no nulo
@@ -203,7 +205,7 @@ class PublicacionesController extends Controller
     public function update(Request $request, Publicaciones $publicaciones)
     {
         // Si la publicación no tiene imagen actualmente, exigir que se suba una nueva
-        $imageRule = $publicaciones->Imagen_Publicacion ? 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif|max:2048';
+        $imageRule = $publicaciones->Imagen_Publicacion ? 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048';
 
         $validated = $request->validate([
             'Titulo_Publicacion'      => ['sometimes', 'required', 'string', 'max:200', new NoProfanity()],
@@ -213,7 +215,7 @@ class PublicacionesController extends Controller
             'Estado_Publicacion'      => 'sometimes|boolean',
             'ubicacion'               => 'nullable|string|max:100',
             'condicion_producto'      => 'nullable|in:nuevo,usado',
-            'Imagen_Publicacion'      => $imageRule === 'required|image|mimes:jpeg,png,jpg,gif|max:2048' ? 'required|array|min:1|max:3' : 'nullable|array|max:3',
+            'Imagen_Publicacion'      => $imageRule === 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048' ? 'required|array|min:1|max:3' : 'nullable|array|max:3',
             'Imagen_Publicacion.*'    => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
