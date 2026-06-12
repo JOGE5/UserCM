@@ -33,7 +33,7 @@ services:
       - "8001:80"
     volumes:
       - app_public:/var/www/html/public
-      - storage_data:/var/www/html/storage/app/public
+      - storage_data:/var/www/html/storage
     depends_on:
       - app
     networks:
