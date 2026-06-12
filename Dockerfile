@@ -36,7 +36,7 @@ COPY . .
 RUN composer install --optimize-autoloader --no-dev
 
 # Compilar assets de frontend (Vite -> public/build)
-RUN npm install && npm run build
+RUN npm install --legacy-peer-deps && npm run build
 
 # Permisos para storage y cache
 RUN chown -R www-data:www-data /var/www/html \
