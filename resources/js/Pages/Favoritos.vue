@@ -50,7 +50,7 @@ async function handleContact(publicationId) {
                 titulo:  pub.Titulo_Publicacion,
                 precio:  pub.Precio_Publicacion,
                 imagen,
-                url: route('publicaciones.show', pub.id),
+                url: route('publicaciones.show', pub.hashid || pub.id),
             },
         });
 

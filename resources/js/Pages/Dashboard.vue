@@ -106,7 +106,7 @@ async function handleContact(publicationId) {
                 titulo:  publication.Titulo_Publicacion,
                 precio:  publication.Precio_Publicacion,
                 imagen,
-                url: route('publicaciones.show', publication.id),
+                url: route('publicaciones.show', publication.hashid || publication.id),
             },
         });
 
