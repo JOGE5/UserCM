@@ -2,7 +2,7 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { ref, watch, computed } from 'vue';
 import { router, Link, useForm } from '@inertiajs/vue3';
-import { Search, BadgeCheck, ShieldCheck, User, ChevronLeft, ChevronRight, MoreHorizontal, UserPlus, X } from 'lucide-vue-next';
+import { Search, BadgeCheck, ShieldCheck, User, ChevronLeft, ChevronRight, MoreHorizontal, UserPlus, X, FileText } from 'lucide-vue-next';
 
 const props = defineProps({
     usuarios: Object,
@@ -13,14 +13,35 @@ const props = defineProps({
 
 const search = ref(props.filters?.search ?? '');
 const rolFilter = ref(props.filters?.rol ?? '');
+const universidadFilter = ref(props.filters?.universidad ?? '');
+const reputacionFilter = ref(props.filters?.reputacion ?? '');
 
 let debounce = null;
-watch([search, rolFilter], () => {
+watch([search, rolFilter, universidadFilter, reputacionFilter], () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => {
-        router.get(route('admin.usuarios'), { search: search.value, rol: rolFilter.value }, { preserveState: true, replace: true });
-    }, 300);
+        router.get(route('admin.usuarios'), { 
+            search: search.value, 
+            rol: rolFilter.value,
+            universidad: universidadFilter.value,
+            reputacion: reputacionFilter.value
+        }, { preserveState: true, preserveScroll: true, replace: true });
+    }, 150); // Búsqueda más rápida (casi tiempo real)
 });
+
+const exportPdf = () => {
+    let url = route('admin.usuarios.pdf');
+    const params = new URLSearchParams();
+    if (search.value) params.append('search', search.value);
+    if (rolFilter.value) params.append('rol', rolFilter.value);
+    if (universidadFilter.value) params.append('universidad', universidadFilter.value);
+    if (reputacionFilter.value) params.append('reputacion', reputacionFilter.value);
+    
+    if (params.toString()) {
+        url += '?' + params.toString();
+    }
+    window.open(url, '_blank');
+};
 
 const rolColors = {
     1: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
@@ -58,12 +79,17 @@ const createForm = useForm({
     name: '',
     Apellidos: '',
     email: '',
-    password: '',
     Cod_Rol: 3,
     Cod_Universidad: '',
     Cod_Carrera: '',
     verificado: true,
 });
+
+const formatTitleCase = (field) => {
+    let text = createForm[field];
+    if (!text) return;
+    createForm[field] = text.toLowerCase().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
+};
 
 const carrerasDisponibles = computed(() => {
     const uni = props.universidades?.find(u => u.Cod_Universidad === Number(createForm.Cod_Universidad));
@@ -90,20 +116,26 @@ const submitCreate = () => {
                     <h1 class="text-xl font-black text-white">Gestión de Usuarios</h1>
                     <p class="text-xs text-gray-500 mt-1">{{ usuarios.total }} usuarios registrados</p>
                 </div>
-                <button @click="openCreate" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-all shrink-0">
-                    <UserPlus class="w-4 h-4" />
-                    Crear usuario
-                </button>
+                <div class="flex items-center gap-3">
+                    <button @click="exportPdf" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-red-100 bg-red-900/40 border border-red-500/30 rounded-xl hover:bg-red-900/60 transition-all shrink-0">
+                        <FileText class="w-4 h-4 text-red-400" />
+                        Exportar PDF
+                    </button>
+                    <button @click="openCreate" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-all shrink-0">
+                        <UserPlus class="w-4 h-4" />
+                        Crear usuario
+                    </button>
+                </div>
             </div>
 
             <!-- Filtros -->
-            <div class="flex flex-col sm:flex-row gap-3">
-                <div class="relative flex-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="relative">
                     <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     <input
                         v-model="search"
                         type="text"
-                        placeholder="Buscar por nombre o email..."
+                        placeholder="Buscar usuario..."
                         class="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all"
                     />
                 </div>
@@ -113,6 +145,23 @@ const submitCreate = () => {
                 >
                     <option value="">Todos los roles</option>
                     <option v-for="r in roles" :key="r.Cod_Rol" :value="r.Cod_Rol">{{ r.Nombre_Rol }}</option>
+                </select>
+                <select
+                    v-model="universidadFilter"
+                    class="px-4 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all text-ellipsis"
+                >
+                    <option value="">Todas las universidades</option>
+                    <option v-for="u in universidades" :key="u.Cod_Universidad" :value="u.Cod_Universidad">{{ u.Nombre_Universidad }}</option>
+                </select>
+                <select
+                    v-model="reputacionFilter"
+                    class="px-4 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
+                >
+                    <option value="">Todas las reputaciones</option>
+                    <option value="EXCELENTE">Excelente</option>
+                    <option value="BUENO">Bueno</option>
+                    <option value="REGULAR">Regular</option>
+                    <option value="MALO">Malo</option>
                 </select>
             </div>
 
@@ -227,13 +276,13 @@ const submitCreate = () => {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Nombre</label>
-                            <input v-model="createForm.name" type="text" placeholder="Nombre"
+                            <input v-model="createForm.name" @input="formatTitleCase('name')" type="text" placeholder="Nombre" maxlength="50"
                                 class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
                             <p v-if="createForm.errors.name" class="text-xs text-rose-400">{{ createForm.errors.name }}</p>
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Apellidos</label>
-                            <input v-model="createForm.Apellidos" type="text" placeholder="Apellidos"
+                            <input v-model="createForm.Apellidos" @input="formatTitleCase('Apellidos')" type="text" placeholder="Apellidos" maxlength="50"
                                 class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
                             <p v-if="createForm.errors.Apellidos" class="text-xs text-rose-400">{{ createForm.errors.Apellidos }}</p>
                         </div>
@@ -244,13 +293,6 @@ const submitCreate = () => {
                         <input v-model="createForm.email" type="email" placeholder="correo@ejemplo.com"
                             class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
                         <p v-if="createForm.errors.email" class="text-xs text-rose-400">{{ createForm.errors.email }}</p>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500">Contraseña</label>
-                        <input v-model="createForm.password" type="text" placeholder="Mínimo 8 caracteres"
-                            class="w-full px-3 py-2.5 text-sm bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-600 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 outline-none transition-all" />
-                        <p v-if="createForm.errors.password" class="text-xs text-rose-400">{{ createForm.errors.password }}</p>
                     </div>
 
                     <div class="space-y-1.5">

@@ -71,7 +71,9 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified'
 ])->group(function () {
-
+    // Rutas para cambio forzoso de contraseña
+    Route::get('/force-change-password', [\App\Http\Controllers\Auth\ForcePasswordController::class, 'show'])->name('force.password.change');
+    Route::post('/force-change-password', [\App\Http\Controllers\Auth\ForcePasswordController::class, 'update'])->name('force.password.update');
 
     Route::get('/dashboard', [PublicacionesController::class, 'index'])->name('dashboard');
 
@@ -186,6 +188,7 @@ Route::middleware([
 
     // Usuarios
     Route::get('/usuarios', [AdminController::class, 'users'])->name('usuarios');
+    Route::get('/usuarios/export-pdf', [AdminController::class, 'exportUsersPdf'])->name('usuarios.pdf');
     Route::post('/usuarios', [AdminController::class, 'storeUser'])->name('usuarios.store');
     Route::patch('/usuarios/{user}/rol', [AdminController::class, 'updateRol'])->name('usuarios.rol');
     Route::patch('/usuarios/{user}/verificado', [AdminController::class, 'updateVerificado'])->name('usuarios.verificado');

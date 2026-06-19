@@ -133,6 +133,14 @@ class AdminController extends Controller
             $query->whereHas('usuarioCampusMarket', fn ($q) => $q->where('Cod_Rol', $rol));
         }
 
+        if ($universidad = $request->get('universidad')) {
+            $query->whereHas('usuarioCampusMarket', fn ($q) => $q->where('Cod_Universidad', $universidad));
+        }
+
+        if ($reputacion = $request->get('reputacion')) {
+            $query->whereHas('reputacionEstado', fn ($q) => $q->where('estado_actual', $reputacion));
+        }
+
         $usuarios = $query->paginate(20)->withQueryString();
         $roles    = Roles::all();
         $universidades = \App\Models\Universidad::with('carreras')
@@ -143,27 +151,67 @@ class AdminController extends Controller
             'usuarios'      => $usuarios,
             'roles'         => $roles,
             'universidades' => $universidades,
-            'filters'       => $request->only('search', 'rol'),
+            'filters'       => $request->only('search', 'rol', 'universidad', 'reputacion'),
         ]);
+    }
+
+    public function exportUsersPdf(Request $request)
+    {
+        $query = User::with(['usuarioCampusMarket.rol', 'usuarioCampusMarket.universidad', 'reputacionEstado'])
+            ->orderBy('created_at', 'desc');
+
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $rolNombre = null;
+        if ($rol = $request->get('rol')) {
+            $query->whereHas('usuarioCampusMarket', fn ($q) => $q->where('Cod_Rol', $rol));
+            $rolNombre = \App\Models\Roles::find($rol)?->Nombre_Rol;
+        }
+
+        $universidadNombre = null;
+        if ($universidad = $request->get('universidad')) {
+            $query->whereHas('usuarioCampusMarket', fn ($q) => $q->where('Cod_Universidad', $universidad));
+            $universidadNombre = \App\Models\Universidad::find($universidad)?->Nombre_Universidad;
+        }
+
+        if ($reputacion = $request->get('reputacion')) {
+            $query->whereHas('reputacionEstado', fn ($q) => $q->where('estado_actual', $reputacion));
+        }
+
+        $usuarios = $query->get();
+        $filters = $request->only('search', 'rol', 'universidad', 'reputacion');
+        $filters['rolNombre'] = $rolNombre;
+        $filters['universidadNombre'] = $universidadNombre;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.usuarios', compact('usuarios', 'filters'));
+        
+        return $pdf->download('reporte_usuarios_campus_market.pdf');
     }
 
     public function storeUser(Request $request)
     {
         $data = $request->validate([
-            'name'            => 'required|string|max:255',
-            'Apellidos'       => 'nullable|string|max:60',
+            'name'            => 'required|string|max:50',
+            'Apellidos'       => 'nullable|string|max:50',
             'email'           => 'required|email|max:255|unique:users,email',
-            'password'        => 'required|string|min:8',
             'Cod_Rol'         => 'required|exists:roles,Cod_Rol',
             'Cod_Universidad' => 'required|exists:universidades,Cod_Universidad',
             'Cod_Carrera'     => 'required|exists:carreras,Cod_Carrera',
             'verificado'      => 'boolean',
         ]);
 
+        $tempPassword = \Illuminate\Support\Str::random(10);
+
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => $data['password'],
+            'name'                  => $data['name'],
+            'email'                 => $data['email'],
+            'password'              => \Illuminate\Support\Facades\Hash::make($tempPassword),
+            'force_password_change' => true,
         ]);
         $user->email_verified_at = now();
         $user->save();
@@ -177,7 +225,13 @@ class AdminController extends Controller
             'verificado'      => $request->boolean('verificado'),
         ]);
 
-        return back()->with('success', 'Usuario creado correctamente.');
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserCredentialsMail($user, $tempPassword));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error enviando correo de credenciales: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Usuario creado correctamente y correo enviado.');
     }
 
     public function updateRol(Request $request, User $user)

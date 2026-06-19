@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \App\Http\Middleware\RedirectIfProfileIncomplete::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\ForcePasswordChange::class,
             // EnsureTwoFactorEnabled: deshabilitado. Forzaba a TODO usuario sin 2FA a
             // 'complete-profile' en cada request, pero completar el perfil no activa el 2FA
             // -> bucle inescapable. Reactivar solo si se reimplementa apuntando a la

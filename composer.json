@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "bacon/bacon-qr-code": "*",
+        "barryvdh/laravel-dompdf": "^3.1",
         "filament/filament": "*",
         "google/cloud-vision": "^2.1",
         "hashids/hashids": "*",
