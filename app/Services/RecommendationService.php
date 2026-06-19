@@ -38,7 +38,7 @@ class RecommendationService
                 'publicaciones.Titulo_Publicacion',
                 'publicaciones.Precio_Publicacion',
                 'publicaciones.Imagen_Publicacion',
-                'publicaciones.ID_Categoria',
+                'publicaciones.Cod_Categoria',
                 'usuarios_campus_markets.Cod_Carrera as Vendedor_Carrera',
                 'usuarios_campus_markets.Cod_Universidad as Vendedor_Universidad',
                 'reputacion_estado.estado_actual'
