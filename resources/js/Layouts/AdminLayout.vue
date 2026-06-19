@@ -49,9 +49,7 @@ const logout = () => router.post(route('logout'));
         ]">
             <!-- Logo -->
             <div class="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
-                <div class="p-2 rounded-xl bg-indigo-600">
-                    <Shield class="w-5 h-5 text-white" />
-                </div>
+                <img src="/images/posters/logo-team.png" alt="Logo" class="h-8 w-auto object-contain" />
                 <div>
                     <p class="text-sm font-bold text-white">Campus Market</p>
                     <p class="text-xs text-indigo-400 font-semibold">Panel Admin</p>
