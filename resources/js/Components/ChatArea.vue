@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, nextTick, onMounted, onBeforeUnmount, computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
+import { usePage, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import {
     Send,
@@ -403,10 +403,10 @@ const isImage = (msg) => msg.attachment_type === 'image';
                                         <span :class="['text-[9px] font-black uppercase tracking-widest', msg.sender_id === currentUserId ? 'text-white/60' : 'text-brand-500']">Publicación compartida</span>
                                     </div>
                                     <p :class="['font-black text-sm leading-snug mb-3', msg.sender_id === currentUserId ? 'text-white' : 'text-gray-900 dark:text-white']">{{ msg.metadata.titulo }}</p>
-                                    <a :href="msg.metadata.url" :class="['flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all', msg.sender_id === currentUserId ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-500/20']">
+                                    <button @click="router.visit(msg.metadata.url)" :class="['flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all', msg.sender_id === currentUserId ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-500/20']">
                                         <ExternalLink class="w-3.5 h-3.5" />
                                         Ver publicación
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1 text-[8px] font-bold opacity-50 mt-1 px-1">
