@@ -61,7 +61,7 @@ class PublicacionesController extends Controller
             ->when($request->filled('condicion'), fn ($q) =>
                 $q->where('condicion_producto', $request->condicion))
             ->orderBy($orderColumn, $orderDirection)
-            ->paginate(15)
+            ->paginate(16)
             ->withQueryString(); // preserva los filtros en los links de paginación
 
         try {

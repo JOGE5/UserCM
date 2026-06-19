@@ -200,7 +200,7 @@ const profilePhotoUrl = computed(() => {
 
                 <!-- Menú Usuario -->
                 <div class="relative z-50 float-3d">
-                    <Dropdown align="right" width="56">
+                    <Dropdown align="right" width="56" :content-classes="[]">
                         <template #trigger>
                             <button class="flex items-center gap-2 p-1.5 pr-1.5 xl:pr-4 rounded-full bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/80 transition-all shadow-sm backdrop-blur-md">
                                 <img :src="profilePhotoUrl" class="h-8 w-8 rounded-full object-cover ring-2 ring-white/50 dark:ring-white/10" :alt="user?.name" />
