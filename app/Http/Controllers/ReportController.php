@@ -39,6 +39,12 @@ class ReportController extends Controller
             'metadata' => $validated['metadata'] ?? null,
         ]);
 
+        // Procesar reporte usando NLP
+        if ($validated['reason']) {
+            $nlpService = app(\App\Services\NLPModerationService::class);
+            $nlpService->processReport($report, $validated['reason']);
+        }
+
         // Si el reporte es por imagen explícita, crear una notificación para admins
         $reason = strtolower($validated['reason'] ?? '');
         $ownerUserId = optional($publicacion->vendedor)->user_id ?? null;
@@ -103,6 +109,12 @@ class ReportController extends Controller
             'reason' => $validated['reason'] ?? null,
             'metadata' => $validated['metadata'] ?? null,
         ]);
+
+        // Procesar reporte usando NLP
+        if ($validated['reason']) {
+            $nlpService = app(\App\Services\NLPModerationService::class);
+            $nlpService->processReport($report, $validated['reason']);
+        }
 
         return back()->with('success', 'Reporte enviado. Gracias por informarnos.');
     }

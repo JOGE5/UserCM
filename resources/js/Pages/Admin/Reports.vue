@@ -2,12 +2,13 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { ref, watch } from 'vue';
 import { router, Link } from '@inertiajs/vue3';
-import { Search, EyeOff, ExternalLink, ChevronLeft, ChevronRight, Flag } from 'lucide-vue-next';
+import { Search, EyeOff, ExternalLink, ChevronLeft, ChevronRight, Flag, CheckCircle2, ShieldBan } from 'lucide-vue-next';
 
 const props = defineProps({
     reportes: Object,
     filters: Object,
     queueMetrics: Object,
+    assignments: Object,
 });
 
 const search = ref(props.filters?.search ?? '');
@@ -36,8 +37,16 @@ watch(search, () => {
     }, 300);
 });
 
-const ocultarPublicacion = (pubId) => {
-    router.patch(route('admin.reportes.ocultar', pubId), {}, { preserveScroll: true });
+const resolveReport = (reportId) => {
+    if (confirm('¿Estás seguro de sancionar al usuario y ocultar el contenido?')) {
+        router.patch(route('admin.reportes.resolve', reportId), {}, { preserveScroll: true });
+    }
+};
+
+const dismissReport = (reportId) => {
+    if (confirm('¿Descartar este reporte? (Falsa alarma)')) {
+        router.patch(route('admin.reportes.dismiss', reportId), {}, { preserveScroll: true });
+    }
 };
 
 const formatDate = (d) => d ? new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(d)) : '—';
@@ -157,6 +166,7 @@ const formatDate = (d) => d ? new Intl.DateTimeFormat('es-ES', { day: '2-digit',
                                 <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Publicación reportada</th>
                                 <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Reportado por</th>
                                 <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Razón</th>
+                                <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Moderador Asignado (M. Húngaro)</th>
                                 <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Fecha</th>
                                 <th class="px-5 py-3.5 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest">Acciones</th>
                             </tr>
@@ -183,17 +193,28 @@ const formatDate = (d) => d ? new Intl.DateTimeFormat('es-ES', { day: '2-digit',
                                     <p class="text-xs text-gray-400 line-clamp-2">{{ r.reason ?? '—' }}</p>
                                 </td>
                                 <td class="px-5 py-4">
+                                    <div v-if="assignments && assignments[r.id]" class="flex flex-col gap-1">
+                                        <span class="inline-flex items-center w-fit px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border border-purple-500/20 bg-purple-500/10 text-purple-400">
+                                            {{ assignments[r.id].moderator_name }}
+                                        </span>
+                                        <span class="text-[9px] text-gray-500 font-bold">Costo est.: {{ assignments[r.id].cost_score }}</span>
+                                    </div>
+                                    <span v-else class="text-[10px] text-gray-600">No asignado</span>
+                                </td>
+                                <td class="px-5 py-4">
                                     <span class="text-[10px] text-gray-500">{{ formatDate(r.created_at) }}</span>
                                 </td>
                                 <td class="px-5 py-4">
                                     <div class="flex items-center justify-center gap-2">
-                                        <Link v-if="r.reportable_id" :href="route('publicaciones.show', r.reportable_id)" target="_blank"
-                                            class="p-1.5 text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-all" title="Ver publicación">
-                                            <ExternalLink class="w-3.5 h-3.5" />
-                                        </Link>
-                                        <button v-if="r.pub_estado !== 'oculta' && r.reportable_id" @click="ocultarPublicacion(r.reportable_id)"
-                                            class="p-1.5 text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 transition-all" title="Ocultar publicación">
-                                            <EyeOff class="w-3.5 h-3.5" />
+                                        <button @click="dismissReport(r.id)"
+                                            class="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg hover:bg-emerald-500/20 transition-all" title="Descartar reporte (Falsa alarma)">
+                                            <CheckCircle2 class="w-3.5 h-3.5" />
+                                            Ignorar
+                                        </button>
+                                        <button @click="resolveReport(r.id)"
+                                            class="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg hover:bg-rose-500/20 transition-all" title="Sancionar usuario y Ocultar contenido">
+                                            <ShieldBan class="w-3.5 h-3.5" />
+                                            Sancionar
                                         </button>
                                     </div>
                                 </td>

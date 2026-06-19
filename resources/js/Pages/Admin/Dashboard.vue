@@ -1,9 +1,10 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Users, FileText, MessageSquare, Flag } from 'lucide-vue-next';
+import { Users, FileText, MessageSquare, Flag, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next';
 
 const props = defineProps({
     stats: Object,
+    forecast: Object,
 });
 
 const cards = [
@@ -34,6 +35,38 @@ const cards = [
                     <div>
                         <p class="text-2xl font-black text-white">{{ card.value }}</p>
                         <p class="text-xs text-gray-500 font-medium">{{ card.label }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forecast Section -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-sm font-bold text-white">Predicción de Ventas y Actividad (Próxima Semana)</h2>
+                        <p class="text-xs text-gray-500 mt-1">Calculado mediante Suavizado Exponencial Simple (\(\alpha=0.3\))</p>
+                    </div>
+                    <div class="p-3 rounded-xl" :class="{
+                        'bg-emerald-500/10 text-emerald-400': forecast.trend === 'up',
+                        'bg-rose-500/10 text-rose-400': forecast.trend === 'down',
+                        'bg-gray-800 text-gray-400': forecast.trend === 'stable' || forecast.trend === 'insufficient_data'
+                    }">
+                        <TrendingUp v-if="forecast.trend === 'up'" class="w-6 h-6" />
+                        <TrendingDown v-else-if="forecast.trend === 'down'" class="w-6 h-6" />
+                        <Minus v-else class="w-6 h-6" />
+                    </div>
+                </div>
+                
+                <div class="flex items-end gap-4">
+                    <div>
+                        <p class="text-4xl font-black" :class="{
+                            'text-emerald-400': forecast.trend === 'up',
+                            'text-rose-400': forecast.trend === 'down',
+                            'text-gray-300': forecast.trend === 'stable' || forecast.trend === 'insufficient_data'
+                        }">
+                            {{ forecast.prediction || 0 }}
+                        </p>
+                        <p class="text-xs text-gray-500 font-bold mt-1 uppercase tracking-widest">Nuevas Publicaciones Esperadas</p>
                     </div>
                 </div>
             </div>

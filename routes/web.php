@@ -194,11 +194,27 @@ Route::middleware([
 
     // Reportes
     Route::get('/reportes', [AdminController::class, 'reports'])->name('reportes');
-    Route::patch('/reportes/{publicacionId}/ocultar', [AdminController::class, 'hideReportedPublication'])->name('reportes.ocultar');
+    Route::patch('/reportes/{reportId}/resolve', [AdminController::class, 'resolveReport'])->name('reportes.resolve');
+    Route::patch('/reportes/{reportId}/dismiss', [AdminController::class, 'dismissReport'])->name('reportes.dismiss');
 
     // Roles (CRUD)
     Route::get('/roles', [AdminController::class, 'roles'])->name('roles');
     Route::post('/roles', [AdminController::class, 'rolesStore'])->name('roles.store');
     Route::patch('/roles/{rol}', [AdminController::class, 'rolesUpdate'])->name('roles.update');
     Route::delete('/roles/{rol}', [AdminController::class, 'rolesDestroy'])->name('roles.destroy');
+
+    // Notificaciones
+    Route::get('/notificaciones', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notificaciones');
+    Route::post('/notificaciones', [\App\Http\Controllers\Admin\NotificationController::class, 'store'])->name('notificaciones.store');
+
+    // Universidades
+    Route::get('/universidades', [AdminController::class, 'universities'])->name('universidades');
+    Route::post('/universidades', [AdminController::class, 'universitiesStore'])->name('universidades.store');
+    Route::put('/universidades/{universidad}', [AdminController::class, 'universitiesUpdate'])->name('universidades.update');
+    Route::delete('/universidades/{universidad}', [AdminController::class, 'universitiesDestroy'])->name('universidades.destroy');
+
+    // Foros
+    Route::get('/foros', [AdminController::class, 'forums'])->name('foros');
+    Route::patch('/foros/{foro}', [AdminController::class, 'forumsUpdate'])->name('foros.update');
+    Route::delete('/foros/{foro}', [AdminController::class, 'forumsDestroy'])->name('foros.destroy');
 });

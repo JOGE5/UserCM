@@ -65,46 +65,14 @@ class PublicacionesController extends Controller
             ->withQueryString(); // preserva los filtros en los links de paginación
 
         try {
-            $markov = new MarkovReputationService();
-            $userUniversidad = $usuarioCampusMarket?->Cod_Universidad;
-
-            $mejores = Publicaciones::with(['categoria', 'vendedor.user.reputacionEstado'])
-                ->where('estado', 'activa')
-                ->get()
-                ->map(function ($pub) use ($markov, $userUniversidad) {
-                    $promedio = $markov->calcularPromedioCalificaciones($pub->vendedor?->user);
-                    
-                    // Algoritmo de Scoring (Recomendación)
-                    $score = 0;
-                    
-                    // 1. Afinidad de Universidad (+50 pts)
-                    if ($userUniversidad && $pub->vendedor?->Cod_Universidad == $userUniversidad) {
-                        $score += 50;
-                    }
-
-                    // 2. Popularidad (+1 pt por cada 5 vistas, max 30)
-                    $score += min(30, floor($pub->Vistas_Publicacion / 5));
-
-                    // 3. Reputación del vendedor (+20 pts si promedio >= 4)
-                    if ($promedio >= 4) {
-                        $score += 20;
-                    } elseif ($promedio < 2 && $promedio > 0) {
-                        $score -= 20; // Penalización si es mal vendedor
-                    }
-
-                    $arr = $pub->toArray();
-                    if (isset($arr['vendedor']) && $pub->vendedor?->user_id) {
-                        $arr['vendedor']['user_id'] = $pub->vendedor->user_id;
-                    }
-                    return array_merge($arr, [
-                        'calificacion_promedio' => $promedio,
-                        'recommendation_score' => $score
-                    ]);
-                })
-                ->sortByDesc('recommendation_score')
-                ->values()
-                ->take(6)
-                ->all();
+            $recommendationService = app(\App\Services\RecommendationService::class);
+            $user = User::find($userId);
+            
+            if ($user) {
+                $mejores = $recommendationService->getRecommendationsForUser($user, 6);
+            } else {
+                $mejores = collect();
+            }
         } catch (\Throwable $e) {
             Log::error('Error calculando mejores valorados: '.$e->getMessage());
             $mejores = [];

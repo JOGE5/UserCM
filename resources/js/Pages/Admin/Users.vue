@@ -28,6 +28,19 @@ const rolColors = {
     3: 'bg-gray-700/50 border-gray-600 text-gray-400',
 };
 
+const markovColors = {
+    'Excelente': 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
+    'Bueno': 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+    'Regular': 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+    'Malo': 'bg-rose-500/10 border-rose-500/20 text-rose-400',
+};
+
+const getMarkovProb = (reputacion) => {
+    if (!reputacion) return 0;
+    const key = `p_${reputacion.estado_actual.toLowerCase()}`;
+    return ((reputacion[key] || 0) * 100).toFixed(0);
+};
+
 const toggleVerificado = (userId) => {
     router.patch(route('admin.usuarios.verificado', userId), {}, { preserveScroll: true });
 };
@@ -110,6 +123,7 @@ const submitCreate = () => {
                         <thead>
                             <tr class="border-b border-gray-800">
                                 <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Usuario</th>
+                                <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Reputación (Markov)</th>
                                 <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Universidad</th>
                                 <th class="px-5 py-3.5 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Rol</th>
                                 <th class="px-5 py-3.5 text-center text-[10px] font-black text-gray-500 uppercase tracking-widest">Verificado</th>
@@ -129,6 +143,16 @@ const submitCreate = () => {
                                             <p class="text-[10px] text-gray-500">{{ u.email }}</p>
                                         </div>
                                     </div>
+                                </td>
+                                <td class="px-5 py-4">
+                                    <div v-if="u.reputacion_estado" class="flex flex-col gap-1">
+                                        <span class="inline-flex items-center w-fit px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded border"
+                                              :class="markovColors[u.reputacion_estado.estado_actual]">
+                                            {{ u.reputacion_estado.estado_actual }}
+                                        </span>
+                                        <span class="text-[9px] text-gray-500 font-bold">Probabilidad: {{ getMarkovProb(u.reputacion_estado) }}%</span>
+                                    </div>
+                                    <span v-else class="text-[10px] text-gray-600">Sin datos</span>
                                 </td>
                                 <td class="px-5 py-4">
                                     <span class="text-xs text-gray-400">{{ u.usuario_campus_market?.universidad?.Nombre_Universidad ?? '—' }}</span>

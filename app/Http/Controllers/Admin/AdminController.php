@@ -34,12 +34,18 @@ class AdminController extends Controller
                 ->get(),
         ];
 
-        return Inertia::render('Admin/Dashboard', compact('stats'));
+        $forecastService = app(\App\Services\ForecastService::class);
+        $forecast = $forecastService->predictNextWeekPublications(0.3); // alpha = 0.3
+
+        return Inertia::render('Admin/Dashboard', [
+            'stats' => $stats,
+            'forecast' => $forecast,
+        ]);
     }
 
     public function users(Request $request)
     {
-        $query = User::with(['usuarioCampusMarket.rol', 'usuarioCampusMarket.universidad'])
+        $query = User::with(['usuarioCampusMarket.rol', 'usuarioCampusMarket.universidad', 'reputacionEstado'])
             ->orderBy('created_at', 'desc');
 
         if ($search = $request->get('search')) {
@@ -209,24 +215,57 @@ class AdminController extends Controller
 
     public function reports(Request $request, \App\Services\QueueTheoryService $queueService)
     {
-        $query = DB::table('reportsPubli')
-            ->leftJoin('publicaciones', 'reportsPubli.reportable_id', '=', 'publicaciones.id')
-            ->leftJoin('users as reporter', 'reportsPubli.reporter_id', '=', 'reporter.id')
-            ->select(
-                'reportsPubli.*',
-                'publicaciones.Titulo_Publicacion',
-                'publicaciones.estado as pub_estado',
-                'reporter.name as reporter_name',
-                'reporter.email as reporter_email'
-            )
-            ->where('reportsPubli.reportable_type', 'like', '%Publicaciones%')
-            ->orderBy('reportsPubli.created_at', 'desc');
+        $query = \App\Models\Report::with(['reporter', 'reportable'])
+            ->where(function($q) {
+                $q->where('status', 'pending')
+                  ->orWhereNull('status');
+            })
+            ->orderBy('created_at', 'desc');
 
         if ($search = $request->get('search')) {
-            $query->where('publicaciones.Titulo_Publicacion', 'like', "%{$search}%");
+            $query->whereHasMorph('reportable', [\App\Models\Publicaciones::class, \App\Models\Foro::class], function($q, $type) use ($search) {
+                if ($type === \App\Models\Publicaciones::class) {
+                    $q->where('Titulo_Publicacion', 'like', "%{$search}%");
+                } elseif ($type === \App\Models\Foro::class) {
+                    $q->where('Titulo_Foro', 'like', "%{$search}%");
+                }
+            });
         }
 
+        // Map data to match what the Vue component expects
         $reportes = $query->paginate(20)->withQueryString();
+        
+        // Transform items to include unified fields for the UI
+        $reportes->getCollection()->transform(function ($report) {
+            $titulo = 'Contenido eliminado';
+            $estado = '—';
+            $autorId = null;
+            
+            if ($report->reportable) {
+                if ($report->reportable_type === \App\Models\Publicaciones::class || str_contains($report->reportable_type, 'Publicaciones')) {
+                    $titulo = '[Publicación] ' . $report->reportable->Titulo_Publicacion;
+                    $estado = $report->reportable->estado;
+                    $autorId = $report->reportable->vendedor?->user_id;
+                } else {
+                    $titulo = '[Foro] ' . $report->reportable->Titulo_Foro;
+                    $estado = $report->reportable->Estado_Foro ? 'activo' : 'oculto';
+                    $autorId = $report->reportable->creador?->user_id ?? $report->reportable->ID_Creador; // Dependiendo de la relación
+                }
+            }
+
+            return [
+                'id' => $report->id,
+                'reportable_type' => $report->reportable_type,
+                'reportable_id' => $report->reportable_id,
+                'reporter_name' => $report->reporter?->name ?? 'Sistema NLP',
+                'reporter_email' => $report->reporter?->email ?? 'Bot',
+                'reason' => $report->reason,
+                'created_at' => $report->created_at,
+                'pub_estado' => $estado,
+                'Titulo_Publicacion' => $titulo,
+                'autor_user_id' => $autorId,
+            ];
+        });
 
         // -------------------------------------------------------------
         // CÁLCULOS TEORÍA DE COLAS (M/M/c) PARA LA PRESENTACIÓN
@@ -263,20 +302,190 @@ class AdminController extends Controller
 
         $queueMetrics = $queueService->calculateMetrics($realLambda1, $realLambda2, $realMu, $c);
 
+        // -------------------------------------------------------------
+        // ASIGNACIÓN ÓPTIMA DE MODERADORES (Algoritmo Húngaro / Heurístico)
+        // -------------------------------------------------------------
+        $assignmentService = app(\App\Services\ModeratorAssignmentService::class);
+        $assignments = $assignmentService->getOptimalAssignments(collect($reportes->items()));
+
         return Inertia::render('Admin/Reports', [
             'reportes' => $reportes,
             'filters'  => $request->only('search', 'c'),
             'queueMetrics' => $queueMetrics,
+            'assignments' => $assignments,
         ]);
     }
 
-    public function hideReportedPublication(Request $request, $publicacionId)
+    public function resolveReport(Request $request, $reportId)
     {
-        Publicaciones::where('id', $publicacionId)->update([
-            'estado'    => 'oculta',
-            'oculta_at' => now(),
+        $report = \App\Models\Report::findOrFail($reportId);
+        
+        // 1. Ocultar el contenido (Publicación o Foro)
+        if ($report->reportable_type === \App\Models\Publicaciones::class || str_contains($report->reportable_type, 'Publicaciones')) {
+            $report->reportable->update([
+                'estado'    => 'oculta',
+                'oculta_at' => now(),
+            ]);
+        } elseif ($report->reportable_type === \App\Models\Foro::class || str_contains($report->reportable_type, 'Foro')) {
+            $report->reportable->update([
+                'Estado_Foro' => 0, // 0 = Oculto
+            ]);
+        }
+
+        // 2. Opcional: Castigar al usuario en Markov (-50)
+        $autorId = null;
+        if ($report->reportable_type === \App\Models\Publicaciones::class || str_contains($report->reportable_type, 'Publicaciones')) {
+            $autorId = $report->reportable->vendedor?->user_id;
+        } else {
+            // Foros
+            $autorId = $report->reportable->creador?->user_id ?? $report->reportable->ID_Creador;
+        }
+
+        if ($autorId) {
+            $autorUser = \App\Models\User::find($autorId);
+            if ($autorUser) {
+                // Crear una puntuación negativa en ReputacionEntreUsuarios
+                \App\Models\ReputacionEntreUsuarios::create([
+                    'ID_Usuario_Calificador' => auth()->id(), // El Admin
+                    'ID_Usuario_Calificado' => $autorId,
+                    'Puntuacion' => 1, // La puntuación más baja posible
+                    'Comentario' => 'Sanción administrativa por violación de normas.',
+                ]);
+                
+                // Actualizar estado Markov
+                $markovService = new \App\Services\MarkovReputationService();
+                $markovService->actualizarEstado($autorUser);
+            }
+        }
+
+        // 3. Cerrar el reporte
+        $report->update([
+            'status' => 'resolved',
+            'resolved_at' => now(),
+            'admin_note' => 'Contenido ocultado y usuario sancionado.',
         ]);
 
-        return back()->with('success', 'Publicación ocultada correctamente.');
+        return back()->with('success', 'Reporte resuelto. Contenido oculto y usuario sancionado.');
+    }
+
+    public function dismissReport(Request $request, $reportId)
+    {
+        $report = \App\Models\Report::findOrFail($reportId);
+        $report->update([
+            'status' => 'dismissed',
+            'resolved_at' => now(),
+            'admin_note' => 'Reporte descartado (Falsa alarma).',
+        ]);
+
+        return back()->with('success', 'Reporte descartado. La cola se ha liberado.');
+    }
+
+    // ==================== GESTIÓN DE UNIVERSIDADES ====================
+
+    public function universities()
+    {
+        $universidades = \App\Models\Universidad::withCount('carreras')
+            ->orderBy('Nombre_Universidad')
+            ->get();
+
+        return Inertia::render('Admin/Universities', [
+            'universidades' => $universidades,
+        ]);
+    }
+
+    public function universitiesStore(Request $request)
+    {
+        $data = $request->validate([
+            'Nombre_Universidad' => 'required|string|max:255|unique:universidades,Nombre_Universidad',
+            'Sede_Universidad' => 'nullable|string|max:255',
+            'imgen' => 'nullable|image|max:2048',
+        ]);
+
+        $imagePath = null;
+        if ($request->hasFile('imgen')) {
+            $imagePath = $request->file('imgen')->store('universidades', 'public');
+        }
+
+        \App\Models\Universidad::create([
+            'Nombre_Universidad' => $data['Nombre_Universidad'],
+            'Sede_Universidad' => $data['Sede_Universidad'] ?? null,
+            'Universisdad_foto_de_perfil' => $imagePath, // Typo in original DB schema preserved
+        ]);
+
+        return back()->with('success', 'Universidad creada correctamente.');
+    }
+
+    public function universitiesUpdate(Request $request, \App\Models\Universidad $universidad)
+    {
+        $data = $request->validate([
+            'Nombre_Universidad' => 'required|string|max:255|unique:universidades,Nombre_Universidad,'.$universidad->Cod_Universidad.',Cod_Universidad',
+            'Sede_Universidad' => 'nullable|string|max:255',
+            'imgen' => 'nullable|image|max:2048',
+        ]);
+
+        $updateData = [
+            'Nombre_Universidad' => $data['Nombre_Universidad'],
+            'Sede_Universidad' => $data['Sede_Universidad'] ?? null,
+        ];
+
+        if ($request->hasFile('imgen')) {
+            $updateData['Universisdad_foto_de_perfil'] = $request->file('imgen')->store('universidades', 'public');
+        }
+
+        $universidad->update($updateData);
+
+        return back()->with('success', 'Universidad actualizada correctamente.');
+    }
+
+    public function universitiesDestroy(\App\Models\Universidad $universidad)
+    {
+        if ($universidad->carreras()->count() > 0) {
+            return back()->with('error', 'No se puede eliminar porque tiene carreras asociadas.');
+        }
+
+        $universidad->delete();
+
+        return back()->with('success', 'Universidad eliminada correctamente.');
+    }
+
+    // ==================== GESTIÓN DE FOROS ====================
+
+    public function forums(Request $request)
+    {
+        $query = \App\Models\Foro::with(['autor', 'categoria'])
+            ->withCount('comentarios')
+            ->orderBy('created_at', 'desc');
+
+        if ($search = $request->get('search')) {
+            $query->where('Titulo_Foro', 'like', "%{$search}%");
+        }
+
+        if ($estado = $request->get('estado')) {
+            $query->where('Estado_Foro', $estado);
+        }
+
+        $foros = $query->paginate(20)->withQueryString();
+
+        return Inertia::render('Admin/Forums', [
+            'foros' => $foros,
+            'filters' => $request->only('search', 'estado'),
+        ]);
+    }
+
+    public function forumsUpdate(Request $request, \App\Models\Foro $foro)
+    {
+        $request->validate(['Estado_Foro' => 'required|boolean']);
+        $foro->update(['Estado_Foro' => $request->Estado_Foro]);
+
+        return back()->with('success', 'Estado del foro actualizado.');
+    }
+
+    public function forumsDestroy(\App\Models\Foro $foro)
+    {
+        // Esto depende de cómo tengas configurada tu base de datos (cascada o no)
+        $foro->comentarios()->delete();
+        $foro->delete();
+
+        return back()->with('success', 'Foro eliminado correctamente.');
     }
 }

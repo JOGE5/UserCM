@@ -49,6 +49,12 @@ class AdminLoginController extends Controller
             ]);
         }
 
+        if (strtolower($perfil->Estado) !== 'activo' && strtolower($perfil->Estado) !== 'habilitado') {
+            throw ValidationException::withMessages([
+                'email' => 'Su cuenta se encuentra inhabilitada o suspendida.',
+            ]);
+        }
+
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
