@@ -21,8 +21,13 @@ class ForecastService
     public function predictNextWeekPublications(float $alpha = 0.3): array
     {
         // Obtener historial de las últimas 8 semanas (agrupado por semana)
+        // YEARWEEK() es de MySQL; en PostgreSQL usamos to_char(...,'IYYYIW') = año+semana ISO.
+        $semanaExpr = DB::connection()->getDriverName() === 'pgsql'
+            ? "to_char(created_at, 'IYYYIW')"
+            : 'YEARWEEK(created_at, 1)';
+
         $historicalData = DB::table('publicaciones')
-            ->select(DB::raw('YEARWEEK(created_at, 1) as semana'), DB::raw('count(*) as total'))
+            ->select(DB::raw("{$semanaExpr} as semana"), DB::raw('count(*) as total'))
             ->where('created_at', '>=', Carbon::now()->subWeeks(8))
             ->groupBy('semana')
             ->orderBy('semana', 'asc')

@@ -15,8 +15,19 @@ class AdminController extends Controller
 {
     public function dashboard()
     {
+        $totalUsuarios      = UsuarioCampusMarket::count();
+        $usuariosActivos    = UsuarioCampusMarket::where('Estado', 'Activo')->count();
+        $totalUniversidades = DB::table('universidades')->count();
+        $totalCarreras      = DB::table('carreras')->count();
+
         $stats = [
-            'total_usuarios'      => UsuarioCampusMarket::count(),
+            'total_usuarios'                => $totalUsuarios,
+            'usuarios_activos'              => $usuariosActivos,
+            'usuarios_inactivos'            => $totalUsuarios - $usuariosActivos,
+            'total_universidades'           => $totalUniversidades,
+            'universidades_nuevas'          => DB::table('universidades')->where('created_at', '>=', now()->subDays(30))->count(),
+            'total_carreras'                => $totalCarreras,
+            'promedio_carreras_universidad' => $totalUniversidades > 0 ? round($totalCarreras / $totalUniversidades, 1) : 0,
             'total_publicaciones' => DB::table('publicaciones')->count(),
             'total_foros'         => DB::table('foros')->count(),
             'total_reportes'      => DB::table('reportsPubli')->count(),
@@ -41,6 +52,69 @@ class AdminController extends Controller
             'stats' => $stats,
             'forecast' => $forecast,
         ]);
+    }
+
+    public function analitica(\App\Services\QueueTheoryService $queueService)
+    {
+        // ---- Cadena de Markov (Reputación) ----
+        $markov = app(\App\Services\MarkovReputationService::class);
+        $estados = $markov->getStates();
+        $matriz = $markov->getMatrizTransicion();
+        $estacionaria = $markov->calcularDistribucionEstacionaria();
+
+        $dist = DB::table('reputacion_estado')
+            ->select('estado_actual', DB::raw('count(*) as total'))
+            ->groupBy('estado_actual')
+            ->pluck('total', 'estado_actual');
+        $distribucionActual = [];
+        foreach ($estados as $e) {
+            $distribucionActual[$e] = (int) ($dist[$e] ?? 0);
+        }
+
+        // ---- Teoría de colas (cola de reportes, M/M/c) ----
+        $c = 2;
+        $days = 30;
+        $totalReports = DB::table('reportsPubli')->where('created_at', '>=', now()->subDays($days))->count();
+        $urgentReports = DB::table('reportsPubli')->where('created_at', '>=', now()->subDays($days))
+            ->where(function ($q) {
+                $q->where('reason', 'like', '%ofensiv%')
+                  ->orWhere('reason', 'like', '%acoso%')
+                  ->orWhere('reason', 'like', '%insult%')
+                  ->orWhere('reason', 'like', '%explícit%')
+                  ->orWhere('reason', 'like', '%imagen%');
+            })->count();
+        $normalReports = $totalReports - $urgentReports;
+        $lambda1 = $days > 0 ? $urgentReports / $days : 0;
+        $lambda2 = $days > 0 ? $normalReports / $days : 0;
+        $usandoEjemplo = ($lambda1 + $lambda2) < 1;
+        if ($usandoEjemplo) {
+            $lambda1 = 8;
+            $lambda2 = 12;
+        }
+        $mu = 15;
+        $colas = $queueService->calculateMetrics($lambda1, $lambda2, $mu, $c);
+        $colas['usando_ejemplo'] = $usandoEjemplo;
+
+        return Inertia::render('Admin/Analitica', [
+            'markov' => [
+                'estados' => $estados,
+                'matriz' => $matriz,
+                'estacionaria' => $estacionaria,
+                'distribucionActual' => $distribucionActual,
+                'totalCalculados' => array_sum($distribucionActual),
+            ],
+            'colas' => $colas,
+        ]);
+    }
+
+    public function recalcularReputaciones(\App\Services\MarkovReputationService $markov)
+    {
+        $users = User::all();
+        foreach ($users as $user) {
+            $markov->actualizarEstado($user);
+        }
+
+        return back()->with('success', 'Reputación recalculada para '.$users->count().' usuario(s).');
     }
 
     public function users(Request $request)
@@ -446,6 +520,227 @@ class AdminController extends Controller
         $universidad->delete();
 
         return back()->with('success', 'Universidad eliminada correctamente.');
+    }
+
+    // ==================== GESTIÓN DE CARRERAS ====================
+
+    public function carreras()
+    {
+        $carreras = \App\Models\Carrera::with('universidad')
+            ->withCount('usuariosCampusMarket')
+            ->orderBy('Nombre_Carrera')
+            ->get();
+
+        $universidades = \App\Models\Universidad::orderBy('Nombre_Universidad')
+            ->get(['Cod_Universidad', 'Nombre_Universidad']);
+
+        return Inertia::render('Admin/Carreras', [
+            'carreras' => $carreras,
+            'universidades' => $universidades,
+        ]);
+    }
+
+    public function carrerasStore(Request $request)
+    {
+        $data = $request->validate([
+            'Nombre_Carrera' => 'required|string|max:120',
+            'Cod_Universidad' => 'required|exists:universidades,Cod_Universidad',
+            'Descripcion_Carrera' => 'nullable|string|max:1000',
+            'Duracion_Carrera' => 'nullable|string|max:50',
+            'imgen' => 'nullable|image|max:2048',
+        ]);
+
+        $imagePath = null;
+        if ($request->hasFile('imgen')) {
+            $imagePath = $request->file('imgen')->store('carreras', 'public');
+        }
+
+        \App\Models\Carrera::create([
+            'Nombre_Carrera' => $data['Nombre_Carrera'],
+            'Cod_Universidad' => $data['Cod_Universidad'],
+            'Descripcion_Carrera' => $data['Descripcion_Carrera'] ?? null,
+            'Duracion_Carrera' => $data['Duracion_Carrera'] ?? null,
+            'Foto_Carrera' => $imagePath,
+        ]);
+
+        return back()->with('success', 'Carrera creada correctamente.');
+    }
+
+    public function carrerasUpdate(Request $request, \App\Models\Carrera $carrera)
+    {
+        $data = $request->validate([
+            'Nombre_Carrera' => 'required|string|max:120',
+            'Cod_Universidad' => 'required|exists:universidades,Cod_Universidad',
+            'Descripcion_Carrera' => 'nullable|string|max:1000',
+            'Duracion_Carrera' => 'nullable|string|max:50',
+            'imgen' => 'nullable|image|max:2048',
+        ]);
+
+        $updateData = [
+            'Nombre_Carrera' => $data['Nombre_Carrera'],
+            'Cod_Universidad' => $data['Cod_Universidad'],
+            'Descripcion_Carrera' => $data['Descripcion_Carrera'] ?? null,
+            'Duracion_Carrera' => $data['Duracion_Carrera'] ?? null,
+        ];
+
+        if ($request->hasFile('imgen')) {
+            $updateData['Foto_Carrera'] = $request->file('imgen')->store('carreras', 'public');
+        }
+
+        $carrera->update($updateData);
+
+        return back()->with('success', 'Carrera actualizada correctamente.');
+    }
+
+    public function carrerasDestroy(\App\Models\Carrera $carrera)
+    {
+        if ($carrera->usuariosCampusMarket()->count() > 0) {
+            return back()->with('error', 'No se puede eliminar: hay usuarios asociados a esta carrera.');
+        }
+
+        $carrera->delete();
+
+        return back()->with('success', 'Carrera eliminada correctamente.');
+    }
+
+    // ==================== GESTIÓN DE CATEGORÍAS DE ARTÍCULOS ====================
+
+    public function categorias()
+    {
+        $counts = DB::table('publicaciones')
+            ->select('Cod_Categoria', DB::raw('count(*) as total'))
+            ->groupBy('Cod_Categoria')
+            ->pluck('total', 'Cod_Categoria');
+
+        $categorias = \App\Models\Categorias::with([
+                'carrera:Cod_Carrera,Nombre_Carrera,Cod_Universidad',
+                'carrera.universidad:Cod_Universidad,Nombre_Universidad',
+            ])
+            ->orderBy('Nombre_Categoria')
+            ->get();
+        foreach ($categorias as $cat) {
+            $cat->publicaciones_count = $counts[$cat->Cod_Categoria] ?? 0;
+        }
+
+        $carreras = \App\Models\Carrera::with('universidad:Cod_Universidad,Nombre_Universidad')
+            ->orderBy('Nombre_Carrera')
+            ->get(['Cod_Carrera', 'Nombre_Carrera', 'Cod_Universidad']);
+
+        return Inertia::render('Admin/Categorias', [
+            'categorias' => $categorias,
+            'carreras' => $carreras,
+        ]);
+    }
+
+    public function categoriasStore(Request $request)
+    {
+        $request->merge(['Cod_Carrera' => $request->input('Cod_Carrera') ?: null]);
+
+        $data = $request->validate([
+            'Nombre_Categoria' => 'required|string|max:100|unique:categorias_articulos,Nombre_Categoria',
+            'Cod_Carrera' => 'nullable|exists:carreras,Cod_Carrera',
+        ]);
+
+        \App\Models\Categorias::create($data);
+
+        return back()->with('success', 'Categoría creada correctamente.');
+    }
+
+    public function categoriasUpdate(Request $request, \App\Models\Categorias $categoria)
+    {
+        $request->merge(['Cod_Carrera' => $request->input('Cod_Carrera') ?: null]);
+
+        $data = $request->validate([
+            'Nombre_Categoria' => 'required|string|max:100|unique:categorias_articulos,Nombre_Categoria,'.$categoria->Cod_Categoria.',Cod_Categoria',
+            'Cod_Carrera' => 'nullable|exists:carreras,Cod_Carrera',
+        ]);
+
+        $categoria->update($data);
+
+        return back()->with('success', 'Categoría actualizada correctamente.');
+    }
+
+    public function categoriasDestroy(\App\Models\Categorias $categoria)
+    {
+        $enUso = DB::table('publicaciones')->where('Cod_Categoria', $categoria->Cod_Categoria)->count();
+        if ($enUso > 0) {
+            return back()->with('error', "No se puede eliminar: {$enUso} publicación(es) usan esta categoría.");
+        }
+
+        $categoria->delete();
+
+        return back()->with('success', 'Categoría eliminada correctamente.');
+    }
+
+    // ==================== GESTIÓN DE REPUTACIÓN ENTRE USUARIOS ====================
+
+    public function reputaciones()
+    {
+        $reputaciones = \App\Models\ReputacionEntreUsuarios::with([
+                'usuarioCalificador:id,name,email',
+                'usuarioCalificado:id,name,email',
+            ])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $usuarios = User::select('id', 'name', 'email')->orderBy('name')->get();
+
+        return Inertia::render('Admin/Reputaciones', [
+            'reputaciones' => $reputaciones,
+            'usuarios' => $usuarios,
+        ]);
+    }
+
+    private function validateReputacion(Request $request)
+    {
+        return $request->validate([
+            'ID_Usuario_Calificador' => 'required|exists:users,id',
+            'ID_Usuario_Calificado'  => 'required|exists:users,id|different:ID_Usuario_Calificador',
+            'Puntuacion'             => 'required|integer|min:0|max:255',
+            'Comentario'             => 'nullable|string|max:1000',
+        ], [
+            'ID_Usuario_Calificado.different' => 'Un usuario no puede calificarse a sí mismo.',
+        ]);
+    }
+
+    public function reputacionesStore(Request $request)
+    {
+        $data = $this->validateReputacion($request);
+
+        $dup = \App\Models\ReputacionEntreUsuarios::where('ID_Usuario_Calificador', $data['ID_Usuario_Calificador'])
+            ->where('ID_Usuario_Calificado', $data['ID_Usuario_Calificado'])
+            ->exists();
+        if ($dup) {
+            return back()->withErrors(['ID_Usuario_Calificado' => 'Ya existe una calificación de este calificador hacia ese usuario.']);
+        }
+
+        \App\Models\ReputacionEntreUsuarios::create($data);
+
+        return back()->with('success', 'Reputación registrada correctamente.');
+    }
+
+    public function reputacionesUpdate(Request $request, \App\Models\ReputacionEntreUsuarios $reputacion)
+    {
+        $data = $this->validateReputacion($request);
+
+        $dup = \App\Models\ReputacionEntreUsuarios::where('ID_Usuario_Calificador', $data['ID_Usuario_Calificador'])
+            ->where('ID_Usuario_Calificado', $data['ID_Usuario_Calificado'])
+            ->where('ID_Reputacion', '!=', $reputacion->ID_Reputacion)
+            ->exists();
+        if ($dup) {
+            return back()->withErrors(['ID_Usuario_Calificado' => 'Ya existe una calificación de este calificador hacia ese usuario.']);
+        }
+
+        $reputacion->update($data);
+
+        return back()->with('success', 'Reputación actualizada correctamente.');
+    }
+
+    public function reputacionesDestroy(\App\Models\ReputacionEntreUsuarios $reputacion)
+    {
+        $reputacion->delete();
+
+        return back()->with('success', 'Reputación eliminada correctamente.');
     }
 
     // ==================== GESTIÓN DE FOROS ====================

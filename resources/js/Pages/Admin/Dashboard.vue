@@ -1,6 +1,6 @@
 <script setup>
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import { Users, FileText, MessageSquare, Flag, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next';
+import { Users, UserCheck, UserX, GraduationCap, Building2, BookOpen, Ratio, FileText, MessageSquare, Flag, TrendingUp, TrendingDown, Minus } from 'lucide-vue-next';
 
 const props = defineProps({
     stats: Object,
@@ -8,10 +8,16 @@ const props = defineProps({
 });
 
 const cards = [
-    { label: 'Usuarios',      value: props.stats.total_usuarios,      icon: Users,        color: 'bg-indigo-500/10 text-indigo-400' },
-    { label: 'Publicaciones', value: props.stats.total_publicaciones, icon: FileText,     color: 'bg-emerald-500/10 text-emerald-400' },
-    { label: 'Foros',         value: props.stats.total_foros,         icon: MessageSquare,color: 'bg-purple-500/10 text-purple-400' },
-    { label: 'Reportes',      value: props.stats.total_reportes,      icon: Flag,         color: 'bg-red-500/10 text-red-400' },
+    { label: 'Usuarios',              value: props.stats.total_usuarios,                 icon: Users,         color: 'bg-indigo-500/10 text-indigo-400' },
+    { label: 'Usuarios activos',      value: props.stats.usuarios_activos,               icon: UserCheck,     color: 'bg-emerald-500/10 text-emerald-400' },
+    { label: 'Usuarios inactivos',    value: props.stats.usuarios_inactivos,             icon: UserX,         color: 'bg-rose-500/10 text-rose-400' },
+    { label: 'Universidades',         value: props.stats.total_universidades,            icon: GraduationCap, color: 'bg-blue-500/10 text-blue-400' },
+    { label: 'Univ. nuevas (30d)',    value: props.stats.universidades_nuevas,           icon: Building2,     color: 'bg-cyan-500/10 text-cyan-400' },
+    { label: 'Carreras',              value: props.stats.total_carreras,                 icon: BookOpen,      color: 'bg-amber-500/10 text-amber-400' },
+    { label: 'Carreras / universidad',value: props.stats.promedio_carreras_universidad,  icon: Ratio,         color: 'bg-fuchsia-500/10 text-fuchsia-400' },
+    { label: 'Publicaciones',         value: props.stats.total_publicaciones,            icon: FileText,      color: 'bg-emerald-500/10 text-emerald-400' },
+    { label: 'Foros',                 value: props.stats.total_foros,                    icon: MessageSquare, color: 'bg-purple-500/10 text-purple-400' },
+    { label: 'Reportes',              value: props.stats.total_reportes,                 icon: Flag,          color: 'bg-red-500/10 text-red-400' },
 ];
 </script>
 

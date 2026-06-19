@@ -3,7 +3,8 @@ import { ref, computed } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     LayoutDashboard, Users, FileText, MessageSquare,
-    Flag, LogOut, Menu, X, ChevronDown, Shield, KeyRound
+    Flag, LogOut, Menu, X, ChevronDown, Shield, KeyRound,
+    GraduationCap, BookOpen, Tags, Star, Activity
 } from 'lucide-vue-next';
 
 defineProps({ title: String });
@@ -17,8 +18,13 @@ const navigation = [
     { name: 'Dashboard',     href: route('admin.dashboard'),    icon: LayoutDashboard, active: route().current('admin.dashboard') },
     { name: 'Usuarios',      href: route('admin.usuarios'),     icon: Users,           active: route().current('admin.usuarios') },
     { name: 'Roles',         href: route('admin.roles'),        icon: KeyRound,        active: route().current('admin.roles') },
+    { name: 'Universidades', href: route('admin.universidades'),icon: GraduationCap,   active: route().current('admin.universidades') },
+    { name: 'Carreras',      href: route('admin.carreras'),     icon: BookOpen,        active: route().current('admin.carreras') },
+    { name: 'Categorías',    href: route('admin.categorias'),   icon: Tags,            active: route().current('admin.categorias') },
+    { name: 'Reputación',    href: route('admin.reputaciones'), icon: Star,            active: route().current('admin.reputaciones') },
     { name: 'Publicaciones', href: route('admin.publicaciones'),icon: FileText,        active: route().current('admin.publicaciones') },
     { name: 'Reportes',      href: route('admin.reportes'),     icon: Flag,            active: route().current('admin.reportes') },
+    { name: 'Analítica',     href: route('admin.analitica'),    icon: Activity,        active: route().current('admin.analitica') },
     { name: 'Marketplace',   href: route('dashboard'),          icon: MessageSquare,   active: false },
 ];
 

@@ -128,10 +128,10 @@ const onChatUpdated = (id) => {
 </script>
 
 <template>
-    <AppLayout title="Mensajes">
+    <AppLayout title="Mensajes" bleed>
         <!-- Eliminamos el header estándar para darle el 100% de la altura al Workspace -->
-        
-        <div class="h-[calc(100vh-73px)] pt-6 pb-6 px-4 sm:px-6 lg:px-8 max-w-[1600px] mx-auto w-full flex overflow-hidden">
+
+        <div class="flex-1 min-h-0 w-full flex p-3 sm:p-4 lg:p-5 overflow-hidden">
             
             <!-- Panel Izquierdo: Lista de Chats -->
             <div 
@@ -225,7 +225,7 @@ const onChatUpdated = (id) => {
                     </div>
 
                     <!-- Empty States -->
-                    <div v-if="filteredChats.length === 0" class="flex flex-col items-center justify-center py-16 text-center opacity-60">
+                    <div v-if="filteredChats.length === 0" class="flex flex-col items-center justify-center h-full min-h-[320px] text-center opacity-60">
                         <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-4">
                             <MessageSquare class="w-8 h-8 text-gray-400" />
                         </div>

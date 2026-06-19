@@ -24,7 +24,7 @@ class Carrera extends Model
      */
     public function universidad()
     {
-        return $this->belongsTo(universidad::class, 'Cod_Universidad');
+        return $this->belongsTo(Universidad::class, 'Cod_Universidad');
     }
 
     /**
@@ -33,5 +33,13 @@ class Carrera extends Model
     public function usuariosCampusMarket()
     {
         return $this->hasMany(UsuarioCampusMarket::class, 'Cod_Carrera');
+    }
+
+    /**
+     * Categorías de artículos asociadas a esta carrera.
+     */
+    public function categorias()
+    {
+        return $this->hasMany(Categorias::class, 'Cod_Carrera', 'Cod_Carrera');
     }
 }

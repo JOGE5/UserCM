@@ -11,7 +11,16 @@ class Categorias extends Model
     
     protected $fillable = [
         'Nombre_Categoria',
+        'Cod_Carrera',
     ];
 
     public $timestamps = true;
+
+    /**
+     * Carrera a la que pertenece la categoría (null = categoría global).
+     */
+    public function carrera()
+    {
+        return $this->belongsTo(Carrera::class, 'Cod_Carrera', 'Cod_Carrera');
+    }
 }

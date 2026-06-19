@@ -30,6 +30,8 @@ import {
 
 defineProps({
     title: String,
+    // Modo "workspace": ocupa todo el ancho y alto disponible (sin contenedor centrado ni footer).
+    bleed: { type: Boolean, default: false },
 });
 
 const page = usePage();
@@ -86,7 +88,7 @@ const profilePhotoUrl = computed(() => {
 
         <!-- NAVBAR PRINCIPAL (E-COMMERCE) -->
         <header class="sticky top-0 z-[100] w-full glass-nav transition-all duration-300">
-            <div class="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <div class="w-full max-w-[1850px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                 <Link :href="route('dashboard')" class="flex items-center gap-3 float-3d group">
                     <div class="px-3 py-1.5 bg-white/10 dark:bg-black/10 backdrop-blur-md rounded-xl shadow-sm hover:shadow-lg group-hover:bg-brand-500/10 transition-all flex items-center justify-center">
@@ -123,7 +125,7 @@ const profilePhotoUrl = computed(() => {
 
                 <!-- Menú Dropdown de Categorías -->
                 <div class="relative z-50 float-3d ml-1 group/cat cursor-pointer">
-                    <Dropdown align="left" width="64">
+                    <Dropdown align="left" width="64" :content-classes="['w-72', '!rounded-3xl', 'overflow-hidden', 'border', 'border-light-border', 'dark:border-white/10', 'bg-white', 'dark:bg-[#16161a]', 'shadow-2xl', 'shadow-brand-500/10']">
                         <template #trigger>
                             <button class="relative px-3 xl:px-5 py-2 xl:py-2.5 rounded-full text-[10px] xl:text-xs font-bold transition-all duration-300 flex items-center gap-1.5 xl:gap-2 text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white/50 dark:hover:bg-white/10 overflow-hidden">
                                 <Layers class="w-4 h-4 z-10 relative transition-transform group-hover/cat:scale-110" />
@@ -133,26 +135,43 @@ const profilePhotoUrl = computed(() => {
                         </template>
 
                         <template #content>
-                            <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 !bg-white/90 dark:!bg-[#16161a]/90 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                                <div class="px-4 py-3 bg-brand-50/50 dark:bg-brand-500/10 border-b border-light-border dark:border-dark-border sticky top-0 backdrop-blur-md z-10">
-                                    <p class="text-[10px] font-black tracking-widest text-brand-600 dark:text-brand-400 uppercase">Explorar Catálogo</p>
+                            <div>
+                                <!-- Encabezado -->
+                                <div class="px-5 pt-4 pb-3 border-b border-light-border/70 dark:border-dark-border/70">
+                                    <p class="text-[10px] font-black tracking-[0.2em] text-brand-600 dark:text-brand-400 uppercase">Explorar Catálogo</p>
+                                    <p class="text-[11px] text-gray-400 font-medium mt-0.5">Encuentra lo que buscas</p>
                                 </div>
-                                <div class="py-2 flex flex-col">
-                                    <Link 
-                                        :href="route('dashboard')" 
-                                        class="px-5 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-2"
+
+                                <!-- Destacado: Todas las categorías -->
+                                <div class="p-2">
+                                    <Link
+                                        :href="route('dashboard')"
+                                        class="group flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-brand-500/10 hover:bg-brand-500/20 transition-all"
                                     >
-                                        <Sparkles class="w-3.5 h-3.5" />
-                                        <span>Todas las Categorías</span>
+                                        <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white shadow-md shadow-brand-500/30 shrink-0">
+                                            <Sparkles class="w-4 h-4" />
+                                        </span>
+                                        <span class="flex-1 min-w-0">
+                                            <span class="block text-xs font-black text-gray-900 dark:text-white">Todas las Categorías</span>
+                                            <span class="block text-[10px] text-gray-400 font-medium">Ver todo el catálogo</span>
+                                        </span>
+                                        <ChevronRight class="w-4 h-4 text-brand-500 group-hover:translate-x-0.5 transition-transform shrink-0" />
                                     </Link>
-                                    <Link 
-                                        v-for="cat in categoriasGlobales" 
+                                </div>
+
+                                <!-- Lista de categorías -->
+                                <div class="px-2 pb-2 max-h-[50vh] overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
+                                    <Link
+                                        v-for="cat in categoriasGlobales"
                                         :key="cat.Cod_Categoria"
-                                        :href="route('dashboard', { categoria: cat.Cod_Categoria })" 
-                                        class="px-5 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex items-center gap-2 border-t border-light-border/50 dark:border-dark-border/50"
+                                        :href="route('dashboard', { categoria: cat.Cod_Categoria })"
+                                        class="group flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-brand-50 dark:hover:bg-white/5 transition-all"
                                     >
-                                        <ChevronRight class="w-3.5 h-3.5 opacity-50" />
-                                        <span>{{ cat.Nombre_Categoria }}</span>
+                                        <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-300 text-[11px] font-black group-hover:bg-brand-500 group-hover:text-white transition-colors shrink-0">
+                                            {{ (cat.Nombre_Categoria || '?').charAt(0).toUpperCase() }}
+                                        </span>
+                                        <span class="flex-1 min-w-0 truncate text-xs font-bold text-gray-700 dark:text-gray-200 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{{ cat.Nombre_Categoria }}</span>
+                                        <ChevronRight class="w-3.5 h-3.5 text-gray-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all shrink-0" />
                                     </Link>
                                 </div>
                             </div>
@@ -255,9 +274,13 @@ const profilePhotoUrl = computed(() => {
         </Transition>
 
         <!-- CONTENIDO PRINCIPAL -->
-        <main class="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 flex flex-col">
+        <main
+            :class="bleed
+                ? 'flex-1 w-full relative z-10 flex flex-col min-h-0'
+                : 'flex-1 w-full max-w-[1850px] mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 flex flex-col'"
+        >
             <!-- Header dinámico (opcional) -->
-            <div v-if="$slots.header" class="mb-8 animate-fade-in glass-panel p-6 sm:p-8 rounded-[2.5rem] relative overflow-hidden shadow-xl float-3d">
+            <div v-if="$slots.header && !bleed" class="mb-8 animate-fade-in glass-panel p-6 sm:p-8 rounded-[2.5rem] relative overflow-hidden shadow-xl float-3d">
                 <div class="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent dark:from-white/5 pointer-events-none z-0"></div>
                 <div class="relative z-10">
                     <slot name="header" />
@@ -265,14 +288,14 @@ const profilePhotoUrl = computed(() => {
             </div>
 
             <!-- Main Slot -->
-            <div class="animate-fade-in flex-1">
+            <div :class="bleed ? 'flex-1 min-h-0 flex flex-col' : 'animate-fade-in flex-1'">
                 <slot />
             </div>
         </main>
 
         <!-- FOOTER E-COMMERCE -->
-        <footer class="mt-auto glass-panel border-t border-white/20 dark:border-white/5 py-8 relative z-10">
-            <div class="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <footer v-if="!bleed" class="mt-auto glass-panel border-t border-white/20 dark:border-white/5 py-8 relative z-10">
+            <div class="max-w-[1850px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="flex items-center gap-3 opacity-60">
                     <img src="/images/posters/logo-team.png" alt="Logo" class="w-6 h-6 grayscale" />
                     <span class="text-xs font-black tracking-[0.2em] uppercase text-gray-500 dark:text-gray-400">Campus Market E-Commerce <span class="text-brand-500 ml-2 bg-brand-500/10 px-2 py-0.5 rounded-md">v1.2.0</span></span>

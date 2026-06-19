@@ -197,4 +197,46 @@ class MarkovReputationService
             default => 0,
         };
     }
+
+    /**
+     * Estados de la cadena (Malo, Regular, Bueno, Excelente).
+     */
+    public function getStates(): array
+    {
+        return self::STATES;
+    }
+
+    /**
+     * Matriz de transición base P (4x4).
+     */
+    public function getMatrizTransicion(): array
+    {
+        return self::TRANSITION_MATRIX;
+    }
+
+    /**
+     * Distribución estacionaria π tal que πP = π, por iteración de potencias.
+     * Es el % de usuarios en cada estado a largo plazo, independiente del estado inicial.
+     */
+    public function calcularDistribucionEstacionaria(int $iteraciones = 500): array
+    {
+        $n = count(self::STATES);
+        $pi = array_fill(0, $n, 1.0 / $n);
+
+        for ($k = 0; $k < $iteraciones; $k++) {
+            $next = array_fill(0, $n, 0.0);
+            for ($j = 0; $j < $n; $j++) {
+                for ($i = 0; $i < $n; $i++) {
+                    $next[$j] += $pi[$i] * self::TRANSITION_MATRIX[$i][$j];
+                }
+            }
+            $pi = $next;
+        }
+
+        $result = [];
+        foreach (self::STATES as $idx => $estado) {
+            $result[$estado] = round($pi[$idx], 4);
+        }
+        return $result;
+    }
 }

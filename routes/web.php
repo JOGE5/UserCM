@@ -181,6 +181,8 @@ Route::middleware([
     'admin.role',
 ])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/analitica', [AdminController::class, 'analitica'])->name('analitica');
+    Route::post('/analitica/recalcular', [AdminController::class, 'recalcularReputaciones'])->name('analitica.recalcular');
 
     // Usuarios
     Route::get('/usuarios', [AdminController::class, 'users'])->name('usuarios');
@@ -212,6 +214,24 @@ Route::middleware([
     Route::post('/universidades', [AdminController::class, 'universitiesStore'])->name('universidades.store');
     Route::put('/universidades/{universidad}', [AdminController::class, 'universitiesUpdate'])->name('universidades.update');
     Route::delete('/universidades/{universidad}', [AdminController::class, 'universitiesDestroy'])->name('universidades.destroy');
+
+    // Carreras
+    Route::get('/carreras', [AdminController::class, 'carreras'])->name('carreras');
+    Route::post('/carreras', [AdminController::class, 'carrerasStore'])->name('carreras.store');
+    Route::put('/carreras/{carrera}', [AdminController::class, 'carrerasUpdate'])->name('carreras.update');
+    Route::delete('/carreras/{carrera}', [AdminController::class, 'carrerasDestroy'])->name('carreras.destroy');
+
+    // Categorías de Artículos
+    Route::get('/categorias', [AdminController::class, 'categorias'])->name('categorias');
+    Route::post('/categorias', [AdminController::class, 'categoriasStore'])->name('categorias.store');
+    Route::put('/categorias/{categoria}', [AdminController::class, 'categoriasUpdate'])->name('categorias.update');
+    Route::delete('/categorias/{categoria}', [AdminController::class, 'categoriasDestroy'])->name('categorias.destroy');
+
+    // Reputación entre usuarios
+    Route::get('/reputaciones', [AdminController::class, 'reputaciones'])->name('reputaciones');
+    Route::post('/reputaciones', [AdminController::class, 'reputacionesStore'])->name('reputaciones.store');
+    Route::put('/reputaciones/{reputacion}', [AdminController::class, 'reputacionesUpdate'])->name('reputaciones.update');
+    Route::delete('/reputaciones/{reputacion}', [AdminController::class, 'reputacionesDestroy'])->name('reputaciones.destroy');
 
     // Foros
     Route::get('/foros', [AdminController::class, 'forums'])->name('foros');
