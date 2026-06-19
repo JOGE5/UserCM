@@ -58,7 +58,7 @@ trait HasHashid
     {
         if (is_numeric($value)) {
             // Soporte para IDs numéricos (por ej. en el panel de admin si no se ha actualizado)
-            return $this->where($field ?? $this->getRouteKeyName(), $value)->firstOrFail();
+            return $this->where($field ?? $this->getKeyName(), $value)->firstOrFail();
         }
 
         $decoded = $this->getHashidsInstance()->decode($value);
@@ -66,6 +66,6 @@ trait HasHashid
             abort(404);
         }
 
-        return $this->where($field ?? $this->getRouteKeyName(), $decoded[0])->firstOrFail();
+        return $this->where($field ?? $this->getKeyName(), $decoded[0])->firstOrFail();
     }
 }

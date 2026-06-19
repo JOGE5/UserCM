@@ -494,11 +494,11 @@ const handleContact = async () => {
     await axios.post(route('chats.messages.store', chat_id), {
       type: 'product_card',
       metadata: {
-        publicacion_id: props.publicacion.id,
+        publicacion_id: props.publicacion.hashid || props.publicacion.id,
         titulo:  props.publicacion.Titulo_Publicacion,
         precio:  props.publicacion.Precio_Publicacion,
         imagen,
-        url: route('publicaciones.show', props.publicacion.id),
+        url: route('publicaciones.show', props.publicacion.hashid || props.publicacion.id),
       },
     })
 
