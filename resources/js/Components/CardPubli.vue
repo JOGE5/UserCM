@@ -69,7 +69,8 @@ function toggleFavorito() {
 }
 
 function open() {
-  if (props.id) router.visit(route('publicaciones.show', props.id));
+  const key = props.publicacion?.hashid || props.id;
+  if (key) router.visit(route('publicaciones.show', key));
 }
 
 function activateBorrador() {
@@ -231,7 +232,7 @@ onBeforeUnmount(() => {
               <CheckCircle class="w-4 h-4" />
             </button>
             <button 
-              @click.stop="router.visit(route('publicaciones.edit', props.id))"
+              @click.stop="router.visit(route('publicaciones.edit', props.publicacion?.hashid || props.id))"
               class="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-xl transition-colors"
               title="Editar"
             >

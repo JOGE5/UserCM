@@ -29,8 +29,8 @@ class PreventDuplicateSubmission
             return back()->withErrors(['error' => 'Solicitud duplicada detectada. Espera un momento.'])->withInput();
         }
 
-        // Marcar como procesada por 60 segundos
-        Cache::put($cacheKey, true, 60);
+        // Marcar como procesada por 10 segundos (reducido para no bloquear reintentos legítimos)
+        Cache::put($cacheKey, true, 10);
 
         return $next($request);
     }
