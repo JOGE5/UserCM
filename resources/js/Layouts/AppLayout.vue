@@ -123,7 +123,7 @@ const profilePhotoUrl = computed(() => {
 
                 <!-- Menú Dropdown de Categorías -->
                 <div class="relative z-50 float-3d ml-1 group/cat cursor-pointer">
-                    <Dropdown align="left" width="64">
+                    <Dropdown align="left" width="64" :content-classes="[]">
                         <template #trigger>
                             <button class="relative px-3 xl:px-5 py-2 xl:py-2.5 rounded-full text-[10px] xl:text-xs font-bold transition-all duration-300 flex items-center gap-1.5 xl:gap-2 text-gray-600 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white/50 dark:hover:bg-white/10 overflow-hidden">
                                 <Layers class="w-4 h-4 z-10 relative transition-transform group-hover/cat:scale-110" />
@@ -181,7 +181,7 @@ const profilePhotoUrl = computed(() => {
 
                 <!-- Menú Usuario -->
                 <div class="relative z-50 float-3d">
-                    <Dropdown align="right" width="56">
+                    <Dropdown align="right" width="56" :content-classes="[]">
                         <template #trigger>
                             <button class="flex items-center gap-2 p-1.5 pr-1.5 xl:pr-4 rounded-full bg-white/40 dark:bg-black/40 border border-white/50 dark:border-white/10 hover:bg-white/80 dark:hover:bg-black/80 transition-all shadow-sm backdrop-blur-md">
                                 <img :src="profilePhotoUrl" class="h-8 w-8 rounded-full object-cover ring-2 ring-white/50 dark:ring-white/10" :alt="user?.name" />
